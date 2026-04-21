@@ -1,0 +1,11 @@
+{
+  "framework": "nextjs",
+  "rootDirectory": "frontend",
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://tu-backend-api.com/api/:path*"
+    }
+  ]
+}
