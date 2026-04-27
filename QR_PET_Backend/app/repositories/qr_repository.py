@@ -1,0 +1,106 @@
+"""
+Repository para operaciones de Códigos QR usando SQLAlchemy 2.0
+"""
+from typing import Optional, List, Any, Union
+import uuid
+from sqlalchemy import select, exists
+from sqlalchemy.orm import joinedload
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.repositories.base import BaseRepository
+from app.models.qr import QRCode
+from app.models.pet import Pet
+
+class QRRepository(BaseRepository[QRCode]):
+    """Repository para la tabla codigos_qr con lógica ORM"""
+    
+    def __init__(self, session: AsyncSession):
+        super().__init__(model=QRCode,session= session)
+
+    def _force_uuid(self, id_val: Any) -> Optional[uuid.UUID]:
+        """Auxiliar para asegurar que el ID sea un objeto UUID"""
+        if id_val is None:
+            return None
+        if isinstance(id_val, uuid.UUID):
+            return id_val
+        try:
+            return uuid.UUID(str(id_val))
+        except (ValueError, TypeError):
+            return None
+
+    async def create(
+        self,
+        codigo: str,
+        mascota_id: Optional[Union[str, uuid.UUID]] = None,
+        activo: bool = True
+    ) -> QRCode:
+        """Crea un nuevo QR asegurando el tipo de dato para mascota_id"""
+        nuevo_qr = QRCode(
+            codigo=codigo.upper(),
+            mascota_id=self._force_uuid(mascota_id),
+            activo=activo
+        )
+        self.session.add(nuevo_qr)
+        await self.session.flush()
+        await self.session.refresh(nuevo_qr)
+        return nuevo_qr
+
+    async def get_by_code(self, codigo: str) -> Optional[QRCode]:
+        """Obtiene un QR por su código alfanumérico"""
+        query = select(QRCode).where(QRCode.codigo == codigo.upper())
+        result = await self.session.execute(query)
+        return result.scalar_one_or_none()
+
+    async def get_by_mascota(self, mascota_id: Union[str, uuid.UUID]) -> Optional[QRCode]:
+        """
+        Obtiene el QR vinculado a una mascota específica.
+        Corregido para evitar error de tipos uuid = character varying
+        """
+        m_id = self._force_uuid(mascota_id)
+        query = select(QRCode).where(QRCode.mascota_id == m_id)
+        result = await self.session.execute(query)
+        return result.scalar_one_or_none()
+
+    async def link_mascota(self, qr_id: Union[str, uuid.UUID], mascota_id: Union[str, uuid.UUID]) -> Optional[QRCode]:
+        """Vincula un QR a una mascota asegurando tipos UUID"""
+        qr = await self.get_by_id(self._force_uuid(qr_id))
+        if qr:
+            qr.mascota_id = self._force_uuid(mascota_id)
+            await self.session.flush()
+            await self.session.refresh(qr)
+        return qr
+
+    async def get_available(self, limit: int = 100, offset: int = 0) -> List[QRCode]:
+        """Obtiene QRs que están activos pero no tienen mascota asignada"""
+        query = (
+            select(QRCode)
+            .where(QRCode.mascota_id == None, QRCode.activo == True)
+            .order_by(QRCode.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+
+    async def get_all_with_details(self, limit: int = 100, offset: int = 0) -> List[QRCode]:
+        """
+        Obtiene todos los QRs cargando la mascota y su dueño en una sola consulta.
+        """
+        query = (
+            select(QRCode)
+            .options(
+                joinedload(QRCode.mascota)
+                .joinedload(Pet.owner)
+            )
+            .order_by(QRCode.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        result = await self.session.execute(query)
+        return list(result.scalars().unique().all())
+
+    async def code_exists(self, codigo: str) -> bool:
+        """Verifica existencia de código de forma rápida"""
+        query = select(exists().where(QRCode.codigo == codigo.upper()))
+        result = await self.session.execute(query)
+        return result.scalar() or False
