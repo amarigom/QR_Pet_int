@@ -7,7 +7,7 @@ from app.core.constants import PetStatus, AnimalSpecies
 # 1. Importaciones para Forward References (Evitan circularidad)
 if TYPE_CHECKING:
     from app.schemas.user import UserResponse
-    from app.schemas.qr import QRResponse
+    #from app.schemas.qr import QRResponse
 
 # 1. Base compartida
 class PetBase(BaseModel):
@@ -62,3 +62,4 @@ from app.schemas.user import UserResponse
 from app.schemas.qr import QRResponse    
 PetWithOwner.model_rebuild()
 PetDetailResponse.model_rebuild()
+

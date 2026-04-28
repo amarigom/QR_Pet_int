@@ -9,6 +9,25 @@ from app.core.database import engine
 from app.middleware import setup_middleware
 from app.api.v1.router import router as v1_router
 from app.utils.logger import logger
+from app.schemas.user import UserResponse, TokenResponse
+from app.schemas.pet import PetWithOwner, PetDetailResponse
+
+def setup_schema_rebuilds():
+    models = [
+        UserResponse, 
+        TokenResponse, 
+        PetWithOwner, 
+        PetDetailResponse
+    ]
+    for model in models:
+        try:
+            model.model_rebuild()
+        except Exception as e:
+            print(f"Aviso: No se pudo reconstruir {model.__name__}: {e}")
+
+# Ejecutamos antes de crear la app
+setup_schema_rebuilds()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -62,7 +81,7 @@ async def root():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
-        "app.main:app", # Asegúrate de que la ruta sea correcta según tu ejecución
+        "main:app", # <-- Cambia "app.main:app" por "main:app" si el archivo está en la raíz del Backend
         host="0.0.0.0",
         port=8000,
         reload=settings.DEBUG,
