@@ -1,9 +1,10 @@
+from __future__ import annotations
 from pydantic import BaseModel, EmailStr, ConfigDict, Field
 from typing import Optional, TYPE_CHECKING
 from datetime import datetime
 from uuid import UUID
 from app.core.constants import UserRole
-from __future__ import annotations
+
 
 # 1. Base compartida
 class UserBase(BaseModel):

@@ -1,9 +1,10 @@
+from __future__ import annotations
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime
 from uuid import UUID
 from app.core.constants import PetStatus, AnimalSpecies
-from __future__ import annotations
+
 
 # 1. Importaciones para Forward References (Evitan circularidad)
 if TYPE_CHECKING:
