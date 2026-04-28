@@ -1,8 +1,10 @@
+from __future__ import annotations
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
 from datetime import datetime
 from uuid import UUID
 from typing import Optional, List, TYPE_CHECKING
+
 
 if TYPE_CHECKING:
     from app.schemas.qr import QRDetailResponse
@@ -35,7 +37,7 @@ class ScanDetailResponse(ScanResponse):
     """
     
     # En lugar de campos sueltos, traemos el objeto QR (que ya trae Pet y Owner)
-    qr: Optional["QRDetailResponse"] = None
+    qr: Optional[QRDetailResponse] = None
     
 
 

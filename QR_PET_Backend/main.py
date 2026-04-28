@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api.v1.router import router as v1_router
+
 from app.config import settings
 from app.core.database import engine
 from app.middleware import setup_middleware
@@ -18,17 +18,22 @@ async def lifespan(app: FastAPI):
     Gestión del ciclo de vida de la aplicación:
     - Conexión y desconexión de base de datos.
     """
-    logger.info("🚀 Iniciando PetFinder API con SQLAlchemy...")
+    logger.info(" Iniciando PetFinder API con SQLAlchemy...")
     yield
-    logger.info("🛑 Cerrando aplicación...")
+    logger.info("Cerrando aplicación...")
     await engine.dispose()
-    logger.info("🔌 Conexiones de base de datos liberadas.")
+    logger.info("Conexiones de base de datos liberadas.")
 
 
 def create_app() -> FastAPI:
     """
     Factory function para configurar e inicializar FastAPI.
     """
+    from app.schemas.user import UserResponse
+    from app.schemas.pet import PetWithOwner
+    
+    UserResponse.model_rebuild()
+    PetWithOwner.model_rebuild()
     application = FastAPI(
         title="PetFinder API",
         version=settings.API_VERSION,
@@ -40,6 +45,7 @@ def create_app() -> FastAPI:
     setup_middleware(application)
 
     # Inclusión de Routers
+    from app.api.v1.router import router as v1_router
     application.include_router(v1_router)
 
     return application

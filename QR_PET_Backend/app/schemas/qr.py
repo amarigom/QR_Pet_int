@@ -1,8 +1,10 @@
+from __future__ import annotations
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
 from typing import Optional, List, TYPE_CHECKING
+
 
 if TYPE_CHECKING:
     from app.schemas.pet import PetWithOwner
@@ -31,7 +33,7 @@ class QRDetailResponse(QRResponse):
     Pydantic llenará esto automáticamente.
     """
     
-    mascota: Optional["PetWithOwner"] = None
+    mascota: Optional[PetWithOwner] = None
 
 # 5. Activación (Lo que envía el usuario al escanear un QR virgen)
 class QRActivateData(BaseModel):
