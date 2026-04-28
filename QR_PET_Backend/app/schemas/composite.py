@@ -1,8 +1,12 @@
 # app/schemas/composite.py
 from typing import Optional, List
-from app.schemas.pet import PetResponse, PetWithOwner 
+from app.schemas.scan import ScanResponse
+from app.schemas.pet import PetResponse
 from app.schemas.user import UserResponse
 from app.schemas.qr import QRResponse # Cuando lo tengas listo
+from typing import Optional, List
+from app.schemas.user import UserResponse
+
 
 class PetWithOwner(PetResponse):
     """Vista: Mascota con los datos de su dueño"""
@@ -16,9 +20,7 @@ class PetDetailResponse(PetResponse):
 class UserWithPets(UserResponse):
     """Vista: Perfil del usuario con sus mascotas"""
     pets: list[PetResponse] = []
-    
-    
-    # app/schemas/composite.py
+        # app/schemas/composite.py
 
 
 # --- NUEVAS VISTAS PARA QR ---
@@ -37,29 +39,18 @@ class PetFullDetail(PetResponse):
     """
     owner: Optional[UserResponse] = None
     qr_code: Optional[QRResponse] = None
-    
-# app/schemas/composite.py
-from typing import Optional, List
-from app.schemas.scan import ScanResponse
-# Importamos QRDetailResponse que ya definimos antes en este mismo archivo
-# o los otros básicos necesarios
+   
+
 
 # --- VISTA PARA EL HISTORIAL DE ESCANEOS ---
-
 class ScanDetailResponse(ScanResponse):
     """
     Vista completa: El Escaneo con los datos del QR involucrado.
     Como QRDetailResponse ya trae Mascota y Dueño, esta vista es total.
     """
     qr: Optional[QRDetailResponse] = None
-    
-# app/schemas/composite.py (Agregado al final de lo que ya tenías)
-from typing import List, Optional
-from app.schemas.user import UserResponse
-from app.schemas.pet import PetResponse
-
+ 
 # --- VISTA DE PERFIL COMPLETO ---
-
 class UserProfile(UserResponse):
     """
     Vista: El usuario con todas sus mascotas.

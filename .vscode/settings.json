@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "./QR_PET_Backend/app"
+    ]
+}

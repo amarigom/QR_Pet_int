@@ -7,7 +7,8 @@ from app.repositories.pet_repository import PetRepository
 from app.core.auth import generate_qr_code
 from app.core.exceptions import ResourceNotFoundException, InvalidDataException
 from app.core.constants import MESSAGE_QR_NOT_FOUND, MESSAGE_QR_ALREADY_LINKED
-from app.schemas.qr import QRResponse, QRDetailResponse, QRActivateData
+from app.schemas.qr import QRResponse, QRActivateData
+from app.schemas.composite import QRDetailResponse
 
 class QRService:
     """Service para gestionar el ciclo de vida de los códigos QR"""

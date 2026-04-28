@@ -30,7 +30,7 @@ def create_app() -> FastAPI:
     Factory function para configurar e inicializar FastAPI.
     """
     from app.schemas.user import UserResponse
-    from app.schemas.pet import PetWithOwner
+    from app.schemas.composite import PetWithOwner
     
     UserResponse.model_rebuild()
     PetWithOwner.model_rebuild()

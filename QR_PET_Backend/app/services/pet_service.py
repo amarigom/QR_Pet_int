@@ -5,7 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.pet_repository import PetRepository
 from app.repositories.qr_repository import QRRepository
 from app.core.exceptions import ResourceNotFoundException
-from app.schemas.pet import PetCreate, PetUpdate, PetResponse, PetDetailResponse
+from app.schemas.pet import PetCreate, PetUpdate, PetResponse
+from app.schemas.composite import PetDetailResponse
 
 class PetService:
     """Service para gestionar el ciclo de vida de las mascotas"""
