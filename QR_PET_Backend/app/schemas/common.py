@@ -7,7 +7,7 @@ T = TypeVar("T")
 class MessageResponse(BaseModel):
     message: str
 
-class SuccessResponse(Generic[T], BaseModel):
+class SuccessResponse( BaseModel,Generic[T]):
     """Ahora podemos decir exactamente qué hay en 'data'"""
     success: bool = True
     message: str
@@ -16,7 +16,7 @@ class SuccessResponse(Generic[T], BaseModel):
     # Esto permite que Pydantic lea modelos de SQLAlchemy
     model_config = ConfigDict(from_attributes=True)
 
-class PaginatedResponse(Generic[T], BaseModel):
+class PaginatedResponse(BaseModel, Generic[T]):
     """El estándar de oro para listas"""
     items: List[T]
     total: int
