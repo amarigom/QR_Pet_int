@@ -37,7 +37,7 @@ class ScanDetailResponse(ScanResponse):
     """
     
     # En lugar de campos sueltos, traemos el objeto QR (que ya trae Pet y Owner)
-    qr: Optional[QRDetailResponse] = None
+    qr: Optional["QRDetailResponse"] = None
     
 
 

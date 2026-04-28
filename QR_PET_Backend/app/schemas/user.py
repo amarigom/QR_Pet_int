@@ -5,7 +5,6 @@ from datetime import datetime
 from uuid import UUID
 from app.core.constants import UserRole
 
-
 # 1. Base compartida
 class UserBase(BaseModel):
     email: EmailStr
@@ -35,8 +34,6 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-
-
 # 6. Estadísticas para el Admin
 class DashboardStats(BaseModel):
     users_count: int
@@ -47,11 +44,12 @@ class DashboardStats(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    # Usamos string por seguridad en la resolución
-    user: UserResponse 
+    # CAMBIO CLAVE: Usamos el string "UserResponse" para retrasar la evaluación
+    user: "UserResponse" 
 
 # --- REPARACIÓN DE REFERENCIAS ---
-# Forzamos a Pydantic a reconstruir TokenResponse 
-# para que encuentre correctamente a UserResponse
+# Forzamos la reconstrucción al final
 UserResponse.model_rebuild()
 TokenResponse.model_rebuild()
+if 'DashboardStats' in locals():
+    DashboardStats.model_rebuild()

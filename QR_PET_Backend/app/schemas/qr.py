@@ -33,7 +33,7 @@ class QRDetailResponse(QRResponse):
     Pydantic llenará esto automáticamente.
     """
     
-    mascota: Optional[PetWithOwner] = None
+    mascota: Optional["PetWithOwner"] = None
 
 # 5. Activación (Lo que envía el usuario al escanear un QR virgen)
 class QRActivateData(BaseModel):
