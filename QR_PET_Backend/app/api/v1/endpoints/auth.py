@@ -25,6 +25,7 @@ async def register(
     """
     from app.services.auth_service import AuthService
     from app.schemas.user import UserResponse
+    from app.schemas.user import UserCreate
     
     auth_service = AuthService(db) 
     return await auth_service.register(user_data)

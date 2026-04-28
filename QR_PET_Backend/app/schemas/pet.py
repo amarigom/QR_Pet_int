@@ -61,6 +61,14 @@ class PetDetailResponse(PetResponse):
     
 # Importamos las clases reales aquí para que rebuild() las vea
 from app.schemas.user import UserResponse
-from app.schemas.qr import QRResponse    
+from app.schemas.qr import QRResponse   
+from app.schemas.user import UserResponse
+
+# Reconstruimos pasando el contexto donde existe UserResponse
+PetResponse.model_rebuild()
+if 'PetWithOwner' in locals():
+    PetWithOwner.model_rebuild()
+if 'PetDetailResponse' in locals():
+    PetDetailResponse.model_rebuild() 
 
 

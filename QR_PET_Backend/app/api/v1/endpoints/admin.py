@@ -40,7 +40,7 @@ async def delete_user(
     return SuccessResponse(message="Usuario eliminado correctamente")
 
 
-@router.post("/users/{user_id}/toggle-admin", response_model="UserResponse") # <-- STRING
+@router.post("/users/{user_id}/toggle-admin", response_model="UserResponse")
 async def toggle_admin_role(
     user_id: uuid.UUID, 
     admin: dict = Depends(require_admin),
@@ -48,24 +48,25 @@ async def toggle_admin_role(
 ):
     """Alterna el rol de administrador de un usuario"""
     from app.services.admin_service import AdminService
-    from app.schemas.user import UserResponse
+    # AGREGADO: Import local necesario para la respuesta
+    from app.schemas.user import UserResponse 
     
     service = AdminService(db)
     return await service.toggle_admin_role(admin["id"], user_id)
 
 
-@router.get("/stats", response_model="DashboardStats") # <-- STRING
+@router.get("/stats", response_model="DashboardStats")
 async def get_dashboard_stats(
     admin: dict = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
     """Estadísticas globales para el Dashboard administrativo"""
     from app.services.admin_service import AdminService
+    # AGREGADO: Import local necesario para la respuesta
     from app.schemas.user import DashboardStats
     
     service = AdminService(db)
     return await service.get_dashboard_stats()
-
 
 @router.get("/pets", response_model=Dict[str, Any])
 async def get_all_pets(
