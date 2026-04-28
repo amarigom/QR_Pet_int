@@ -3,9 +3,13 @@ Router principal que agrupa todos los endpoints v1
 """
 from fastapi import APIRouter
 
+# 1. Importamos los routers de los endpoints
+from app.api.v1.endpoints import auth, pets, qr, scan, admin
 
 router = APIRouter(prefix="/api/v1")
-from app.api.v1.endpoints import auth, pets, qr, scan, admin
+
+# 2. Inclusión de rutas
+# El orden aquí no afecta la circularidad, pero sí la organización en el Swagger
 router.include_router(auth.router)
 router.include_router(pets.router)
 router.include_router(qr.router)

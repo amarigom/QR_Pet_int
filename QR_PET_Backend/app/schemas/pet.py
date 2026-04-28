@@ -1,15 +1,8 @@
-from __future__ import annotations
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, List, TYPE_CHECKING
+from typing import Optional
 from datetime import datetime
 from uuid import UUID
 from app.core.constants import PetStatus, AnimalSpecies
-
-
-# 1. Importaciones para Forward References (Evitan circularidad)
-if TYPE_CHECKING:
-    from app.schemas.user import UserResponse
-    from app.schemas.qr import QRResponse
 
 # 1. Base compartida
 class PetBase(BaseModel):
@@ -35,7 +28,7 @@ class PetUpdate(BaseModel):
     notas: Optional[str] = None
     estado: Optional[PetStatus] = None
 
-# 4. Esquema de RESPUESTA BASE
+# 4. Esquema de RESPUESTA BASE (La "Vista" básica de mascota)
 class PetResponse(PetBase):
     id: UUID
     usuario_id: UUID
@@ -44,31 +37,5 @@ class PetResponse(PetBase):
 
     model_config = ConfigDict(from_attributes=True)
 
-# 5. Esquemas detallados (Relaciones)
-class PetWithOwner(PetResponse):
-    """
-    Relación con el objeto 'owner' completo.
-    Usamos string "UserResponse" para que Pydantic lo resuelva luego.
-    """
-    owner: Optional["UserResponse"] = None
-
-class PetDetailResponse(PetResponse):
-    """
-    Relación con el objeto 'qr_code'.
-    Usamos string "QRResponse" para evitar problemas de carga.
-    """
-    qr_code: Optional["QRResponse"] = None
-    
-# Importamos las clases reales aquí para que rebuild() las vea
-from app.schemas.user import UserResponse
-from app.schemas.qr import QRResponse   
-from app.schemas.user import UserResponse
-
-# Reconstruimos pasando el contexto donde existe UserResponse
+# 5. Rebuild simple (Ya no hay imports circulares, así que no necesita argumentos)
 PetResponse.model_rebuild()
-if 'PetWithOwner' in locals():
-    PetWithOwner.model_rebuild()
-if 'PetDetailResponse' in locals():
-    PetDetailResponse.model_rebuild() 
-
-

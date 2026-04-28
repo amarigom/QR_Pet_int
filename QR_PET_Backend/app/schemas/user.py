@@ -1,6 +1,5 @@
-from __future__ import annotations
 from pydantic import BaseModel, EmailStr, ConfigDict, Field
-from typing import Optional, TYPE_CHECKING
+from typing import Optional
 from datetime import datetime
 from uuid import UUID
 from app.core.constants import UserRole
@@ -34,22 +33,19 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse  # Ya no necesita comillas porque UserResponse ya existe arriba
+
 # 6. Estadísticas para el Admin
 class DashboardStats(BaseModel):
     users_count: int
     pets_count: int
     qrs_count: int
     scans_count: int
-    
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    # CAMBIO CLAVE: Usamos el string "UserResponse" para retrasar la evaluación
-    user: "UserResponse" 
 
-# --- REPARACIÓN DE REFERENCIAS ---
-# Forzamos la reconstrucción al final
+# Rebuilds simples y directos
 UserResponse.model_rebuild()
 TokenResponse.model_rebuild()
-if 'DashboardStats' in locals():
-    DashboardStats.model_rebuild()
+DashboardStats.model_rebuild()

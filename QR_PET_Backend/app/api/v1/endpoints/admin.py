@@ -1,16 +1,17 @@
 import uuid
-from typing import Dict, Any, TYPE_CHECKING
+from typing import Dict, Any, List
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# Core y Seguridad (Imports básicos seguros)
+# 1. Imports de Esquemas (Ahora son SEGUROS e directos)
+from app.schemas.common import SuccessResponse
+from app.schemas.user import UserResponse, DashboardStats
+from app.schemas.composite import PetDetailResponse  # Para el detalle profundo
+
+# 2. Core y Seguridad
 from app.api.v1.dependencies import require_admin
 from app.core.database import get_db
-from app.schemas.common import SuccessResponse
-
-# Bloque para el editor (VS Code)
-if TYPE_CHECKING:
-    from app.schemas.user import UserResponse, DashboardStats
+from app.services.admin_service import AdminService # Lo subimos si no causa ciclo en services
 
 router = APIRouter(prefix="/admin", tags=["Administración"])
 
@@ -21,11 +22,8 @@ async def get_all_users(
     admin: dict = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
-    """Obtiene listado global de usuarios (Solo Admin)"""
-    from app.services.admin_service import AdminService
     service = AdminService(db)
     return await service.get_all_users(page, limit)
-
 
 @router.delete("/users/{user_id}", response_model=SuccessResponse)
 async def delete_user(
@@ -33,38 +31,24 @@ async def delete_user(
     admin: dict = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
-    """Elimina cualquier usuario del sistema"""
-    from app.services.admin_service import AdminService
     service = AdminService(db)
     await service.delete_user(admin["id"], user_id)
     return SuccessResponse(message="Usuario eliminado correctamente")
 
-
-@router.post("/users/{user_id}/toggle-admin", response_model="UserResponse")
+@router.post("/users/{user_id}/toggle-admin", response_model=UserResponse)
 async def toggle_admin_role(
     user_id: uuid.UUID, 
     admin: dict = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
-    """Alterna el rol de administrador de un usuario"""
-    from app.services.admin_service import AdminService
-    # AGREGADO: Import local necesario para la respuesta
-    from app.schemas.user import UserResponse 
-    
     service = AdminService(db)
     return await service.toggle_admin_role(admin["id"], user_id)
 
-
-@router.get("/stats", response_model="DashboardStats")
+@router.get("/stats", response_model=DashboardStats)
 async def get_dashboard_stats(
     admin: dict = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
-    """Estadísticas globales para el Dashboard administrativo"""
-    from app.services.admin_service import AdminService
-    # AGREGADO: Import local necesario para la respuesta
-    from app.schemas.user import DashboardStats
-    
     service = AdminService(db)
     return await service.get_dashboard_stats()
 
@@ -75,19 +59,15 @@ async def get_all_pets(
     admin: dict = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
-    """Listado global de mascotas con carga de dueños"""
-    from app.services.admin_service import AdminService
     service = AdminService(db)
     return await service.get_all_pets(page, limit)
 
-
-@router.get("/pets/{pet_id}", response_model=Dict[str, Any])
+@router.get("/pets/{pet_id}", response_model=PetDetailResponse)
 async def admin_get_pet_detail(
     pet_id: uuid.UUID,
     admin: dict = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
-    """Inspección profunda de una mascota"""
-    from app.services.admin_service import AdminService
+    """Inspección profunda usando la vista compuesta"""
     service = AdminService(db)
     return await service.get_pet_detail_admin(pet_id)
