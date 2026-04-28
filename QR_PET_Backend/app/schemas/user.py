@@ -3,6 +3,7 @@ from typing import Optional, TYPE_CHECKING
 from datetime import datetime
 from uuid import UUID
 from app.core.constants import UserRole
+from __future__ import annotations
 
 # 1. Base compartida
 class UserBase(BaseModel):
@@ -46,7 +47,7 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     # Usamos string por seguridad en la resolución
-    user: "UserResponse" 
+    user: UserResponse 
 
 # --- REPARACIÓN DE REFERENCIAS ---
 # Forzamos a Pydantic a reconstruir TokenResponse 

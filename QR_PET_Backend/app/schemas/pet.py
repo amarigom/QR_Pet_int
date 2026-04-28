@@ -3,6 +3,7 @@ from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime
 from uuid import UUID
 from app.core.constants import PetStatus, AnimalSpecies
+from __future__ import annotations
 
 # 1. Importaciones para Forward References (Evitan circularidad)
 if TYPE_CHECKING:
@@ -48,14 +49,14 @@ class PetWithOwner(PetResponse):
     Relación con el objeto 'owner' completo.
     Usamos string "UserResponse" para que Pydantic lo resuelva luego.
     """
-    owner: Optional["UserResponse"] = None
+    owner: Optional[UserResponse] = None
 
 class PetDetailResponse(PetResponse):
     """
     Relación con el objeto 'qr_code'.
     Usamos string "QRResponse" para evitar problemas de carga.
     """
-    qr_code: Optional["QRResponse"] = None
+    qr_code: Optional[QRResponse] = None
     
 # Importamos las clases reales aquí para que rebuild() las vea
 from app.schemas.user import UserResponse
