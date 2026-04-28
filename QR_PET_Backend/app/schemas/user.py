@@ -51,3 +51,5 @@ class TokenResponse(BaseModel):
 # --- REPARACIÓN DE REFERENCIAS ---
 # Forzamos a Pydantic a reconstruir TokenResponse 
 # para que encuentre correctamente a UserResponse
+UserResponse.model_rebuild()
+TokenResponse.model_rebuild()
