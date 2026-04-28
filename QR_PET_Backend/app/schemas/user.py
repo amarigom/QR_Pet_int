@@ -33,11 +33,7 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    # Usamos string por seguridad en la resolución
-    user: "UserResponse" 
+
 
 # 6. Estadísticas para el Admin
 class DashboardStats(BaseModel):
@@ -45,8 +41,13 @@ class DashboardStats(BaseModel):
     pets_count: int
     qrs_count: int
     scans_count: int
+    
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    # Usamos string por seguridad en la resolución
+    user: "UserResponse" 
 
 # --- REPARACIÓN DE REFERENCIAS ---
 # Forzamos a Pydantic a reconstruir TokenResponse 
 # para que encuentre correctamente a UserResponse
-TokenResponse.model_rebuild()

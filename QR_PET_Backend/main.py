@@ -7,8 +7,9 @@ from fastapi import FastAPI
 from app.config import settings
 from app.core.database import engine 
 from app.middleware import setup_middleware
-from app.api.v1.router import router as v1_router
+
 from app.utils.logger import logger
+from app.api.v1.router import router as v1_router
 
 # 1. Definimos el Lifespan PRIMERO para que esté disponible al crear la app
 @asynccontextmanager

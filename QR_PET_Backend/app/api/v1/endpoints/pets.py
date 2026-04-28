@@ -1,10 +1,11 @@
 import uuid
 from fastapi import APIRouter, Depends, Query, status
+from app.schemas.pet import PetCreate, PetUpdate, PetResponse, PetDetailResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Importaciones locales
 from app.core.database import get_db
-from app.schemas.pet import PetCreate, PetUpdate, PetResponse, PetDetailResponse
+
 from app.schemas.common import SuccessResponse
 from app.services.pet_service import PetService
 from app.api.v1.dependencies import get_current_user
