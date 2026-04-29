@@ -12,6 +12,7 @@ from app.middleware import setup_middleware
 from app.utils.logger import logger
 
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -53,7 +54,14 @@ def create_app() -> FastAPI:
 
 app = create_app()
 
-
+from fastapi.middleware.cors import CORSMiddleware
+# ... después de app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 @app.get("/health", tags=["Health"])
 async def health_check():
     return {"status": "ok", "orm": "sqlalchemy", "version": settings.API_VERSION}
