@@ -64,7 +64,15 @@ app.add_middleware(
 )
 @app.get("/health", tags=["Health"])
 async def health_check():
-    return {"status": "ok", "orm": "sqlalchemy", "version": settings.API_VERSION}
+    try:
+        # Intentamos una consulta simple
+        from sqlalchemy import text
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        return {"status": "ok", "db": "connected"}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)} # Esto nos va a mostrar el error real en pantalla
+    #return {"status": "ok", "orm": "sqlalchemy", "version": settings.API_VERSION}
 
 
 @app.get("/", tags=["Root"])
