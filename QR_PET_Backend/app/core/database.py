@@ -4,22 +4,25 @@ import os
 from dotenv import load_dotenv
 from app.config import settings
 
-load_dotenv()
+# Levantamos la URL
+raw_url = os.getenv("DATABASE_URL")
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+# Limpieza absoluta de parámetros de query string
+if raw_url:
+    # Esto elimina cualquier cosa después del '?' (como sslmode)
+    DATABASE_URL = raw_url.split('?')[0]
+else:
+    DATABASE_URL = raw_url
 
 connect_args = {}
-if "localhost" not in DATABASE_URL and "127.0.0.1" not in DATABASE_URL:
-    # Esto es el equivalente a sslmode=require para asyncpg
+# Forzamos el SSL que Neon necesita para asyncpg
+if DATABASE_URL and "localhost" not in DATABASE_URL and "127.0.0.1" not in DATABASE_URL:
     connect_args = {"ssl": True}
 
-# El motor de SQLAlchemy sustituye al pool de asyncpg
-# pool_size y max_overflow gestionan las conexiones automáticamente
 engine = create_async_engine(
     DATABASE_URL,
-    echo=True,
-    future=True,
-    connect_args=connect_args
+    connect_args=connect_args,
+    echo=True
 )
 
 # Esto sustituye a tu antigua clase Database
