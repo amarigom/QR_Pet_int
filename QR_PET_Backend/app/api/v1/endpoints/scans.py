@@ -76,3 +76,17 @@ async def get_pet_scans(
     """
     service = ScanService(db)
     return await service.get_pet_scans(pet_id, page, limit)
+# En tu archivo de routers de scans
+@router.post("/process/{codigo_qr}", response_model=Dict[str, Any], status_code=status.HTTP_201_CREATED)
+async def process_scan_by_code(
+    codigo_qr: str, 
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Público: Procesa el escaneo usando el código del QR (ej: -V9WPYPYNLW).
+    Crea el registro y devuelve los datos de la mascota + scan_id.
+    """
+    service = ScanService(db)
+    # Aquí deberías tener un método en el service que busque la mascota por código,
+    # cree el escaneo y devuelva todo el combo.
+    return await service.process_scan_from_qr(codigo_qr)

@@ -11,6 +11,8 @@ from app.models.qr import QRCode
 from app.models.pet import Pet
 
 class ScanRepository(BaseRepository[Scan]):
+    
+    
     """Repository para la tabla escaneos con Sesión Inyectada"""
     
     def __init__(self, session: AsyncSession):

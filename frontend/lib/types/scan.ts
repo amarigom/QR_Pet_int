@@ -19,17 +19,15 @@ export interface ScanResponse {
  * ESTA ES LA INTERFAZ CLAVE PARA EL MAPA Y DASHBOARD
  * Sincronizada con el esquema Pydantic "ScanLocation" de FastAPI
  */
+
 export interface ScanWithLocation {
   id: string | number;
   latitud: number;
   longitud: number;
-  mascota_nombre: string; // Antes tenías pet_name
-  fecha?: string;          // Antes tenías escaneado_en
-  direccion?: string;     // Opcional por si viene direccion_aproximada
-  owner_name?: string;
-  
+  pet_name: string;
+  escaneado_en: string; // ISO String de la fecha
+  direccion_aproximada?: string;
 }
-
 /**
  * Para el estado del Dashboard (Ajustado)
  */

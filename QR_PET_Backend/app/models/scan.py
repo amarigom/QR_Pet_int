@@ -1,5 +1,6 @@
 # app/models/scan.py
 from sqlalchemy import String, DateTime, ForeignKey, Float, Text, func
+from sqlalchemy.dialects.postgresql import UUID  # Importante para Neon/Postgres
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
 from datetime import datetime
@@ -12,14 +13,16 @@ if TYPE_CHECKING:
 class Scan(Base):
     __tablename__ = "escaneos"
 
-    id: Mapped[str] = mapped_column(
-        String, 
+    # Cambiado de String a UUID nativo para evitar el DatatypeMismatchError
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), 
         primary_key=True, 
-        default=lambda: str(uuid.uuid4())
+        default=uuid.uuid4  # Usamos el objeto UUID directamente, no el string
     )
     
-    qr_id: Mapped[str] = mapped_column(
-        String, 
+    # Cambiado a UUID para que la Foreign Key coincida con codigos_qr.id
+    qr_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), 
         ForeignKey("codigos_qr.id"), 
         nullable=False
     )
