@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.pet import PetCreate, PetUpdate, PetResponse
 from app.schemas.composite import PetDetailResponse  # <--- La "Vista" con relaciones
 from app.schemas.common import SuccessResponse
+from app.schemas.user import UserDashboardStats
 
 # 2. Core, Seguridad y Modelos
 from app.core.database import get_db
@@ -35,6 +36,18 @@ async def get_pets(
     """Obtiene el listado paginado de mascotas del usuario."""
     pet_service = PetService(db)
     return await pet_service.get_user_pets(user.id, page, limit)
+
+
+
+@router.get("/stats/summary", response_model=UserDashboardStats)
+async def get_my_stats(
+    current_user: User = Depends(get_current_user), # USER NORMAL, no admin
+    db: AsyncSession = Depends(get_db)
+):
+    pet_service = PetService(db)
+    
+    return await pet_service.get_user_stats(current_user.id)
+
 
 @router.get("/{pet_id}", response_model=PetDetailResponse)
 async def get_pet(

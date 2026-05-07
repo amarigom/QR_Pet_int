@@ -11,7 +11,7 @@ import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
 import { QrCode, Mail, Lock, User, Phone, Github } from 'lucide-react'
 import { toast } from 'sonner'
-import { register } from '@/lib/api'
+import { authApi } from '@/lib/api';
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -40,7 +40,7 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      const response = await register({
+      const response = await authApi.register({
         nombre: formData.nombre,
         email: formData.email,
         password: formData.password,

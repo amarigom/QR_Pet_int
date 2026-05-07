@@ -1,13 +1,25 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
-/*import 'leaflet/dist/leaflet.css'*/L
+import 'leaflet/dist/leaflet.css' 
 import { formatDateTime } from '@/lib/utils'
-import type { Scan, ScanWithLocation } from '@/lib/types'
 
-// Fix Leaflet default marker icon
+interface ScanLocation {
+  id: string | number
+  latitud: number
+  longitud: number
+  mascota_nombre: string
+  fecha: string | Date
+}
+
+interface AdminScanMapProps {
+  scans: ScanLocation[]
+  pets?: any[] 
+}
+
+// Fix de iconos
 const DefaultIcon = L.icon({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
@@ -18,71 +30,75 @@ const DefaultIcon = L.icon({
 })
 L.Marker.prototype.options.icon = DefaultIcon
 
-type ScanWithDetails = Scan & { pet_name: string; owner_name: string }
-
-interface AdminScanMapProps {
-  scans: ScanWithLocation[]
-}
-
-function FitBounds({ scans }: { scans: ScanWithLocation[] }) {
+function FitBounds({ scans }: { scans: ScanLocation[] }) {
   const map = useMap()
-
   useEffect(() => {
     if (scans.length > 0) {
-      const bounds = L.latLngBounds(
-        scans
-          .filter((s) => s.latitud && s.longitud)
-          .map((s) => [s.latitud!, s.longitud!] as [number, number])
-      )
+      const coords = scans.map(s => [s.latitud, s.longitud] as [number, number]);
+      const bounds = L.latLngBounds(coords);
       if (bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 })
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
       }
     }
   }, [scans, map])
-
   return null
 }
 
 export default function AdminScanMap({ scans }: AdminScanMapProps) {
-  // Default center (Mexico City)
-  const defaultCenter: [number, number] = [19.4326, -99.1332]
+  const TANDIL_CENTER: [number, number] = [-37.32167, -59.13316]
   
-  const validScans = scans.filter((s) => s.latitud && s.longitud)
-  const center = validScans.length > 0
-    ? [validScans[0].latitud!, validScans[0].longitud!] as [number, number]
-    : defaultCenter
+  // Referencia al contenedor del mapa
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+
+  const validScans = useMemo(() => 
+    (scans || []).filter((s) => 
+      s.latitud !== null && s.longitud !== null && 
+      !isNaN(Number(s.latitud)) && !isNaN(Number(s.longitud))
+    ), 
+    [scans]
+  )
 
   return (
-    <MapContainer
-      center={center}
-      zoom={5}
-      scrollWheelZoom={true}
-      className="w-full h-full"
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <FitBounds scans={validScans} />
-      {validScans.map((scan) => (
-        <Marker
-          key={scan.id}
-          position={[scan.latitud!, scan.longitud!]}
+    <div className="w-full h-full min-h-[450px] relative">
+      {/* 
+        PASO CLAVE: Usamos un div intermedio. 
+        React-Leaflet a veces falla al limpiar su propio contenedor.
+      */}
+      <div 
+        ref={mapContainerRef} 
+        style={{ height: '450px', width: '100%' }}
+        className="rounded-xl overflow-hidden border border-slate-200 shadow-md"
+      >
+        <MapContainer
+          // Usamos una key que cambie siempre en desarrollo si hay problemas
+          key={typeof window !== 'undefined' ? `map-${validScans.length}` : 'map-ssr'}
+          center={TANDIL_CENTER}
+          zoom={13}
+          scrollWheelZoom={true}
+          style={{ height: '100%', width: '100%' }}
         >
-          <Popup>
-            <div className="p-2 min-w-[180px]">
-              <p className="font-semibold">{scan.pet_name}</p>
-              <p className="text-sm text-gray-600">Dueno: {scan.pet_name}</p>
-              <p className="text-xs text-gray-500 mt-1">
-                {formatDateTime(scan.escaneado_en)}
-              </p>
-              {scan.direccion_aproximada && (
-                <p className="text-xs text-gray-500 mt-1">{scan.direccion_aproximada}</p>
-              )}
-            </div>
-          </Popup>
-        </Marker>
-      ))}
-    </MapContainer>
+          <TileLayer
+            attribution='&copy; OpenStreetMap contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          
+          <FitBounds scans={validScans} />
+
+          {validScans.map((scan) => (
+            <Marker 
+              key={scan.id} 
+              position={[Number(scan.latitud), Number(scan.longitud)]}
+            >
+              <Popup>
+                <div className="text-sm">
+                  <p className="font-bold">{scan.mascota_nombre}</p> 
+                  <p>{formatDateTime(scan.fecha.toString())}</p>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+      </div>
+    </div>
   )
 }

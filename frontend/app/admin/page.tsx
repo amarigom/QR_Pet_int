@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Users, PawPrint, QrCode, Eye, TrendingUp, Clock, Plus } from 'lucide-react'
-import { getAdminStats } from '@/lib/api'
+import { adminApi } from '@/lib/api'
 import { formatDateTime } from '@/lib/utils'
 import type { AdminStats } from '@/lib/types'
 import {
@@ -25,7 +25,7 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     async function loadStats() {
       try {
-        const data = await getAdminStats()
+        const data = await adminApi.getStats()
         setStats(data)
       } catch (error) {
         console.error('Error loading admin stats:', error)
@@ -130,7 +130,7 @@ export default function AdminDashboardPage() {
             <Eye className="w-5 h-5 text-chart-1" />
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{stats.scans_count}</p>
+            <p className="text-3xl font-bold">{stats.total_scans}</p>
             <p className="text-xs text-muted-foreground mt-1">
               Escaneos realizados
             </p>

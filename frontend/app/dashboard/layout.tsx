@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { QrCode, Home, PawPrint, MapPin, Settings, LogOut, Menu, X } from 'lucide-react'
-import { getCurrentUser, logout } from '@/lib/api'
+import { authApi } from '@/lib/api';
 import type { User } from '@/lib/types'
 
 const navItems = [
@@ -33,125 +33,142 @@ export default function DashboardLayout({
   const [isLoading, setIsLoading] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  useEffect(() => {
-    async function loadUser() {
-      try {
-        const userData = await getCurrentUser()
-        setUser(userData)
-      } catch {
-        router.push('/auth/login')
-      } finally {
-        setIsLoading(false)
-      }
+  // Memorizamos la carga del usuario para evitar recrear la función
+  const loadUser = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      const userData = await authApi.getCurrentUser()
+      setUser(userData)
+    } catch (error) {
+      console.error("Sesión no válida:", error)
+      router.push('/auth/login')
+    } finally {
+      setIsLoading(false)
     }
-    loadUser()
   }, [router])
 
+  useEffect(() => {
+    loadUser()
+  }, [loadUser])
+
   async function handleLogout() {
-    await logout()
-    router.push('/')
+    try {
+      await authApi.logout()
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error)
+    } finally {
+      // Siempre redirigimos al inicio, falle o no la API
+      router.push('/')
+    }
   }
 
+  // Estado de carga con branding
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse flex items-center gap-2">
-          <QrCode className="w-8 h-8 text-primary" />
-          <span className="text-lg font-medium">Cargando...</span>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+        <div className="flex items-center gap-3 animate-bounce">
+          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-lg">
+            <QrCode className="w-7 h-7 text-primary-foreground" />
+          </div>
         </div>
+        <span className="mt-4 text-muted-foreground font-medium">Cargando tu panel...</span>
       </div>
     )
   }
 
+  // Si no hay usuario y terminó de cargar (el useEffect ya estará redirigiendo)
   if (!user) return null
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-card border-b">
+      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
+          <div className="flex items-center gap-6">
+            <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center shadow-sm">
                 <QrCode className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="font-bold text-lg hidden sm:inline">PetQR</span>
+              <span className="font-bold text-xl tracking-tight hidden sm:inline">PetQR</span>
             </Link>
 
             {/* Desktop Nav */}
             <nav className="hidden md:flex items-center gap-1">
-              {navItems.map((item) => (
-                <Link key={item.href} href={item.href}>
-                  <Button
-                    variant={pathname === item.href ? 'secondary' : 'ghost'}
-                    size="sm"
-                  >
-                    <item.icon className="w-4 h-4 mr-2" />
-                    {item.label}
-                  </Button>
-                </Link>
-              ))}
+              {navItems.map((item) => {
+                const isActive = pathname === item.href
+                return (
+                  <Link key={item.href} href={item.href}>
+                    <Button
+                      variant={isActive ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className={isActive ? "bg-secondary font-semibold" : ""}
+                    >
+                      <item.icon className="w-4 h-4 mr-2" />
+                      {item.label}
+                    </Button>
+                  </Link>
+                )
+              })}
             </nav>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Mobile menu button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </Button>
-
             {/* User menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                  <Avatar className="h-9 w-9">
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      {user.nombre.charAt(0).toUpperCase()}
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full ring-offset-background transition-colors hover:bg-muted">
+                  <Avatar className="h-9 w-9 border">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                      {user.nombre.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="px-2 py-1.5">
-                  <p className="font-medium">{user.nombre}</p>
-                  <p className="text-sm text-muted-foreground">{user.email}</p>
+              <DropdownMenuContent align="end" className="w-56 mt-2">
+                <div className="flex flex-col space-y-1 p-2">
+                  <p className="text-sm font-medium leading-none">{user.nombre}</p>
+                  <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                 </div>
                 <DropdownMenuSeparator />
+                
                 {user.rol === 'admin' && (
-                  <>
-                    <DropdownMenuItem asChild>
-                      <Link href="/admin">
-                        <Settings className="w-4 h-4 mr-2" />
-                        Panel Admin
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin" className="cursor-pointer">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Panel Admin
+                    </Link>
+                  </DropdownMenuItem>
                 )}
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:bg-destructive/10 cursor-pointer">
                   <LogOut className="w-4 h-4 mr-2" />
-                  Cerrar Sesion
+                  Cerrar Sesión
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* Mobile menu button */}
+            <Button
+              variant="outline"
+              size="icon"
+              className="md:hidden ml-2"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </Button>
           </div>
         </div>
 
-        {/* Mobile Nav */}
+        {/* Mobile Nav Overlay */}
         {mobileMenuOpen && (
-          <nav className="md:hidden border-t px-4 py-2 space-y-1">
+          <nav className="md:hidden border-t bg-card px-4 py-4 space-y-2 animate-in slide-in-from-top-2 duration-200">
             {navItems.map((item) => (
               <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}>
                 <Button
                   variant={pathname === item.href ? 'secondary' : 'ghost'}
-                  className="w-full justify-start"
+                  className="w-full justify-start text-base"
                 >
-                  <item.icon className="w-4 h-4 mr-2" />
+                  <item.icon className="w-5 h-5 mr-3" />
                   {item.label}
                 </Button>
               </Link>
@@ -161,7 +178,9 @@ export default function DashboardLayout({
       </header>
 
       {/* Main content */}
-      <main className="container mx-auto px-4 py-6">{children}</main>
+      <main className="container mx-auto px-4 py-8 animate-in fade-in duration-500">
+        {children}
+      </main>
     </div>
   )
 }

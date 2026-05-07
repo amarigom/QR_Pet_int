@@ -18,7 +18,7 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import { ArrowLeft, QrCode, CheckCircle, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
-import { activateQR, checkQR } from '@/lib/api'
+import { qrApi } from '@/lib/api';
 
 export default function ActivateQRPage() {
   const router = useRouter()
@@ -46,7 +46,7 @@ export default function ActivateQRPage() {
 
     setIsChecking(true)
     try {
-      const result = await checkQR(code)
+      const result = await qrApi.check(code)
       if (result.available) {
         setCodeStatus('valid')
         setStep('form')
@@ -76,7 +76,7 @@ export default function ActivateQRPage() {
 
     setIsSubmitting(true)
     try {
-      await activateQR({
+      await qrApi.activate({
         codigo: code,
         ...formData,
         raza: formData.raza || null,

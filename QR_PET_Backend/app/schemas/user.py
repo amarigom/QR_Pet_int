@@ -3,7 +3,8 @@ from typing import Optional
 from datetime import datetime
 from uuid import UUID
 from app.core.constants import UserRole
-
+from .scan import ScanResponse
+from typing import List, Optional
 # 1. Base compartida
 class UserBase(BaseModel):
     email: EmailStr
@@ -45,6 +46,15 @@ class DashboardStats(BaseModel):
     qrs_count: int
     scans_count: int
 
+
+class UserDashboardStats(BaseModel):
+    pets_count: int
+    qrs_count: int
+    scans_count: int
+    recent_scans: List[ScanResponse] = []
+    
+class Config:
+        from_attributes = True
 # Rebuilds simples y directos
 UserResponse.model_rebuild()
 TokenResponse.model_rebuild()

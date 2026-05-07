@@ -1,11 +1,12 @@
 import uuid
 from typing import Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.repositories.scan_repository import ScanRepository
 from app.repositories.qr_repository import QRRepository
 from app.core.exceptions import ResourceNotFoundException
-from app.schemas.scan import ScanCreate, ScanResponse
+from app.schemas.scan import ScanCreate, ScanResponse,ScanUpdate
+from sqlalchemy import select
+from uuid import UUID
 
 class ScanService:
     """Service para gestionar el registro y consulta de escaneos"""
@@ -84,3 +85,27 @@ class ScanService:
             "page": page,
             "limit": limit,
         }
+        
+    async def update_scan_data(self, scan_id: UUID, data: ScanUpdate):
+        # 1. Buscar el escaneo existente
+        result = await self.db.execute(select(Scan).where(Scan.id == scan_id))
+        db_scan = result.scalar_one_or_none()
+        
+        if not db_scan:
+            return None
+
+        # 2. Convertir el esquema a dict ignorando los valores no enviados
+        update_data = data.model_dump(exclude_unset=True)
+
+        # 3. Actualizar los campos dinámicamente
+        for key, value in update_data.items():
+            setattr(db_scan, key, value)
+
+        # 4. Guardar cambios
+        await self.db.commit()
+        await self.db.refresh(db_scan)
+        
+        # NOTA DE SISTEMAS: Aquí podrías disparar una notificación Push o Email 
+        # al dueño informando que el encontrador dejó un mensaje.
+        
+        return db_scan     

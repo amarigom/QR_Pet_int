@@ -11,34 +11,42 @@ import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
 import { QrCode, Mail, Lock, Github } from 'lucide-react'
 import { toast } from 'sonner'
-import { login } from '@/lib/api'
+//import { authApi } from '@/lib/api'
+//import { AuthResponse } from '@/lib/types'
+import { useAuth } from '@/app/context/auth/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter()
+  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setIsLoading(true)
+async function handleSubmit(e: React.FormEvent) {
+  e.preventDefault();
+  setIsLoading(true);
 
-    try {
-      const response = await login({ email, password })
-      toast.success(`Bienvenido, ${response.user.nombre}!`)
-      
-      if (response.user.rol === 'admin') {
-        router.push('/admin')
-      } else {
-        router.push('/dashboard')
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error al iniciar sesion')
-    } finally {
-      setIsLoading(false)
-    }
+  try {
+    // 1. Llamamos a la función del contexto. 
+    // Esta función ya se encarga de: authApi.login, guardar en LocalStorage y el dispatch.
+    await login(email, password);
+
+    // 2. Si llegamos aquí, es porque el login fue exitoso.
+    // El AuthProvider ya tiene al usuario en el estado.
+    toast.success("¡Inicio de sesión exitoso!");
+
+    // NOTA: Si tu AuthProvider YA hace el router.push, no necesitás hacerlo acá.
+    // Pero si querés asegurar la redirección manual basada en el rol que ahora está en el estado:
+    // (Asumiendo que 'user' viene del hook useAuth)
+    
+  } catch (error) {
+    console.error("Error en handleSubmit:", error);
+    toast.error(error instanceof Error ? error.message : 'Credenciales inválidas');
+  } finally {
+    setIsLoading(false);
   }
-
+}
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-secondary/5 to-accent/5">
       <Card className="w-full max-w-md">

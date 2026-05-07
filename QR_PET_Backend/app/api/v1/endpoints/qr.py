@@ -1,7 +1,8 @@
 import uuid
 from typing import Dict, Any
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status,HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+
 
 # 1. Imports de Esquemas (Atómicos y el Compuesto para detalle)
 from app.schemas.qr import QRActivateData, QRCheckResponse

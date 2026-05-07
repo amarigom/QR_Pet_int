@@ -23,7 +23,7 @@ import {
   Home,
   Shield,
 } from 'lucide-react'
-import { getCurrentUser, logout } from '@/lib/api'
+import { authApi } from '@/lib/api'
 import type { User } from '@/lib/types'
 
 const navItems = [
@@ -47,7 +47,7 @@ export default function AdminLayout({
   useEffect(() => {
     async function loadUser() {
       try {
-        const userData = await getCurrentUser()
+        const userData = await authApi.getCurrentUser()
         if (userData.rol !== 'admin') {
           router.push('/dashboard')
           return
@@ -63,7 +63,7 @@ export default function AdminLayout({
   }, [router])
 
   async function handleLogout() {
-    await logout()
+    await authApi.logout()
     router.push('/')
   }
 

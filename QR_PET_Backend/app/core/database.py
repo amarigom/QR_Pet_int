@@ -3,7 +3,7 @@ from sqlalchemy.orm import declarative_base
 import os
 from dotenv import load_dotenv
 from app.config import settings
-
+load_dotenv()
 # Levantamos la URL
 raw_url = os.getenv("DATABASE_URL")
 

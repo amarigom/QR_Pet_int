@@ -32,7 +32,7 @@ import {
   Copy,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { getPet, generateQR, deletePet } from '@/lib/api'
+import { petsApi, qrApi } from '@/lib/api';
 import { formatDateTime } from '@/lib/utils'
 import type { Pet, QRCode as QRCodeType, Scan } from '@/lib/types'
 import { QRCodeDisplay } from '@/components/qr-code-display'
@@ -52,7 +52,7 @@ export default function PetDetailPage() {
   useEffect(() => {
     async function loadPet() {
       try {
-        const data = await getPet(petId)
+        const data = await petsApi.getById(petId)
         setPet(data.pet)
         setQr(data.qr)
         setScans(data.scans || [])
@@ -70,7 +70,7 @@ export default function PetDetailPage() {
   async function handleGenerateQR() {
     setIsGenerating(true)
     try {
-      const newQr = await generateQR(petId)
+      const newQr = await qrApi.generate(petId)
       setQr(newQr)
       toast.success('Codigo QR generado exitosamente')
     } catch (error) {
@@ -83,7 +83,7 @@ export default function PetDetailPage() {
   async function handleDelete() {
     setIsDeleting(true)
     try {
-      await deletePet(petId)
+      await petsApi.delete(petId)
       toast.success('Mascota eliminada')
       router.push('/dashboard/pets')
     } catch (error) {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -8,267 +8,164 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Textarea } from '@/components/ui/textarea' // Nuevo componente
 import {
-  PawPrint,
-  Phone,
-  MessageCircle,
-  MapPin,
-  Calendar,
-  Palette,
-  FileText,
-  AlertCircle,
-  QrCode,
-  Heart,
+  PawPrint, Phone, MessageCircle, MapPin, Calendar,
+  Palette, FileText, AlertCircle, QrCode, Heart, Send
 } from 'lucide-react'
-import { scanQR } from '@/lib/api'
+import { qrApi } from '@/lib/api/qr'
 import { formatDate } from '@/lib/utils'
-import type { Pet, QRCode } from '@/lib/types'
+import type { Pet } from '@/lib/types'
 
 export default function ScanPage() {
   const params = useParams()
   const code = params.code as string
 
-  const [data, setData] = useState<{ 
-  pet: Pet; 
-  owner: { nombre: string; telefono: string; } 
-} | null>(null);
-
+  const [data, setData] = useState<{ pet: Pet; owner: { nombre: string; telefono: string; } } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [locationSent, setLocationSent] = useState(false)
+  
+  // Estados para el flujo de reporte
+  const [scanId, setScanId] = useState<string | null>(null)
+  const [locationStatus, setLocationStatus] = useState<'pending' | 'sent' | 'denied'>('pending')
+  const [extraMessage, setExtraMessage] = useState('')
+  const [isSendingMessage, setIsSendingMessage] = useState(false)
 
-  useEffect(() => {
-    async function performScan() {
-      try {
-        // Try to get location
-        let location: { lat: number; lng: number } | undefined
+  // 1. Función para enviar ubicación (se dispara sola)
+  const sendLocation = useCallback(async (id: string) => {
+    if (!navigator.geolocation) return
 
-        if (navigator.geolocation) {
-          try {
-            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-              navigator.geolocation.getCurrentPosition(resolve, reject, {
-                enableHighAccuracy: true,
-                timeout: 5000,
-                maximumAge: 0,
-              })
-            })
-            location = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            }
-            setLocationSent(true)
-          } catch {
-            // Location denied or unavailable, continue without it
-            console.log('Location not available')
-          }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          await qrApi.updateScanLocation(id, {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude
+          })
+          setLocationStatus('sent')
+        } catch (e) {
+          console.error("Error actualizando ubicación", e)
         }
+      },
+      () => setLocationStatus('denied'),
+      { enableHighAccuracy: true, timeout: 8000 } // Subimos timeout a 8s
+    )
+  }, [])
 
-        const petData = await scanQR(code, location)
-        setData(petData)
+  // 2. Carga inicial de datos de la mascota
+  useEffect(() => {
+    async function initScan() {
+      try {
+        setIsLoading(true)
+        // El backend ahora debería crear el scan vacío y devolver los datos de la mascota + el ID del scan
+        const response = await qrApi.scan(code) 
+        setData(response)
+        setScanId(response.scan_id)
+        
+        // Disparamos la ubicación sin bloquear el render
+        if (response.scan_id) sendLocation(response.scan_id)
+        
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Codigo QR no valido')
+        setError(err instanceof Error ? err.message : 'Código no válido')
       } finally {
         setIsLoading(false)
       }
     }
+    initScan()
+  }, [code, sendLocation])
 
-    performScan()
-  }, [code])
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-secondary/5 to-accent/5 p-4">
-        <div className="max-w-md mx-auto pt-8 space-y-6">
-          <div className="text-center">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4 animate-pulse">
-              <QrCode className="w-8 h-8 text-primary" />
-            </div>
-            <Skeleton className="h-6 w-48 mx-auto mb-2" />
-            <Skeleton className="h-4 w-32 mx-auto" />
-          </div>
-          <Skeleton className="h-64" />
-          <Skeleton className="h-32" />
-        </div>
-      </div>
-    )
+  // 3. Función para enviar el mensaje manual
+  const handleSendMessage = async () => {
+    if (!scanId || !extraMessage.trim()) return
+    setIsSendingMessage(true)
+    try {
+      await qrApi.updateScanMessage(scanId, extraMessage)
+      setExtraMessage('') // Limpiar tras enviar
+      alert("Mensaje enviado al dueño. ¡Gracias!")
+    } catch (e) {
+      alert("Error al enviar el mensaje.")
+    } finally {
+      setIsSendingMessage(false)
+    }
   }
 
-  if (error || !data) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-secondary/5 to-accent/5 p-4 flex items-center justify-center">
-        <Card className="max-w-md w-full">
-          <CardContent className="pt-6">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto">
-                <AlertCircle className="w-8 h-8 text-destructive" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">Codigo QR no encontrado</h1>
-                <p className="text-muted-foreground mt-2">
-                  {error || 'Este codigo QR no esta registrado o ha sido desactivado'}
-                </p>
-              </div>
-              <Link href="/">
-                <Button variant="outline">
-                  Ir al inicio
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
+  // --- RENDERS (Loading y Error se mantienen similares) ---
+  if (isLoading) return <div className="p-8"><Skeleton className="h-64 w-full" /></div>
+  if (error || !data) return <div className="p-8 text-center">QR No válido</div>
 
-  const whatsappMessage = encodeURIComponent(
-    `Hola! Encontre a ${data.pet.nombre}. Escanee el codigo QR de su collar.`
-  )
-  const whatsappUrl = data.owner?.telefono
-    ? `https://wa.me/${data.owner.telefono.replace(/\D/g, '')}?text=${whatsappMessage}`
+  const whatsappUrl = data.owner?.telefono 
+    ? `https://wa.me/${data.owner.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(`¡Hola! Encontré a ${data.pet.nombre}.`)}`
     : null
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/5 to-accent/5">
-      {/* Header */}
-      <div className="bg-primary text-primary-foreground py-6 px-4">
-        <div className="max-w-md mx-auto text-center">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Heart className="w-5 h-5" />
-            <span className="text-sm font-medium">Mascota Encontrada</span>
-          </div>
-          <h1 className="text-2xl font-bold">Gracias por escanear</h1>
-          <p className="text-primary-foreground/80 text-sm mt-1">
-            Por favor contacta al dueno
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/5 to-accent/5 pb-10">
+      {/* Header con color dinámico según estado */}
+      <div className={`${data.pet.estado === 'PERDIDO' ? 'bg-destructive' : 'bg-primary'} text-white py-6 px-4 text-center`}>
+        <h1 className="text-2xl font-bold flex items-center justify-center gap-2">
+          <Heart className="fill-current" /> {data.pet.nombre}
+        </h1>
+        <p className="opacity-90">{data.pet.estado === 'PERDIDO' ? '¡ESTOY PERDIDO! AYÚDAME' : 'Mascota Protegida'}</p>
       </div>
 
       <div className="max-w-md mx-auto p-4 space-y-4 -mt-4">
-        {/* Location Alert */}
-        {locationSent && (
-          <Alert className="bg-secondary/20 border-secondary">
-            <MapPin className="w-4 h-4" />
-            <AlertTitle>Ubicacion enviada</AlertTitle>
-            <AlertDescription>
-              El dueno ha sido notificado con tu ubicacion aproximada
-            </AlertDescription>
+        {/* Alerta de Ubicación */}
+        {locationStatus === 'sent' && (
+          <Alert className="bg-green-50 border-green-200">
+            <MapPin className="w-4 h-4 text-green-600" />
+            <AlertDescription className="text-green-700">Tu ubicación fue enviada automáticamente al dueño.</AlertDescription>
           </Alert>
         )}
 
-        {/* Pet Card */}
-        <Card className="overflow-hidden">
-          {/* Pet Photo */}
-          <div className="aspect-video bg-muted relative">
-            {data.pet.foto_url ? (
-              <img
-                src={data.pet.foto_url}
-                alt={data.pet.nombre}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-secondary/10">
-                <PawPrint className="w-20 h-20 text-primary/30" />
-              </div>
-            )}
-            <Badge className="absolute top-3 right-3 bg-primary">
-              <PawPrint className="w-3 h-3 mr-1" />
-              {data.pet.especie}
-            </Badge>
+        {/* Tarjeta de Mascota (Foto y Notas) */}
+        <Card>
+          <div className="aspect-square relative bg-muted">
+             {data.pet.foto_url && <img src={data.pet.foto_url} alt="Pet" className="object-cover w-full h-full" />}
+             <Badge className="absolute top-2 right-2">{data.pet.raza || data.pet.especie}</Badge>
           </div>
-
-          <CardHeader className="pb-2">
-            <CardTitle className="text-2xl">{data.pet.nombre}</CardTitle>
-            {data.pet.raza && (
-              <CardDescription className="capitalize">
-                {data.pet.raza}
-              </CardDescription>
-            )}
-          </CardHeader>
-
-          <CardContent className="space-y-4">
-            {/* Pet Details */}
-            <div className="grid grid-cols-2 gap-3">
-              {data.pet.color && (
-                <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-                  <Palette className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Color</p>
-                    <p className="text-sm font-medium">{data.pet.color}</p>
-                  </div>
-                </div>
-              )}
-
-              {data.pet.edad_aproximada && (
-                <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Nacimiento</p>
-                    <p className="text-sm font-medium">{formatDate(data.pet.edad_aproximada)}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
+          <CardContent className="pt-4">
             {data.pet.notas && (
-              <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
-                <div className="flex items-center gap-2 mb-1">
-                  <FileText className="w-4 h-4 text-amber-600" />
-                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                    Informacion Medica Importante
-                  </p>
-                </div>
-                <p className="text-sm text-amber-700 dark:text-amber-300">
-                  {data.pet.notas}
-                </p>
+              <div className="bg-amber-50 p-3 rounded-md border border-amber-100 flex gap-2">
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                <p className="text-sm text-amber-800"><strong>Importante:</strong> {data.pet.notas}</p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Contact Card */}
+        {/* Acciones Rápidas */}
+        <div className="grid grid-cols-1 gap-3">
+          <Button asChild size="lg" className="h-16 text-lg">
+            <a href={`tel:${data.owner.telefono}`}><Phone className="mr-2" /> Llamar al dueño</a>
+          </Button>
+          {whatsappUrl && (
+            <Button asChild variant="outline" size="lg" className="h-16 text-lg border-green-500 text-green-600 hover:bg-green-50">
+              <a href={whatsappUrl} target="_blank"><MessageCircle className="mr-2" /> Enviar WhatsApp</a>
+            </Button>
+          )}
+        </div>
+
+        {/* Formulario de Mensaje Extra */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Contactar al Dueno</CardTitle>
-            <CardDescription>
-              {data.owner?.nombre || 'Dueno de ' + data.pet.nombre}
-            </CardDescription>
+            <CardTitle className="text-sm">¿Ves algo más?</CardTitle>
+            <CardDescription>Envía un mensaje rápido sobre el estado de la mascota.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {data.owner?.telefono ? (
-              <>
-                <a href={`tel:${data.owner.telefono}`} className="block">
-                  <Button className="w-full" size="lg">
-                    <Phone className="w-5 h-5 mr-2" />
-                    Llamar: {data.owner.telefono}
-                  </Button>
-                </a>
-                {whatsappUrl && (
-                  <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="block">
-                    <Button variant="secondary" className="w-full" size="lg">
-                      <MessageCircle className="w-5 h-5 mr-2" />
-                      Enviar WhatsApp
-                    </Button>
-                  </a>
-                )}
-              </>
-            ) : (
-              <Alert>
-                <AlertCircle className="w-4 h-4" />
-                <AlertDescription>
-                  No hay numero de contacto disponible. El dueno sera notificado del escaneo.
-                </AlertDescription>
-              </Alert>
-            )}
+          <CardContent className="space-y-2">
+            <Textarea 
+              placeholder="Ej: Está asustado bajo un auto rojo en la calle 9 de Julio..."
+              value={extraMessage}
+              onChange={(e) => setExtraMessage(e.target.value)}
+              className="resize-none"
+            />
+            <Button 
+              className="w-full" 
+              onClick={handleSendMessage} 
+              disabled={isSendingMessage || !extraMessage.trim()}
+            >
+              {isSendingMessage ? "Enviando..." : "Enviar aviso al dueño"} <Send className="ml-2 w-4 h-4" />
+            </Button>
           </CardContent>
         </Card>
-
-        {/* Footer */}
-        <div className="text-center py-4">
-          <Link href="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-            <QrCode className="w-4 h-4" />
-            Protegido por PetQR
-          </Link>
-        </div>
       </div>
     </div>
   )

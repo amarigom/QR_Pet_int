@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Users, Shield, Trash2, ShieldCheck, ShieldX } from 'lucide-react'
 import { toast } from 'sonner'
-import { getAdminUsers, deleteUser, toggleUserAdmin } from '@/lib/api'
+import { adminApi } from '@/lib/api' // Usamos el objeto unificado
 import { formatDate } from '@/lib/utils'
 import type { User } from '@/lib/types'
 
@@ -39,49 +39,59 @@ export default function AdminUsersPage() {
   }, [])
 
   async function loadUsers() {
-    try {
-      const data = await getAdminUsers()
-      if (data && data.items) {
-        setUsers(data.items)
-      } else {
-        setUsers(Array.isArray(data) ? data : [])
-      }
-    } catch (error) {
-      console.error('Error loading users:', error)
-      toast.error('Error al cargar usuarios')
-      setUsers([]) // Evitamos que sea undefined
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  try {
+    setIsLoading(true);
+    
+    // Tipamos la respuesta como 'any' temporalmente o usamos el tipo User[] 
+    // para que TS nos deje trabajar con la estructura.
+    const data: any = await adminApi.getUsers();
+    
+    console.log("Revisando estructura de datos:", data);
 
-  // Cambiamos 'number' a 'string' definitivamente
-async function handleDelete(userId: string) {
+    if (Array.isArray(data)) {
+      // Si el backend devuelve [user1, user2...]
+      setUsers(data);
+    } else if (data && typeof data === 'object' && 'items' in data && Array.isArray(data.items)) {
+      // Si el backend devuelve { items: [...], total: 10 }
+      setUsers(data.items);
+    } else {
+      setUsers([]);
+    }
+  } catch (error) {
+    console.error('Error loading users:', error);
+    toast.error('Error al cargar usuarios');
+    setUsers([]);
+  } finally {
+    setIsLoading(false);
+  }
+}
+
+  async function handleDelete(userId: string) {
     try {
-      await deleteUser(userId) // La API ahora recibirá el UUID correctamente
+      // Cambio: usamos adminApi.deleteUser()
+      await adminApi.deleteUser(userId)
       setUsers(users.filter((u) => u.id !== userId))
       toast.success('Usuario eliminado')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error al eliminar')
     }
-}
-  // Cambiamos 'number' por 'string'
-async function handleToggleAdmin(userId: string) {
+  }
+
+  async function handleToggleAdmin(userId: string) {
     try {
-      const updatedUser = await toggleUserAdmin(userId)
+      // ✅ Cambio: usamos adminApi.toggleAdmin()
+      const updatedUser = await adminApi.toggleAdmin(userId)
       
-      setUsers(users?.map((u) => (u.id === userId ? updatedUser : u)))
+      setUsers(users.map((u) => (u.id === userId ? updatedUser : u)))
       
-      // Chequeamos si el rol es 'admin' (o el valor que uses en tu DB)
       const isAdmin = updatedUser.rol === 'admin'
-      
       toast.success(
         isAdmin ? 'Usuario promovido a admin' : 'Admin removido'
       )
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error al cambiar rol')
     }
-}
+  }
 
   if (isLoading) {
     return (
@@ -119,75 +129,84 @@ async function handleToggleAdmin(userId: string) {
               <TableRow>
                 <TableHead>Nombre</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Telefono</TableHead>
+                <TableHead>Teléfono</TableHead>
                 <TableHead>Rol</TableHead>
                 <TableHead>Registro</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users?.map?.((user) => {
-                // Definimos la constante isAdmin dentro del map para cada usuario
-                const isAdmin = user.rol === 'admin'
+              {users.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    No se encontraron usuarios.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                users.map((user) => {
+                  const isAdmin = user.rol === 'admin'
 
-                return (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.nombre}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.telefono || '-'}</TableCell>
-                    <TableCell>
-                      {isAdmin ? (
-                        <Badge className="bg-primary">
-                          <Shield className="w-3 h-3 mr-1" />
-                          Admin
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary">Usuario</Badge>
-                      )}
-                    </TableCell>
-                    {/* Usamos created_at que es el campo real de tu interfaz/DB */}
-                    <TableCell>{formatDate(user.created_at)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleToggleAdmin(user.id)}
-                          title={isAdmin ? 'Quitar admin' : 'Hacer admin'}
-                        >
-                          {isAdmin ? (
-                            <ShieldX className="w-4 h-4 text-muted-foreground" />
-                          ) : (
-                            <ShieldCheck className="w-4 h-4 text-muted-foreground" />
-                          )}
-                        </Button>
+                  return (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.nombre}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>{user.telefono || '-'}</TableCell>
+                      <TableCell>
+                        {isAdmin ? (
+                          <Badge className="bg-primary">
+                            <Shield className="w-3 h-3 mr-1" />
+                            Admin
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">Usuario</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>{formatDate(user.created_at)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleToggleAdmin(user.id)}
+                            title={isAdmin ? 'Quitar admin' : 'Hacer admin'}
+                          >
+                            {isAdmin ? (
+                              <ShieldX className="w-4 h-4 text-muted-foreground" />
+                            ) : (
+                              <ShieldCheck className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </Button>
 
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <Trash2 className="w-4 h-4 text-destructive" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Eliminar usuario</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta accion eliminara permanentemente a {user.nombre} y todas sus mascotas. Esta accion no se puede deshacer.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete(user.id)}>
-                                Eliminar
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta acción eliminará permanentemente a {user.nombre} y todas sus mascotas registradas. Esta acción no se puede deshacer.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => handleDelete(user.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Eliminar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )}
             </TableBody>
           </Table>
         </CardContent>

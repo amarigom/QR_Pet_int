@@ -14,7 +14,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { PawPrint, Search, Dog, Cat, HelpCircle,LucideIcon} from 'lucide-react'
-import { getAdminPets } from '@/lib/api'
+import { adminApi } from '@/lib/api'
 import { formatDate } from '@/lib/utils'
 import type { Pet } from '@/lib/types'
 
@@ -35,7 +35,7 @@ export default function AdminPetsPage() {
   useEffect(() => {
     async function loadPets() {
       try {
-        const data = await getAdminPets()
+        const data = await adminApi.getPets()
         setPets(data)
         setFilteredPets(data)
       } catch (error) {

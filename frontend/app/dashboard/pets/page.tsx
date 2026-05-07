@@ -7,8 +7,9 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { PawPrint, QrCode, Eye } from 'lucide-react'
-import { getPets } from '@/lib/api'
-import type { Pet } from '@/lib/types'
+import { petsApi } from '@/lib/api'
+// Importamos PaginatedResponse para el tipado correcto
+import type { Pet, PaginatedResponse } from '@/lib/types'
 
 export default function PetsPage() {
   const [pets, setPets] = useState<Pet[]>([])
@@ -17,10 +18,16 @@ export default function PetsPage() {
   useEffect(() => {
     async function loadPets() {
       try {
-        const data = await getPets()
-        setPets(data)
+        setIsLoading(true)
+        // 1. Obtenemos la respuesta completa (con metadatos de paginación)
+        const response = await petsApi.getAll() as unknown as PaginatedResponse<Pet>
+        
+        // 2. Extraemos solo el array de 'items' para nuestro estado de mascotas
+        // Usamos el fallback [] por seguridad
+        setPets(response.items || [])
       } catch (error) {
         console.error('Error loading pets:', error)
+        setPets([]) // En caso de error, reseteamos a array vacío
       } finally {
         setIsLoading(false)
       }
@@ -49,7 +56,7 @@ export default function PetsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Mis Mascotas</h1>
-          <p className="text-muted-foreground">Gestiona la informacion de tus mascotas</p>
+          <p className="text-muted-foreground">Gestiona la información de tus mascotas</p>
         </div>
         <Link href="/dashboard/activate">
           <Button>
@@ -59,6 +66,7 @@ export default function PetsPage() {
         </Link>
       </div>
 
+      {/* Ahora pets siempre será un array, así que .length y .map funcionarán */}
       {pets.length === 0 ? (
         <Card>
           <CardContent className="py-12">
@@ -66,7 +74,7 @@ export default function PetsPage() {
               <PawPrint className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">Sin mascotas registradas</h3>
               <p className="text-muted-foreground mb-4">
-                Activa un codigo QR para registrar tu primera mascota
+                Activa un código QR para registrar tu primera mascota
               </p>
               <Link href="/dashboard/activate">
                 <Button>

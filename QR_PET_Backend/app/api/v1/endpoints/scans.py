@@ -2,8 +2,7 @@ import uuid
 from typing import Dict, Any
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-
-# 1. Imports de Esquemas (Atómicos y el Compuesto para detalle)
+from app.schemas.scan import ScanUpdate
 from app.schemas.scan import ScanCreate, ScanResponse
 from app.schemas.common import SuccessResponse
 # Si en algún momento necesitas el detalle completo (Scan + QR + Mascota)
@@ -13,6 +12,8 @@ from app.schemas.common import SuccessResponse
 from app.core.database import get_db
 from app.api.v1.dependencies import get_current_user, require_admin
 from app.services.scan_service import ScanService
+from app.schemas.scan import ScanCreate, ScanListAdminResponse
+from uuid import UUID
 
 router = APIRouter(prefix="/scans", tags=["Escaneos (Scans)"])
 
@@ -28,8 +29,27 @@ async def create_scan(
     service = ScanService(db)
     return await service.create_scan(scan_data)
 
+@router.put("/{scan_id}", response_model=ScanResponse)
+async def update_scan(
+    scan_id: UUID,
+    scan_data: ScanUpdate,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Actualiza un escaneo existente con ubicación o mensaje del encontrador.
+    """
+    service = ScanService(db)
+    updated_scan = await service.update_scan_data(scan_id, scan_data)
+    
+    if not updated_scan:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Registro de escaneo no encontrado"
+        )
+    
+    return updated_scan
 
-@router.get("", response_model=Dict[str, Any])
+@router.get("", response_model=ScanListAdminResponse)
 async def get_all_scans(
     page: int = Query(1, ge=1),
     limit: int = Query(100, ge=1, le=500),

@@ -6,153 +6,137 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { MapPin, Clock, Globe } from 'lucide-react'
-import { getAdminStats } from '@/lib/api'
-import { formatDateTime } from '@/lib/utils'
-import type { AdminStats, ScanWithLocation } from '@/lib/types'
+import { adminApi } from '@/lib/api'
 
+
+// Importación dinámica del mapa para evitar errores de SSR
 const AdminScanMap = dynamic(() => import('@/components/admin-scan-map'), {
   ssr: false,
   loading: () => <Skeleton className="w-full h-[500px] rounded-lg" />,
 })
 
+import { ScanResponse, ScanWithLocation } from '@/lib/types'
+import { scansApi } from '@/lib/api' // Usamos la nueva API de escaneos
+import { formatDateTime } from '@/lib/utils' // Asumiendo que tenés esta util
+
 export default function AdminScansPage() {
-  const [stats, setStats] = useState<AdminStats | null>(null)
+  const [scans, setScans] = useState<ScanWithLocation[]>([])
+  const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    async function loadStats() {
+    async function loadData() {
       try {
-        const data = await getAdminStats()
+        setIsLoading(true)
+        // Usamos el método de la nueva API que ya devuelve el tipo correcto
+        const response = await scansApi.getAll(1, 100) 
         
-        // --- NORMALIZACIÓN DE DATOS ---
-        // Usamos 'any' en el map para evitar que TS se queje de los campos originales de la DB
-        const normalizedScans: ScanWithLocation[] = (data.recent_scans || []).map((s: any) => ({
-          ...s,
-          pet_name: s.mascota_nombre || s.pet_name || 'Mascota',
-          owner_name: s.usuario_nombre || s.owner_name || 'Usuario',
-          escaneado_en: s.created_at || s.escaneado_en,
-          direccion: s.direccion_aproximada || s.direccion || 'Sin dirección',
-          // Aseguramos que latitud y longitud sean números o null
-          latitud: s.latitud !== null ? Number(s.latitud) : null,
-          longitud: s.longitud !== null ? Number(s.longitud) : null
-        }))
+        const normalized: ScanWithLocation[] = (response.items || []).map((s: ScanResponse) => {
+  // 1. Manejo seguro de la mascota (Objeto vs String)
+  let name = 'Sin nombre';
+  let owner = 'Admin View';
 
-        // Guardamos en el estado. 
-        // IMPORTANTE: Si AdminStats da error, usamos 'as AdminStats' para forzar la aceptación
-        setStats({
-          ...data,
-          recent_scans: normalizedScans
-        } as AdminStats)
+  if (typeof s.mascota === 'object' && s.mascota !== null) {
+    name = s.mascota.nombre;
+    owner = s.mascota.owner?.nombre || 'Sin dueño';
+  } else if (typeof s.mascota === 'string') {
+    name = s.mascota;
+  }
 
+  // 2. Manejo seguro de coordenadas
+  let lat: number | null = null;
+  let lng: number | null = null;
+  
+  if (s.coordenadas && s.coordenadas.includes(',')) {
+    const parts = s.coordenadas.split(',');
+    lat = parseFloat(parts[0]);
+    lng = parseFloat(parts[1]);
+  }
+
+  return {
+    id: s.id.toString(),
+    pet_name: name,
+    qr_codigo: s.qr_codigo,
+    escaneado_en: s.fecha,
+    direccion: s.ubicacion || 'Sin dirección',
+    latitud: isNaN(lat!) ? null : lat,
+    longitud: isNaN(lng!) ? null : lng,
+    owner_name: owner
+  };
+});
+        setScans(normalized)
+        setTotalCount(response.total || 0)
       } catch (error) {
-        console.error('Error loading stats:', error)
+        console.error('Error al cargar escaneos:', error)
       } finally {
         setIsLoading(false)
       }
     }
-    loadStats()
+    loadData()
   }, [])
 
+  // ... (El resto del render se mantiene igual, pero ahora 'scan.pet_name' es garantizadamente un string)
+
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-[500px]" />
-      </div>
-    )
+    return <div className="p-8 space-y-4"><Skeleton className="h-12 w-full" /><Skeleton className="h-64 w-full" /></div>
   }
 
-  // Ahora extraemos los datos de forma segura
-  const recentScans = (stats as any)?.recent_scans || []
-  
-  // Filtramos para el mapa asegurando que latitud y longitud sean válidos
-  const scansWithLocation = recentScans.filter(
-    (s: any) => s.latitud && s.longitud
-  )
+  // Filtramos solo los que tienen coordenadas para el mapa
+  const scansWithMapData = scans.filter(s => s.latitud !== null && s.longitud !== null)
 
   return (
-  
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Mapa Global de Escaneos</h1>
-        <p className="text-muted-foreground">
-          Visualiza todos los escaneos del sistema
-        </p>
+    <div className="space-y-6 p-6">
+      <header>
+        <h1 className="text-2xl font-bold">Monitoreo de Escaneos</h1>
+        <p className="text-muted-foreground">Historial global de actividad de códigos QR</p>
+      </header>
+
+      <div className="grid gap-6">
+        {/* Mapa */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2"><Globe className="w-5 h-5" /> Mapa de Calor</CardTitle>
+            <Badge>{scansWithMapData.length} puntos en el mapa</Badge>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[500px] border rounded-md overflow-hidden bg-muted/20">
+    {scansWithMapData.length > 0 ? (
+      <AdminScanMap 
+        key={`map-instance-${scansWithMapData.length}`} 
+        scans={scansWithMapData} 
+      />
+    ) : (
+      <div className="flex items-center justify-center h-full text-muted-foreground">
+        No hay datos de ubicación para mostrar en el mapa
       </div>
+    )}
+  </div>
+          </CardContent>
+        </Card>
 
-      {/* Global Map */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="w-5 h-5" />
-                Mapa de Escaneos
-              </CardTitle>
-              <CardDescription>
-                {scansWithLocation.length} ubicaciones con coordenadas
-              </CardDescription>
-            </div>
-            <Badge variant="secondary">
-              {stats?.scans_count || 0} escaneos totales
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[500px] rounded-lg overflow-hidden border">
-            {/* Le pasamos los datos normalizados al mapa */}
-            <AdminScanMap scans={scansWithLocation} />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Recent Scans List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            Escaneos Recientes
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {recentScans.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              No hay escaneos registrados
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {recentScans.map((scan :any) => (
-                <div
-                  key={scan.id}
-                  className="flex items-center gap-4 p-3 rounded-lg bg-muted/50"
-                >
-                  <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center">
-                    <MapPin className="w-5 h-5 text-secondary-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-medium">{scan.pet_name}</p>
-                      <span className="text-muted-foreground">por</span>
-                      <Badge variant="outline" className="text-xs">
-                        {scan.owner_name}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {scan.direccion_aproximada ||
-                        (scan.latitud && scan.longitud
-                          ? `${scan.latitud.toFixed(4)}, ${scan.longitud.toFixed(4)}`
-                          : 'Sin ubicación')}
-                    </p>
-                  </div>
-                  <div className="text-sm text-muted-foreground whitespace-nowrap">
-                    {formatDateTime(scan.escaneado_en)}
+        {/* Lista de Escaneos */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Clock className="w-5 h-5" /> Actividad Reciente</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {scans.map((scan) => (
+              <div key={scan.id} className="flex items-center justify-between p-4 border rounded-lg bg-card">
+                <div className="flex items-center gap-4">
+                  <div className="bg-primary/10 p-2 rounded-full"><MapPin className="w-5 h-5 text-primary" /></div>
+                  <div>
+                    <p className="font-semibold">{scan.pet_name} <span className="text-xs text-muted-foreground font-mono">[{scan.qr_codigo}]</span></p>
+                    <p className="text-sm text-muted-foreground">{scan.direccion}</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                <div className="text-right">
+                  <p className="text-sm font-medium">{formatDateTime(scan.escaneado_en)}</p>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
