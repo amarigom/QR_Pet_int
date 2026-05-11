@@ -1,9 +1,11 @@
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from datetime import datetime
 from uuid import UUID
 from app.core.constants import PetStatus, AnimalSpecies
 
+if TYPE_CHECKING:
+    from app.schemas.user import UserResponse
 # 1. Base compartida
 class PetBase(BaseModel):
     nombre: str = Field(..., min_length=1, max_length=100)

@@ -4,7 +4,7 @@ from datetime import datetime
 from uuid import UUID
 
 from app.core.constants import UserRole
-from .common import UserMinimal, ScanMinimal, PaginatedResponse
+from .common import UserMinimal, ScanMinimal
 
 # 1. Base para datos de entrada (Request)
 class UserBase(BaseModel):
