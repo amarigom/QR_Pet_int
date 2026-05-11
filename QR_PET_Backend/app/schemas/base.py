@@ -127,10 +127,3 @@ class PaginatedResponse(BaseModel, Generic[T]):
     pages: Optional[int] = 0
 
     model_config = ConfigDict(from_attributes=True)
-
-
-class TokenResponse(BaseModel):
-    """Respuesta de token de autenticación"""
-    access_token: str
-    token_type: str = "bearer"
-    # user se añade dinámicamente en auth_service

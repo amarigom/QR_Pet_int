@@ -54,6 +54,13 @@ class UserLogin(BaseModel):
     password: str
 
 
+class TokenResponse(BaseModel):
+    """Response de autenticación con token"""
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+
+
 # ============================================================================
 # ESTADÍSTICAS
 # ============================================================================

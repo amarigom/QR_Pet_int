@@ -24,7 +24,6 @@ from app.schemas.base import (
     SuccessResponse,
     ErrorResponse,
     PaginatedResponse,
-    TokenResponse,
 )
 
 from app.schemas.user import (
@@ -32,6 +31,7 @@ from app.schemas.user import (
     UserUpdate,
     UserResponse,
     UserLogin,
+    TokenResponse,
     DashboardStats,
     UserDashboardStats,
 )
