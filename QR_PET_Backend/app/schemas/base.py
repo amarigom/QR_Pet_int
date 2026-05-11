@@ -5,9 +5,12 @@ Sin dependencias externas entre esquemas.
 
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, EmailStr
-from typing import Optional
+from typing import Optional, List, Generic, TypeVar
 from uuid import UUID
 from app.core.constants import PetStatus, AnimalSpecies, UserRole
+
+# Type variable para genéricos
+T = TypeVar("T")
 
 
 # ============================================================================
@@ -99,11 +102,11 @@ class MessageResponse(BaseModel):
     message: str
 
 
-class SuccessResponse(BaseModel):
+class SuccessResponse(BaseModel, Generic[T]):
     """Respuesta estándar de éxito con datos genéricos"""
     success: bool = True
     message: str
-    data: Optional[dict] = None
+    data: Optional[T] = None
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -115,9 +118,9 @@ class ErrorResponse(BaseModel):
     errors: Optional[dict] = None
 
 
-class PaginatedResponse(BaseModel):
+class PaginatedResponse(BaseModel, Generic[T]):
     """Respuesta paginada genérica"""
-    items: list
+    items: List[T]
     total: int
     page: int
     limit: int
