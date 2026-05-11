@@ -1,32 +1,33 @@
 from pydantic import BaseModel, EmailStr, ConfigDict, Field
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
+
 from app.core.constants import UserRole
-from .scan import ScanResponse
-from typing import List, Optional
-# 1. Base compartida
+from .common import UserMinimal, ScanMinimal, PaginatedResponse
+
+# 1. Base para datos de entrada (Request)
 class UserBase(BaseModel):
     email: EmailStr
     nombre: str = Field(..., min_length=1, max_length=100)
     telefono: Optional[str] = None
     avatar_url: Optional[str] = None
 
-# 2. Creación
+# 2. Creación (Request con password)
 class UserCreate(UserBase):
     password: str = Field(..., min_length=6)
 
-# 3. Actualización
+# 3. Actualización (Campos opcionales)
 class UserUpdate(BaseModel):
     nombre: Optional[str] = Field(None, min_length=1, max_length=100)
     telefono: Optional[str] = None
     avatar_url: Optional[str] = None
 
-# 4. Respuesta estándar
-class UserResponse(UserBase):
-    id: UUID
+# 4. Respuesta estándar (Hereda de Minimal para tener el ID y de Base para el resto)
+class UserResponse(UserMinimal, UserBase):
     rol: UserRole
     created_at: datetime
+    
     model_config = ConfigDict(from_attributes=True)
 
 # 5. Auth y Tokens
@@ -37,7 +38,7 @@ class UserLogin(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    user: UserResponse  # Ya no necesita comillas porque UserResponse ya existe arriba
+    user: UserResponse
 
 # 6. Estadísticas para el Admin
 class DashboardStats(BaseModel):
@@ -45,17 +46,15 @@ class DashboardStats(BaseModel):
     pets_count: int
     qrs_count: int
     scans_count: int
+    # Agregamos los escaneos recientes usando el modelo común para romper el círculo
+    recent_scans: List[ScanMinimal] = []
 
+    model_config = ConfigDict(from_attributes=True)
 
 class UserDashboardStats(BaseModel):
     pets_count: int
     qrs_count: int
     scans_count: int
-    recent_scans: List[ScanResponse] = []
+    recent_scans: List[ScanMinimal] = []
     
-class Config:
-        from_attributes = True
-# Rebuilds simples y directos
-UserResponse.model_rebuild()
-TokenResponse.model_rebuild()
-DashboardStats.model_rebuild()
+    model_config = ConfigDict(from_attributes=True)

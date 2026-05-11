@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, Any, List, Generic, TypeVar
+from uuid import UUID
 
 # Definimos un tipo variable para los datos
 T = TypeVar("T")
@@ -30,3 +31,18 @@ class ErrorResponse(BaseModel):
     success: bool = False
     message: str
     errors: Optional[Any] = None
+    
+class UserMinimal(BaseModel):
+    id: UUID
+    nombre: str
+    avatar_url: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
+
+class ScanMinimal(BaseModel):
+    id: int
+    qr_codigo: str
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
+    fecha: datetime
+    direccion_aproximada: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True) 
