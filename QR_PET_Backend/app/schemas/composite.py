@@ -37,5 +37,7 @@ class UserProfile(UserWithPets):
     model_config = ConfigDict(from_attributes=True)
 
 # Rebuilds de seguridad para resolver las referencias cruzadas
+
 PetWithOwner.model_rebuild()
 PetDetailResponse.model_rebuild()
+UserWithPets.model_rebuild()
