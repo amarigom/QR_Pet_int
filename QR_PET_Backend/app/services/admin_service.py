@@ -7,6 +7,7 @@ from datetime import datetime
 from app.repositories.user_repository import UserRepository
 from app.repositories.pet_repository import PetRepository
 from app.repositories.qr_repository import QRRepository
+from app.repositories.scan_repository import ScanRepository
 
 # Schemas y Helpers
 from app.schemas.user import UserResponse
@@ -21,6 +22,7 @@ class AdminService:
         self.user_repo = UserRepository(db)
         self.pet_repo = PetRepository(db) 
         self.qr_repo = QRRepository(db)
+        self.scan_repo = ScanRepository(db)
 
     async def get_all_users(self, page: int = 1, limit: int = 50) -> Dict[str, Any]:
         """Obtiene usuarios delegando la paginación al BaseRepository"""
@@ -103,8 +105,7 @@ class AdminService:
         total_users = await self.user_repo.count()
         total_pets = await self.pet_repo.count()
         total_qrs = await self.qr_repo.count()
-        # Si aún no tienes scans, ponle 0 por ahora para que no falle la validación
-        total_scans = 0 
+        total_scans = await self.scan_repo.count()
 
         return {
             "users_count": total_users,  # Antes era total_users
@@ -113,3 +114,42 @@ class AdminService:
             "scans_count": total_scans,  # Este campo es obligatorio según tu error
             "timestamp": datetime.utcnow()
         }
+        
+    async def get_scans_coordinates(self) -> List[List[float]]:
+        """Obtiene solo las coordenadas para el mapa de calor"""
+        from sqlalchemy import select
+        from app.models.scan import Scan
+
+        # Filtramos solo los que tienen latitud y longitud no nulas
+        query = select(Scan.latitud, Scan.longitud).where(
+            Scan.latitud.isnot(None), 
+            Scan.longitud.isnot(None)
+        )
+        result = await self.db.execute(query)
+        # Retornamos formato [lat, lng] que es el que suelen pedir las librerías de mapas
+        # return [[row.latitud, row.longitud] for row in result.all()]
+        rows = result.all()
+        return [{"lat": float(row.latitud), "lng": float(row.longitud)} for row in rows]    
+    
+    # En app/services/admin_service.py
+
+    async def get_heatmap_data(self) -> List[Dict[str, float]]:
+        """
+        Obtiene todas las coordenadas de escaneos para el mapa de calor.
+        Filtra los registros que no tienen GPS.
+        """
+        from sqlalchemy import select
+        from app.models.scan import Scan
+
+        # Seleccionamos solo latitud y longitud de los escaneos que tienen ambos
+        query = select(Scan.latitud, Scan.longitud).where(
+            Scan.latitud.isnot(None),
+            Scan.longitud.isnot(None)
+        )
+        
+        result = await self.db.execute(query)
+        rows = result.all()
+
+        # Retornamos una lista de dicts (o podrías retornar [lat, lng] según tu librería de mapa)
+        #return [{"lat": row.latitud, "lng": row.longitud} for row in rows]
+        return [{"lat": float(row.latitud), "lng": float(row.longitud)} for row in rows]

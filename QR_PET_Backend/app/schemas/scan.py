@@ -16,8 +16,8 @@ class ScanBase(BaseModel):
 
 class ScanResponse(ScanBase):
     id: UUID
-    qr_id: UUID
-    created_at: datetime
+    qr_codigo: UUID
+    fecha: datetime
 
     model_config = ConfigDict(from_attributes=True)
 

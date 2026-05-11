@@ -3,47 +3,71 @@
 import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { RecentScan, Pet } from '@/lib/types'
 
-export default function ScanMap({ scans }: { scans: any[] }) {
+
+// Corregir el problema de los iconos perdidos en Leaflet + Next.js
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+});
+// ------------------------
+// 1. Definimos la interfaz fuera para que sea más legible
+interface ScanMapProps {
+  scans: RecentScan[];
+  pets?: Pet[];            // Nuevo prop opcional
+  initialCenter?: {        // Nuevo prop opcional
+    lat: number;
+    lng: number;
+  };
+}
+
+
+
+export default function ScanMap({ scans, pets, initialCenter }: ScanMapProps ) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<L.Map | null>(null)
   // Generamos un ID único para este renderizado
   const [mapId] = useState(() => `map-${Math.random().toString(36).substr(2, 9)}`)
 
   useEffect(() => {
-    // Si no hay contenedor o ya existe la instancia, no hacemos nada
-    if (!mapContainerRef.current || mapInstanceRef.current) return
+  // 1. INICIALIZACIÓN (Solo si no existe)
+  if (!mapContainerRef.current) return;
 
-    // 1. Inicialización
-    const map = L.map(mapContainerRef.current).setView([-37.32, -59.13], 13)
-
-    // 2. Capa de Mapa
+  if (!mapInstanceRef.current) {
+    const map = L.map(mapContainerRef.current).setView([-37.32, -59.13], 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap'
-    }).addTo(map)
+    }).addTo(map);
+    mapInstanceRef.current = map;
+    console.log("Mapa inicializado por primera vez");
+  }
 
-    // 3. Marcadores (Simplificado para probar)
-    if (scans && scans.length > 0) {
-      scans.forEach(scan => {
-        if (scan.latitud && scan.longitud) {
-          L.marker([scan.latitud, scan.longitud])
-            .addTo(map)
-            .bindPopup(scan.mascota_nombre || "Mascota")
-        }
-      })
-    }
+  const map = mapInstanceRef.current;
 
-    mapInstanceRef.current = map
-
-    // 4. LIMPIEZA TOTAL (La clave del éxito)
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.off() // Quita todos los eventos
-        mapInstanceRef.current.remove() // Destruye el mapa
-        mapInstanceRef.current = null // Limpia la referencia
+  // 2. ACTUALIZACIÓN DE MARCADORES (Se ejecuta siempre que cambie 'scans')
+  // Primero limpiamos marcadores viejos si fuera necesario (opcional)
+  
+  if (scans && scans.length > 0) {
+    console.log(`Procesando ${scans.length} escaneos...`);
+    scans.forEach(scan => {
+      if (scan.latitud && scan.longitud) {
+        console.log(`Marcador agregado: ${scan.mascota_nombre}`);
+        L.marker([scan.latitud, scan.longitud])
+          .addTo(map)
+          .bindPopup(scan.mascota_nombre || "Mascota");
       }
-    }
-  }, [scans])
+    });
+  } else {
+    console.log('No hay escaneos para mostrar.');
+
+  }
+    // 3. LIMPIEZA (Solo cuando el componente se destruye de verdad)
+  
+}, [scans, initialCenter]);
 
   return (
     <div className="w-full h-full border-2 border-green-500 rounded-lg overflow-hidden">

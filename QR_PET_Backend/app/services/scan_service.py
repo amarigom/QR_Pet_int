@@ -35,7 +35,6 @@ class ScanService:
             qr_id=qr.id,
             **scan_data.model_dump(exclude={"codigo"})
         )
-        
         await self.db.commit()
         await self.db.refresh(scan)
         
@@ -72,7 +71,6 @@ class ScanService:
         
         await self.db.commit()
         await self.db.refresh(scan)
-
         pet_data = qr.mascota
         owner_data = pet_data.owner
 
@@ -142,13 +140,32 @@ class ScanService:
                 {
                     "id": str(s.id),
                     "qr_codigo": s.qr.codigo if s.qr else "N/A",
-                    "mascota": s.qr.mascota.nombre if s.qr and s.qr.mascota else "Sin asignar",
+                    "mascota_nombre": s.qr.mascota.nombre if s.qr and s.qr.mascota else "Sin asignar",
                     "fecha": s.created_at,
-                    "ubicacion": s.direccion_aproximada,
-                    "coordenadas": f"{s.latitud}, {s.longitud}" if s.latitud else "No proporcionada"
+                    "direccion": s.direccion_aproximada or "Ubicación aproximada",
+                    # CLAVE: Enviamos los campos individuales como espera el Esquema y el TS
+                    "latitud": s.latitud,
+                    "longitud": s.longitud,
+                    # Mantenemos esto solo si lo usás en alguna tabla como texto:
+                    "coordenadas_texto": f"{s.latitud}, {s.longitud}" if s.latitud else "No proporcionada"
                 } for s in scans
             ],
             "total": total,
             "page": page,
             "limit": limit,
         }
+        
+    async def get_admin_heatmap_data(self) -> List[Dict[str, Any]]:
+        """Lógica de negocio para el mapa de calor"""
+        scans = await self.scan_repo.get_all_scans_with_coords()
+        
+        # Aquí formateamos exactamente como lo necesita el frontend
+        return [
+            {
+                "id": str(s.id),
+                "latitud": s.latitud,
+                "longitud": s.longitud,
+                "mascota_nombre": s.qr.mascota.nombre if s.qr and s.qr.mascota else "Mascota",
+                "fecha": s.created_at.isoformat()
+            } for s in scans
+        ]

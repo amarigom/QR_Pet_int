@@ -6,9 +6,9 @@ import { Analytics } from '@vercel/analytics/next'
 import { AuthProvider } from './context/auth/AuthProvider'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
-
-import './globals.css'
 import 'leaflet/dist/leaflet.css'
+import './globals.css'
+
 
 
 const nunito = Nunito({ subsets: ['latin'] })

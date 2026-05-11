@@ -79,3 +79,16 @@ class ScanRepository(BaseRepository[Scan]):
         )
         result = await self.session.execute(query)
         return result.scalar() or 0
+    
+    
+    async def get_all_scans_with_coords(self) -> List[Scan]:
+        """Consulta bruta para el mapa de calor (Admin)"""
+        query = (
+            select(Scan)
+            .options(joinedload(Scan.qr).joinedload(QRCode.mascota)) # Carga relaciones para evitar lazy loading
+            .filter(Scan.latitud.isnot(None))
+            .filter(Scan.longitud.isnot(None))
+            .order_by(Scan.created_at.desc())
+        )
+        result = await self.db.execute(query)
+        return result.scalars().all()

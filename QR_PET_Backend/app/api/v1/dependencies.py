@@ -64,3 +64,9 @@ async def get_optional_user(
         return await get_current_user(token, db)
     except Exception:
         return None
+    
+from app.services.admin_service import AdminService # Asegurate de importar el servicio
+
+async def get_admin_service(db: AsyncSession = Depends(get_db)) -> AdminService:
+    """Proveedor del servicio de administración"""
+    return AdminService(db)

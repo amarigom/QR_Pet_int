@@ -26,12 +26,13 @@ export default function ScanMap({ scans }: { scans: any[] }) {
     if (scans && scans.length > 0) {
       scans.forEach(scan => {
         if (scan.latitud && scan.longitud) {
-          L.marker([scan.latitud, scan.longitud])
+            console.log(`Agregando marcador para ${scan.mascota_nombre} en (${scan.latitud}, ${scan.longitud})`)
+            L.marker([scan.latitud, scan.longitud])
             .addTo(map)
             .bindPopup(scan.mascota_nombre || "Mascota")
         }
       })
-    }
+    } else console.log('No hay escaneos con coordenadas para mostrar en el mapa.')
 
     mapInstanceRef.current = map
 
