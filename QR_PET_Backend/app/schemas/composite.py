@@ -1,43 +1,74 @@
-# app/schemas/composite.py
-# app/schemas/composite.py
+"""
+Esquemas Compuestos (Composite)
+
+IMPORTANTE: Módulo que ensambla respuestas complejas usando vistas anidadas.
+Evita dependencias circulares importando SOLO de base.py, common.py y esquemas individuales.
+Nunca importa directamente entre composite.py y los esquemas que se usan en endpoints.
+"""
+
 from typing import Optional, List
 from pydantic import ConfigDict
 
-# Importamos los modelos base
+# ============================================================================
+# IMPORTAR SOLO ESQUEMAS BASE Y MINIMAL
+# ============================================================================
+
+from app.schemas.base import (
+    UserMinimal,
+    PetMinimal,
+    ScanMinimal,
+    QRMinimal,
+)
 from app.schemas.user import UserResponse
 from app.schemas.pet import PetResponse
-from app.schemas.scan import ScanResponse
 from app.schemas.qr import QRResponse
+from app.schemas.scan import ScanResponse
 
-# --- VISTAS COMPUESTAS ---
+
+# ============================================================================
+# VISTAS COMPUESTAS - Ensambles seguros
+# ============================================================================
 
 class PetWithOwner(PetResponse):
-    """Mascota con los datos de su dueño"""
+    """Mascota con datos de su dueño"""
     owner: Optional[UserResponse] = None
 
+
 class PetDetailResponse(PetResponse):
-    """Vista: Detalle total con QR y Dueño (La que pide pets.py)"""
+    """Vista completa: Mascota + Dueño + QR"""
     owner: Optional[UserResponse] = None
     qr_code: Optional[QRResponse] = None
 
+
 class UserWithPets(UserResponse):
-    """Perfil del usuario con la lista de sus mascotas"""
+    """Perfil del usuario con lista de mascotas"""
     pets: List[PetResponse] = []
 
+
 class QRDetailResponse(QRResponse):
-    """El QR con su mascota asociada y el dueño de la misma"""
-    mascota: Optional[PetWithOwner] = None 
+    """QR con su mascota y dueño asociado"""
+    mascota: Optional[PetWithOwner] = None
+
 
 class ScanDetailResponse(ScanResponse):
-    """El historial de escaneo con el detalle del QR y la mascota"""
+    """Historial de escaneo con detalle completo"""
     qr: Optional[QRDetailResponse] = None
 
+
 class UserProfile(UserWithPets):
-    """Vista total para el Dashboard"""
+    """Vista total para Dashboard del usuario"""
     model_config = ConfigDict(from_attributes=True)
 
-# Rebuilds de seguridad para resolver las referencias cruzadas
+
+# ============================================================================
+# RECONSTRUCCIÓN SEGURA DE MODELOS
+# ============================================================================
+# Esto garantiza que Pydantic resuelva todas las referencias anidadas
+# DESPUÉS de que todos los esquemas estén completamente definidos
 
 PetWithOwner.model_rebuild()
 PetDetailResponse.model_rebuild()
 UserWithPets.model_rebuild()
+QRDetailResponse.model_rebuild()
+ScanDetailResponse.model_rebuild()
+UserProfile.model_rebuild()

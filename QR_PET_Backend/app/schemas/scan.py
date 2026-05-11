@@ -1,52 +1,65 @@
+"""
+Esquemas de Escaneo (Scan)
+- ScanBase: Base para operaciones CRUD
+- ScanCreate: Request para crear escaneo
+- ScanUpdate: Request para actualizar escaneo
+- ScanResponse: Response estándar de escaneo
+- ScanLocation: Específico para mapa (Frontend)
+"""
+
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, List
+from typing import Optional
 from datetime import datetime
 from uuid import UUID
+from app.schemas.base import ScanBase, ScanMinimal, UserMinimal
 
-# Importamos lo que necesitamos de la base común
-from .common import UserMinimal, ScanMinimal
 
-# Nota: Si PetResponse causa círculos, podrías usar un PetMinimal en common.py
-from .pet import PetResponse 
-
-class ScanBase(BaseModel):
-    latitud: Optional[float] = None
-    longitud: Optional[float] = None
-    direccion_aproximada: Optional[str] = None
-    mensaje_encontrador: Optional[str] = None
-    telefono_encontrador: Optional[str] = None
+# ============================================================================
+# OPERACIONES CRUD
+# ============================================================================
 
 class ScanCreate(ScanBase):
+    """Schema para crear un escaneo (Request)"""
     codigo: str = Field(..., min_length=1)
 
+
 class ScanUpdate(BaseModel):
+    """Schema para actualizar un escaneo (Request)"""
     latitud: Optional[float] = None
     longitud: Optional[float] = None
     direccion_aproximada: Optional[str] = None
     mensaje_encontrador: Optional[str] = None
 
-# Respuesta extendiendo de ScanMinimal para asegurar consistencia
+
+# ============================================================================
+# RESPUESTAS
+# ============================================================================
+
 class ScanResponse(ScanMinimal, ScanBase):
-    """Respuesta base de un escaneo con sus datos de creación."""
-    # id, qr_codigo, fecha ya vienen de ScanMinimal
+    """Response estándar de escaneo (sin relaciones)"""
     model_config = ConfigDict(from_attributes=True)
 
-class ScanWithPetResponse(ScanResponse):
-    """Esquema enriquecido para la vista de administración o detalles."""
-    mascota: Optional[PetResponse] = None
-    # Podemos incluir al usuario que realizó el escaneo (si existe)
-    usuario: Optional[UserMinimal] = None 
+
+# ============================================================================
+# RESPUESTAS ESPECIALIZADAS
+# ============================================================================
+
+class ScanWithUserResponse(ScanResponse):
+    """Escaneo con datos del usuario que lo reportó"""
+    usuario: Optional[UserMinimal] = None
     
     model_config = ConfigDict(from_attributes=True)
 
-# Reemplazamos ScanListAdminResponse por el PaginatedResponse genérico en los endpoints,
-# pero si prefieres mantenerlo aquí, sería así:
-class ScanAdminResponse(ScanWithPetResponse):
-    """Alias o extensión para claridad en el panel de admin"""
-    pass
+
+class ScanAdminResponse(ScanResponse):
+    """Response para el panel de admin"""
+    usuario: Optional[UserMinimal] = None
+    
+    model_config = ConfigDict(from_attributes=True)
+
 
 class ScanLocation(BaseModel):
-    """Específico para el mapa de Tandil (Frontend)"""
+    """Response específico para mapa de Tandil (Frontend)"""
     id: int
     latitud: float
     longitud: float

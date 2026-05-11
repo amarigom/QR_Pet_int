@@ -1,49 +1,31 @@
-from datetime import datetime
-from pydantic import BaseModel, ConfigDict
-from typing import Optional, Any, List, Generic, TypeVar
-from uuid import UUID
+"""
+Módulo común: Re-exporta esquemas base para backwards compatibility.
 
-# Definimos un tipo variable para los datos
-T = TypeVar("T")
+NOTA: Este módulo ahora actúa como un proxy que re-exporta elementos de base.py.
+Esto mantiene la compatibilidad con código existente mientras evita dependencias circulares.
+"""
 
-class MessageResponse(BaseModel):
-    message: str
+# Re-exportar desde base.py para mantener compatibilidad
+from app.schemas.base import (
+    MessageResponse,
+    SuccessResponse,
+    ErrorResponse,
+    PaginatedResponse,
+    UserMinimal,
+    ScanMinimal,
+    QRMinimal,
+    PetMinimal,
+    TokenResponse,
+)
 
-class SuccessResponse( BaseModel,Generic[T]):
-    """Ahora podemos decir exactamente qué hay en 'data'"""
-    success: bool = True
-    message: str
-    data: Optional[T] = None
-    
-    # Esto permite que Pydantic lea modelos de SQLAlchemy
-    model_config = ConfigDict(from_attributes=True)
-
-class PaginatedResponse(BaseModel, Generic[T]):
-    """El estándar de oro para listas"""
-    items: List[T]
-    total: int
-    page: int
-    limit: int  # Cambiamos page_size por limit para que coincida con SQL
-    pages: Optional[int] = 0
-
-    model_config = ConfigDict(from_attributes=True)
-
-class ErrorResponse(BaseModel):
-    success: bool = False
-    message: str
-    errors: Optional[Any] = None
-    
-class UserMinimal(BaseModel):
-    id: UUID
-    nombre: str
-    avatar_url: Optional[str] = None
-    model_config = ConfigDict(from_attributes=True)
-
-class ScanMinimal(BaseModel):
-    id: UUID
-    qr_codigo: str
-    latitud: Optional[float] = None
-    longitud: Optional[float] = None
-    fecha: datetime
-    direccion_aproximada: Optional[str] = None
-    model_config = ConfigDict(from_attributes=True) 
+__all__ = [
+    "MessageResponse",
+    "SuccessResponse",
+    "ErrorResponse",
+    "PaginatedResponse",
+    "UserMinimal",
+    "ScanMinimal",
+    "QRMinimal",
+    "PetMinimal",
+    "TokenResponse",
+]
