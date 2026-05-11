@@ -31,10 +31,11 @@ export interface ScanWithLocation {
 /**
  * Para el estado del Dashboard (Ajustado)
  */
-export interface DashboardStats {
-  total_scans: number;
-  recent_scans: ScanWithLocation[]; // Ahora coinciden perfectamente
-}
+//export interface Dashboa
+// rdStats {
+//  total_scans: number;
+ // recent_scans: ScanWithLocation[]; // Ahora coinciden perfectamente
+//}
 
 export interface PaginatedScans {
   items: ScanWithLocation[];

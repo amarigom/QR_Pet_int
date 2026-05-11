@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.scan import ScanUpdate
 from app.schemas.scan import ScanCreate, ScanResponse
-from app.schemas.common import SuccessResponse
+from app.schemas.common import SuccessResponse, PaginatedResponse
 # Si en algún momento necesitas el detalle completo (Scan + QR + Mascota)
 # importarías ScanDetailResponse de app.schemas.composite
 
@@ -12,7 +12,7 @@ from app.schemas.common import SuccessResponse
 from app.core.database import get_db
 from app.api.v1.dependencies import get_current_user, require_admin
 from app.services.scan_service import ScanService
-from app.schemas.scan import ScanCreate, ScanListAdminResponse
+from app.schemas.scan import ScanUpdate
 from uuid import UUID
 
 router = APIRouter(prefix="/scans", tags=["Escaneos (Scans)"])
@@ -49,7 +49,7 @@ async def update_scan(
     
     return updated_scan
 
-@router.get("", response_model=ScanListAdminResponse)
+@router.get("", response_model=PaginatedResponse[ScanResponse])
 async def get_all_scans(
     page: int = Query(1, ge=1),
     limit: int = Query(100, ge=1, le=500),

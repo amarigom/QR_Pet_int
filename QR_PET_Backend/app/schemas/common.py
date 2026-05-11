@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, Any, List, Generic, TypeVar
 from uuid import UUID
@@ -23,7 +24,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
     total: int
     page: int
     limit: int  # Cambiamos page_size por limit para que coincida con SQL
-    pages: int
+    pages: Optional[int] = 0
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -39,7 +40,7 @@ class UserMinimal(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class ScanMinimal(BaseModel):
-    id: int
+    id: UUID
     qr_codigo: str
     latitud: Optional[float] = None
     longitud: Optional[float] = None

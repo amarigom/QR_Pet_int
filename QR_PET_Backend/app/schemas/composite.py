@@ -1,59 +1,41 @@
 # app/schemas/composite.py
+# app/schemas/composite.py
 from typing import Optional, List
-from app.schemas.scan import ScanResponse
-from app.schemas.pet import PetResponse
-from app.schemas.user import UserResponse
-from app.schemas.qr import QRResponse # Cuando lo tengas listo
-from typing import Optional, List
-from app.schemas.user import UserResponse
+from pydantic import ConfigDict
 
+# Importamos los modelos base
+from app.schemas.user import UserResponse
+from app.schemas.pet import PetResponse
+from app.schemas.scan import ScanResponse
+from app.schemas.qr import QRResponse
+
+# --- VISTAS COMPUESTAS ---
 
 class PetWithOwner(PetResponse):
-    """Vista: Mascota con los datos de su dueño"""
+    """Mascota con los datos de su dueño"""
     owner: Optional[UserResponse] = None
 
 class PetDetailResponse(PetResponse):
-    """Vista: Detalle total con QR y Dueño"""
+    """Vista: Detalle total con QR y Dueño (La que pide pets.py)"""
     owner: Optional[UserResponse] = None
     qr_code: Optional[QRResponse] = None
 
 class UserWithPets(UserResponse):
-    """Vista: Perfil del usuario con sus mascotas"""
-    pets: list[PetResponse] = []
-        # app/schemas/composite.py
-
-
-# --- NUEVAS VISTAS PARA QR ---
+    """Perfil del usuario con la lista de sus mascotas"""
+    pets: List[PetResponse] = []
 
 class QRDetailResponse(QRResponse):
-    """
-    Vista completa: El QR con su mascota (y la mascota con su dueño)
-    Se usa cuando alguien escanea un QR activo.
-    """
+    """El QR con su mascota asociada y el dueño de la misma"""
     mascota: Optional[PetWithOwner] = None 
 
-class PetFullDetail(PetResponse):
-    """
-    Vista: Mascota con su Dueño Y su QR asociado.
-    Ideal para el perfil detallado de la mascota.
-    """
-    owner: Optional[UserResponse] = None
-    qr_code: Optional[QRResponse] = None
-   
-
-
-# --- VISTA PARA EL HISTORIAL DE ESCANEOS ---
 class ScanDetailResponse(ScanResponse):
-    """
-    Vista completa: El Escaneo con los datos del QR involucrado.
-    Como QRDetailResponse ya trae Mascota y Dueño, esta vista es total.
-    """
+    """El historial de escaneo con el detalle del QR y la mascota"""
     qr: Optional[QRDetailResponse] = None
- 
-# --- VISTA DE PERFIL COMPLETO ---
-class UserProfile(UserResponse):
-    """
-    Vista: El usuario con todas sus mascotas.
-    Útil para el dashboard principal del usuario.
-    """
-    pets: List[PetResponse] = []
+
+class UserProfile(UserWithPets):
+    """Vista total para el Dashboard"""
+    model_config = ConfigDict(from_attributes=True)
+
+# Rebuilds de seguridad para resolver las referencias cruzadas
+PetWithOwner.model_rebuild()
+PetDetailResponse.model_rebuild()
