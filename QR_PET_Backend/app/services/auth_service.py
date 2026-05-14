@@ -3,9 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import hash_password, verify_password, create_access_token
 from app.core.exceptions import (
-    AuthenticationException, ConflictException, ResourceNotFoundException
+    AuthenticationException, ConflictException, ResourceNotFoundException, InvalidDataException
 )
-from app.core.constants import MESSAGE_EMAIL_EXISTS, MESSAGE_INVALID_CREDENTIALS
+from app.core.constants import MESSAGE_EMAIL_EXISTS, MESSAGE_INVALID_CREDENTIALS, validate_password
 from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserResponse, TokenResponse, UserLogin, UserCreate
 
@@ -19,14 +19,19 @@ class AuthService:
     async def register(self, user_data: UserCreate) -> UserResponse:
         """Registra un nuevo usuario y persiste la transacción"""
         
-        # 1. Validaciones de existencia (Lógica de Negocio)
+        # 1. Validar contraseña con nuevos requisitos
+        is_valid, password_error = validate_password(user_data.password)
+        if not is_valid:
+            raise InvalidDataException(password_error)
+        
+        # 2. Validaciones de existencia (Lógica de Negocio)
         if await self.user_repo.email_exists(user_data.email):
             raise ConflictException(MESSAGE_EMAIL_EXISTS)
         
-        # 2. Preparación de datos
+        # 3. Preparación de datos
         password_hash = hash_password(user_data.password)
         
-        # 3. Creación a través del repo (BaseRepository maneja los kwargs)
+        # 4. Creación a través del repo (BaseRepository maneja los kwargs)
         user = await self.user_repo.create(
             email=user_data.email,
             nombre=user_data.nombre,
@@ -36,7 +41,7 @@ class AuthService:
             rol="usuario" # Rol por defecto
         )
         
-        # 4. EL COMMIT: Aquí es donde la sesión se guarda en la DB
+        # 5. EL COMMIT: Aquí es donde la sesión se guarda en la DB
         await self.db.commit()
         await self.db.refresh(user)
         
