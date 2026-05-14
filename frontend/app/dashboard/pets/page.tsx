@@ -86,7 +86,7 @@ export default function PetsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
           {pets.map((pet) => (
             <Link key={pet.id} href={`/dashboard/pets/${pet.id}`}>
               <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full group">
@@ -107,11 +107,11 @@ export default function PetsPage() {
                   </div>
 
                   {/* Pet Info */}
-                  <div className="p-4 space-y-3">
+                  <div className="p-3 sm:p-4 space-y-3">
                     <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h3 className="font-semibold text-lg">{pet.nombre}</h3>
-                        <p className="text-sm text-muted-foreground capitalize">
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-base sm:text-lg truncate">{pet.nombre}</h3>
+                        <p className="text-xs sm:text-sm text-muted-foreground capitalize truncate">
                           {pet.especie}
                           {pet.raza && ` - ${pet.raza}`}
                         </p>
@@ -128,14 +128,15 @@ export default function PetsPage() {
                           className="w-4 h-4 rounded-full border"
                           style={{ backgroundColor: pet.color.toLowerCase() }}
                         />
-                        <span className="text-muted-foreground">{pet.color}</span>
+                        <span className="text-muted-foreground text-xs sm:text-sm truncate">{pet.color}</span>
                       </div>
                     )}
 
                     <div className="flex items-center justify-between pt-2 border-t">
-                      <Button variant="ghost" size="sm" className="text-muted-foreground">
+                      <Button variant="ghost" size="sm" className="text-muted-foreground text-xs">
                         <Eye className="w-4 h-4 mr-1" />
-                        Ver detalles
+                        <span className="hidden sm:inline">Ver detalles</span>
+                        <span className="sm:hidden">Ver</span>
                       </Button>
                     </div>
                   </div>
