@@ -9,9 +9,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
-import { QrCode, Mail, Lock, User, Phone, Github } from 'lucide-react'
+import { QrCode, Mail, Lock, User, Phone, Github, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
-import { authApi } from '@/lib/api';
+import { authApi } from '@/lib/api'
+import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator'
+import { validateEmail, isPasswordValid, validateRequiredFields } from '@/lib/utils/validation'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -23,17 +25,43 @@ export default function RegisterPage() {
     confirmPassword: '',
     telefono: '',
   })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  function validateForm(): boolean {
+    const newErrors: Record<string, string> = {};
+
+    // Validar campos requeridos
+    const requiredFields = { nombre: formData.nombre, email: formData.email, password: formData.password, confirmPassword: formData.confirmPassword };
+    const { isValid, errors: fieldErrors } = validateRequiredFields(requiredFields);
+    
+    if (!isValid) {
+      Object.assign(newErrors, fieldErrors);
+    }
+
+    // Validar email
+    if (formData.email && !validateEmail(formData.email)) {
+      newErrors.email = 'Correo inválido';
+    }
+
+    // Validar contraseña
+    if (formData.password && !isPasswordValid(formData.password)) {
+      newErrors.password = 'La contraseña no cumple con los requisitos';
+    }
+
+    // Validar coincidencia de contraseñas
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Las contraseñas no coinciden';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Las contrasenas no coinciden')
-      return
-    }
-
-    if (formData.password.length < 6) {
-      toast.error('La contrasena debe tener al menos 6 caracteres')
+    if (!validateForm()) {
+      toast.error('Por favor corrige los errores en el formulario')
       return
     }
 
@@ -49,7 +77,9 @@ export default function RegisterPage() {
       toast.success(`Bienvenido a PetQR, ${response.user.nombre}!`)
       router.push('/dashboard')
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error al registrarse')
+      const errorMessage = error instanceof Error ? error.message : 'Error al registrarse'
+      toast.error(errorMessage)
+      setErrors({ submit: errorMessage })
     } finally {
       setIsLoading(false)
     }
@@ -70,43 +100,58 @@ export default function RegisterPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {errors.submit && (
+            <div className="flex gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+              <p className="text-sm text-red-600">{errors.submit}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="nombre">Nombre Completo</Label>
+              <Label htmlFor="nombre">Nombre Completo *</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="nombre"
                   type="text"
                   placeholder="Tu nombre"
-                  className="pl-10"
+                  className={`pl-10 ${errors.nombre ? 'border-red-500' : ''}`}
                   value={formData.nombre}
-                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, nombre: e.target.value })
+                    if (errors.nombre) setErrors({ ...errors, nombre: '' })
+                  }}
                   required
                   disabled={isLoading}
                 />
               </div>
+              {errors.nombre && <p className="text-xs text-red-500">{errors.nombre}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Correo Electronico</Label>
+              <Label htmlFor="email">Correo Electrónico *</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="email"
                   type="email"
                   placeholder="tu@email.com"
-                  className="pl-10"
+                  className={`pl-10 ${errors.email ? 'border-red-500' : ''}`}
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value })
+                    if (errors.email) setErrors({ ...errors, email: '' })
+                  }}
                   required
                   disabled={isLoading}
                 />
               </div>
+              {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="telefono">Telefono (Opcional)</Label>
+              <Label htmlFor="telefono">Teléfono (Opcional)</Label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -122,40 +167,55 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Contrasena</Label>
+              <Label htmlFor="password">Contraseña *</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="password"
                   type="password"
                   placeholder="••••••••"
-                  className="pl-10"
+                  className={`pl-10 ${errors.password ? 'border-red-500' : ''}`}
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, password: e.target.value })
+                    if (errors.password) setErrors({ ...errors, password: '' })
+                  }}
                   required
                   disabled={isLoading}
                 />
               </div>
+              {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
+              
+              {/* Indicador de fuerza de contraseña */}
+              <PasswordStrengthIndicator password={formData.password} />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar Contrasena</Label>
+              <Label htmlFor="confirmPassword">Confirmar Contraseña *</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="confirmPassword"
                   type="password"
                   placeholder="••••••••"
-                  className="pl-10"
+                  className={`pl-10 ${errors.confirmPassword ? 'border-red-500' : ''}`}
                   value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, confirmPassword: e.target.value })
+                    if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: '' })
+                  }}
                   required
                   disabled={isLoading}
                 />
               </div>
+              {errors.confirmPassword && <p className="text-xs text-red-500">{errors.confirmPassword}</p>}
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={isLoading || !isPasswordValid(formData.password)}
+            >
               {isLoading ? (
                 <>
                   <Spinner className="mr-2" />
@@ -203,9 +263,9 @@ export default function RegisterPage() {
           </div>
 
           <p className="text-center text-sm text-muted-foreground">
-            Ya tienes cuenta?{' '}
+            ¿Ya tienes cuenta?{' '}
             <Link href="/auth/login" className="text-primary hover:underline font-medium">
-              Inicia sesion
+              Inicia sesión
             </Link>
           </p>
         </CardContent>

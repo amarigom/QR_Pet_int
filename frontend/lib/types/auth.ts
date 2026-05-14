@@ -3,8 +3,8 @@ export interface User {
   email: string;
   nombre: string;
   telefono: string | null;
-  // Cambié 'user' por 'usuario' para que coincida con tu base de datos de Python
-  rol: 'admin' | 'usuario'; 
+  // Actualizado con nuevos roles: SUPERADMIN, ADMIN_GENERAL, ADMIN, USER
+  rol: 'superadmin' | 'admin_general' | 'admin' | 'usuario'; 
   avatar_url: string | null;
   created_at: string;
 }
@@ -22,13 +22,13 @@ export interface RegisterData extends LoginCredentials {
 export interface AuthResponse {
   access_token: string;
   token_type: string;
-  // Usamos la interfaz User que definimos arriba. ¡Mucho más limpio!
   user: User; 
 }
 
 export interface ApiError {
   detail: string;
 }
+
 export interface AuthContextType {
   user: User | null;
   token: string | null;
@@ -36,4 +36,15 @@ export interface AuthContextType {
   isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+}
+
+export interface PasswordStrengthResult {
+  score: 0 | 1 | 2 | 3 | 4; // 0 = muy débil, 4 = muy fuerte
+  message: string;
+  requirements: {
+    minLength: boolean;      // 8+ caracteres
+    hasLetter: boolean;      // Al menos una letra
+    hasNumber: boolean;      // Al menos un número
+    hasSpecial: boolean;     // Al menos un carácter especial
+  };
 }
