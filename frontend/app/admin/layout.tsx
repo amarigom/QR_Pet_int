@@ -48,7 +48,7 @@ export default function AdminLayout({
     async function loadUser() {
       try {
         const userData = await authApi.getCurrentUser()
-        if (userData.rol !== 'admin') {
+        if (!userData || userData.rol !== 'admin') {
           router.push('/dashboard')
           return
         }
