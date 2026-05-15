@@ -1,7 +1,5 @@
 {
-  "framework": "nextjs",
-  "rootDirectory": "frontend",
-  "cleanUrls": true,
+  "version": 2,
   "rewrites": [
     {
       "source": "/api/:path*",
