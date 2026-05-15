@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
+
 
 export default function ScanMap({ scans }: { scans: any[] }) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
