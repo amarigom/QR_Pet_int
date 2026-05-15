@@ -2,14 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "QR_PET_Backend/app/main.py",
+      "src": "QR_PET_Backend/main.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/api/v1/(.*)",
-      "dest": "QR_PET_Backend/app/main.py"
+      "dest": "QR_PET_Backend/main.py"
     }
   ]
 }
