@@ -79,7 +79,7 @@ export default function AdminUsersPage() {
 
   async function handleToggleAdmin(userId: string) {
     try {
-      // ✅ Cambio: usamos adminApi.toggleAdmin()
+      
       const updatedUser = await adminApi.toggleAdmin(userId)
       
       setUsers(users.map((u) => (u.id === userId ? updatedUser : u)))
