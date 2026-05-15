@@ -13,7 +13,7 @@ import {
   PawPrint, Phone, MessageCircle, MapPin, Calendar,
   Palette, FileText, AlertCircle, QrCode, Heart, Send
 } from 'lucide-react'
-import { qrApi } from '@/lib/api/qr'
+import { qrApi } from '@/lib/api/qr2'
 import { formatDate } from '@/lib/utils'
 import type { Pet } from '@/lib/types'
 

@@ -18,7 +18,7 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import { ArrowLeft, QrCode, CheckCircle, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
-import { qrApi } from '@/lib/api/qr';
+import { qrApi } from '@/lib/api/qr2';
 
 export default function ActivateQRPage() {
   const router = useRouter()
