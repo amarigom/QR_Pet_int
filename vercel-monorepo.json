@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "projects": [
+    {
+      "name": "qr-pet-backend",
+      "path": "QR_PET_Backend",
+      "installCommand": "pip install -r requirements.txt",
+      "buildCommand": "echo 'Backend ready'",
+      "outputDirectory": "."
+    },
+    {
+      "name": "qr-pet-frontend",
+      "path": "frontend",
+      "framework": "nextjs"
+    }
+  ]
+}
