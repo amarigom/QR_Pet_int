@@ -7,7 +7,19 @@ Nunca importa directamente entre composite.py y los esquemas que se usan en endp
 """
 
 from typing import Optional, List
-from pydantic import ConfigDict
+from pydantic import BaseModel, ConfigDict
+
+from app.schemas.user import UserResponse
+from app.schemas.auth import AuthResponse 
+
+# Definimos el esquema de registro en la zona neutral
+class AuthRegisterResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+
+    class Config:
+        from_attributes = True
 
 # ============================================================================
 # IMPORTAR SOLO ESQUEMAS BASE Y MINIMAL

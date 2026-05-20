@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status,Request, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from app.schemas.composite import AuthRegisterResponse
 
 # 1. Imports de Esquemas (Ahora SEGUROS y directos)
 from app.schemas.user import UserCreate, UserLogin, TokenResponse, UserResponse
@@ -12,32 +12,33 @@ from app.core.database import get_db
 from app.api.v1.dependencies import get_current_user
 from fastapi import Body
 from app.services.auth_service import AuthService
-from app.models.user import User  # Importamos el modelo para la anotación del Depends
+from app.models.user import User 
+from app.core.auth import create_access_token# Importamos el modelo para la anotación del Depends
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=AuthRegisterResponse, status_code=status.HTTP_201_CREATED)
 async def register(
-    request: Request,
+    user_data: UserCreate, 
     db: AsyncSession = Depends(get_db)
 ):
     """
     Registra un nuevo usuario en el sistema.
     """
-    try:
-        # Obtener el body como JSON directamente
-        body = await request.json()
-        user_data = UserCreate(**body)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid JSON: {str(e)}")
-    except TypeError as e:
-        raise HTTPException(status_code=422, detail=f"Missing or invalid fields: {str(e)}")
-    
     auth_service = AuthService(db)
-    result = await auth_service.register(user_data)
     
-    return UserResponse.model_validate(result)
-
+    # 1. retorna el objeto de la base de datos)
+    new_user = await auth_service.register(user_data)
+    
+    
+    access_token = create_access_token(data={"sub": str(new_user.id)})
+    
+    # 3. Armamos la estructura que machea con AuthRegisterResponse
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": new_user  # Pydantic se encarga de transformarlo a UserResponse solo
+    }
 @router.post("/login", response_model=TokenResponse)
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
