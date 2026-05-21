@@ -6,7 +6,8 @@ export const petsApi = {
 
   getDashboardStats: () => fetchAPI<UserDashboardStats>('/pets/stats/summary'), 
   
-  getAll: () => fetchAPI<Pet[]>('/pets'),
+  getAll: (page = 1, limit = 20) => 
+    fetchAPI<{ items: Pet[]; total: number }>(`/pets?page=${page}&limit=${limit}`),
   
   // api/pets.ts
 getById: (id: string) => fetchAPI<Pet>(`/pets/${id}`),

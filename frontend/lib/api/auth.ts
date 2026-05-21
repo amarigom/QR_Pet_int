@@ -35,7 +35,7 @@ export const authApi = {
       body: data as any, // TypeScript a veces se queja con JSON.stringify, este "as any" lo soluciona
       headers: { 'Content-Type': 'application/json' },
     });
-
+    console.log("Respuesta de registro:", res);
     if (res.access_token) {
       localStorage.setItem('token', res.access_token);
       if (res.user) {

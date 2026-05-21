@@ -15,53 +15,62 @@ import type { UserDashboardStats } from '@/lib/types/user'
 
 export default function DashboardPage() {
   const { user, isAdmin, loading: authLoading } = useAuth(); 
-  const [stats, setStats] = useState<UserDashboardStats | null>(null)
+  const [stats, setStats] = useState<DashboardStats | UserDashboardStats | null>(null)
   const [pets, setPets] = useState<Pet[]>([]) 
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const loadData = async () => {
-      // Si el AuthContext todavía está cargando el usuario del localStorage, esperamos.
-      if (authLoading) return;
+  const loadData = async () => {
+    if (authLoading) return;
 
-      // Si terminó de cargar y no hay usuario, dejamos de mostrar el esqueleto.
-      if (!user) {
-        console.log("DASHBOARD: No hay sesión activa.");
-        setIsLoading(false);
-        return;
-      }
+    if (!user) {
+      console.log("DASHBOARD: No hay sesión activa.");
+      setIsLoading(false);
+      return;
+    }
 
-      console.log("DASHBOARD: Cargando datos para", user.email, "con rol:", user.rol);
+    console.log("DASHBOARD: Cargando datos para", user.email, "con rol:", user.rol);
 
-      try {
-        setIsLoading(true);
-        // Determinamos si es admin basándonos en el objeto user recuperado
-        const checkAdmin = user.rol === 'admin';
+    try {
+      setIsLoading(true);
+      const checkAdmin = user.rol === 'admin';
 
+      if (checkAdmin) {
+        // --- Flujo Admin ---
+        // Nota: Si el admin tuviera un endpoint de stats diferente, lo cambiarías acá.
+        // Si comparte el mismo porque el backend detecta el rol del token, queda igual.
         const [statsData, petsData] = await Promise.all([
-          checkAdmin 
-            ? petsApi.getDashboardStats() 
-            : userApi.getDashboardStats(),
-          checkAdmin
-            ? petsApi.getAll()
-            : userApi.getMyPets()
+          petsApi.getDashboardStats(), 
+          petsApi.getAll()
         ]);
 
         setStats(statsData);
+        setPets(petsData?.items || []);
+
+      } else {
+        // --- Flujo Usuario Común ---
+        console.log("DASHBOARD: Cargando mascotas y estadísticas del usuario común...");
         
-        // Normalizamos la respuesta de mascotas (por si viene en .items o es un array directo)
-        const finalizedPets = (petsData as any)?.items || (Array.isArray(petsData) ? petsData : []);
-        setPets(finalizedPets);
+        // Usamos tus funciones de petsApi directamente
+        const [statsData, petsData] = await Promise.all([
+          petsApi.getDashboardStats(), // Llama a /pets/stats/summary
+          petsApi.getAll()             // Llama a /pets (raíz)
+        ]);
 
-      } catch (error) {
-        console.error("DASHBOARD: Error cargando datos API:", error);
-      } finally {
-        setIsLoading(false);
+        setStats(statsData);
+        // Como ya sabemos que viene un objeto paginado, accedemos a .items de forma segura
+        setPets(petsData?.items || []);
       }
-    };
 
-    loadData();
-  }, [user, isAdmin, authLoading]); // Se dispara cuando cambia el usuario o el estado de carga del Auth
+    } catch (error) {
+      console.error("DASHBOARD: Error cargando datos API:", error);
+    } finally {
+      setIsLoading(false);
+    } 
+  };
+
+  loadData();
+}, [user, isAdmin, authLoading]);
 
   // Pantalla de carga (Skeleton)
   if (isLoading || authLoading) {
@@ -79,7 +88,7 @@ export default function DashboardPage() {
     );
   }
 
-  // Si no hay usuario después de cargar, podrías mostrar un mensaje o dejar que el middleware redirija
+  // Si no hay usuario después de cargar, mostramos el aviso con enlace al login
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
@@ -195,7 +204,7 @@ export default function DashboardPage() {
       </Card>
 
       {/* Escaneos Recientes */}
-      {stats?.recent_scans && stats.recent_scans.length > 0 && (
+      {stats && 'recent_scans' in stats && stats.recent_scans && stats.recent_scans.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">

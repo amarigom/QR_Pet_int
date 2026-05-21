@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { MapPin, Clock, PawPrint } from 'lucide-react'
-import { adminApi } from '@/lib/api';
+import { adminApi, petsApi } from '@/lib/api' // Importamos ambos servicios existentes
+import { useAuth } from '@/app/context/auth/AuthContext' // Tu hook de autenticación
 import { formatDateTime } from '@/lib/utils'
 import type { DashboardStats, Pet, RecentScan } from '@/lib/types'
 
@@ -19,6 +20,7 @@ const ScanMap = dynamic(() => import('@/components/scan-map'), {
 })
 
 export default function MapPage() {
+  const { user, loading: authLoading } = useAuth()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [pets, setPets] = useState<Pet[]>([])
   const [scans, setScans] = useState<RecentScan[]>([]) 
@@ -26,14 +28,41 @@ export default function MapPage() {
 
   useEffect(() => {
     async function loadData() {
-      try {
-        const [petsData, allScans] = await Promise.all([
-          adminApi.getPets(),
-          adminApi.getAllScans(1, 200)
-        ])
+      // Si la sesión sigue cargando o no hay un usuario válido, esperamos
+      if (authLoading || !user) return;
 
-        // MAPEO: Transformamos los datos del backend al tipo RecentScan
-        const formattedScans: RecentScan[] = (allScans || []).map((scan: any) => ({
+      try {
+        setIsLoading(true);
+        const isAdmin = user.rol === 'admin';
+
+        let petsRes: any;
+        let scansRes: any;
+
+        if (isAdmin) {
+          // --- FLUJO ADMINISTRADOR: Datos globales ---
+          console.log("MAPA: Cargando datos globales como Administrador...");
+          [petsRes, scansRes] = await Promise.all([
+            adminApi.getPets(),
+            adminApi.getAllScans(1, 200)
+          ]);
+        } else {
+          // --- FLUJO USUARIO COMÚN: Datos protegidos ---
+          console.log("MAPA: Cargando datos del usuario común...");
+          
+          // Usamos petsApi para traer sus mascotas y un resolved seguro para los scans
+          // por si todavía no creaste el endpoint /scans/me o similar en el backend.
+          [petsRes, scansRes] = await Promise.all([
+            petsApi.getAll(), 
+            Promise.resolve({ items: [] }) 
+          ]);
+        }
+
+        // Adaptación flexible si el backend devuelve data paginada { items: [...] } o un array directo
+        const rawPets = petsRes?.items || (Array.isArray(petsRes) ? petsRes : []);
+        const rawScans = scansRes?.items || (Array.isArray(scansRes) ? scansRes : []);
+
+        // MAPEO: Transformamos los datos del backend al tipo RecentScan que necesita tu UI
+        const formattedScans: RecentScan[] = rawScans.map((scan: any) => ({
           ...scan,
           id: String(scan.id ?? Math.random()),
           latitud: scan.latitud != null ? Number(scan.latitud) : null,
@@ -44,26 +73,27 @@ export default function MapPage() {
           qr_codigo: scan.qr_codigo || ""
         }));
 
-        setPets(petsData || []);
+        setPets(rawPets);
         setScans(formattedScans);
         
-        // Sincronizamos con stats para la lista y el contador
+        // Sincronizamos con los stats locales de la vista
         setStats({
           scans_count: formattedScans.length,
-          pets_count: petsData.length,
+          pets_count: rawPets.length,
           recent_scans: formattedScans.slice(0, 10) 
         } as DashboardStats);
 
       } catch (error) {
-        console.error('Error loading data:', error)
+        console.error('Error loading data in MapPage:', error);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
-    loadData()
-  }, [])
 
-  if (isLoading) {
+    loadData();
+  }, [user, authLoading]);
+
+  if (authLoading || isLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-64" />
@@ -73,7 +103,7 @@ export default function MapPage() {
     )
   }
 
-  // Filtramos solo los que tienen coordenadas para el mapa
+  // Filtramos solo los escaneos que tienen coordenadas válidas para el mapa
   const scansWithLocation = scans.filter(
     (s) => s.latitud !== null && s.longitud !== null
   );

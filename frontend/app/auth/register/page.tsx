@@ -28,12 +28,12 @@ export default function RegisterPage() {
     e.preventDefault()
 
     if (formData.password !== formData.confirmPassword) {
-      toast.error('Las contrasenas no coinciden')
+      toast.error('Las contraseñas no coinciden')
       return
     }
 
     if (formData.password.length < 6) {
-      toast.error('La contrasena debe tener al menos 6 caracteres')
+      toast.error('La contraseña debe tener al menos 6 caracteres')
       return
     }
 
@@ -41,25 +41,35 @@ export default function RegisterPage() {
 
     try {
       const aux: any = {
-        nombre: formData.nombre,
-        email: formData.email,
+        nombre: formData.nombre.trim(),
+        email: formData.email.trim(),
         password: formData.password,
-        
       };
+
       if (formData.telefono && formData.telefono.trim() !== '') {
         aux.telefono = formData.telefono;
-}
-      
+      }
+
       console.log(aux);
       const response = await authApi.register(aux)
-      
-      toast.success(`Bienvenido a PetQR, ${response.user.nombre}!`)
+
+      // 1. Guardamos el token de inmediato de forma segura si vino en la respuesta
+      if (response?.access_token) {
+        localStorage.setItem('token', response.access_token);
+      }
+
+      // 2. Extraemos el nombre con protección anti-failures (?.)
+      const nombreUsuario = response?.user?.nombre || "Usuario";
+      toast.success(`Bienvenido a PetQR, ${nombreUsuario}!`);
+
       router.push('/dashboard')
       router.refresh();
+
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error al registrarse')
+      console.error("Error capturado en el registro:", error);
+      toast.error(error instanceof Error ? error.message : 'Error al registrarse');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
