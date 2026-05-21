@@ -53,7 +53,7 @@ export default function RegisterPage() {
       console.log(aux);
       const response = await authApi.register(aux)
       
-      toast.success(`Bienvenido a PetQR, ${response.nombre}!`)
+      toast.success(`Bienvenido a PetQR, ${response.user.nombre}!`)
       router.push('/dashboard')
       router.refresh();
     } catch (error) {
