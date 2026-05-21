@@ -51,6 +51,19 @@ export const authService = {
     if (!response.ok) {
       throw new APIError(data.detail || 'Error en el registro', response.status);
     }
+
+    
+    if (data && data.access_token) {
+      localStorage.setItem('token', data.access_token);
+      
+      // Guardamos los datos del usuario de forma inteligente según cómo vengan estructurados
+      if (data.user) {
+        localStorage.setItem('auth_user', JSON.stringify(data.user));
+      } else {
+        localStorage.setItem('auth_user', JSON.stringify(data));
+      }
+    }
+
     return data;
   },
 

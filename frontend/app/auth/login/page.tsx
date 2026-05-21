@@ -97,7 +97,7 @@ async function handleSubmit(e: React.FormEvent) {
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading} >
               {isLoading ? (
                 <>
                   <Spinner className="mr-2" />

@@ -32,7 +32,7 @@ export const authApi = {
     // El registro se mantiene como JSON (estándar Pydantic)
     const res = await fetchAPI<AuthResponse>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify(data) as any, // TypeScript a veces se queja con JSON.stringify, este "as any" lo soluciona
+      body: data as any, // TypeScript a veces se queja con JSON.stringify, este "as any" lo soluciona
       headers: { 'Content-Type': 'application/json' },
     });
 

@@ -40,14 +40,22 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      const response = await authApi.register({
+      const aux: any = {
         nombre: formData.nombre,
         email: formData.email,
         password: formData.password,
-        telefono: formData.telefono || undefined,
-      })
-      toast.success(`Bienvenido a PetQR, ${response.user.nombre}!`)
+        
+      };
+      if (formData.telefono && formData.telefono.trim() !== '') {
+        aux.telefono = formData.telefono;
+}
+      
+      console.log(aux);
+      const response = await authApi.register(aux)
+      
+      toast.success(`Bienvenido a PetQR, ${response.nombre}!`)
       router.push('/dashboard')
+      router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error al registrarse')
     } finally {
