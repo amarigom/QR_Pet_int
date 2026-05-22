@@ -16,15 +16,16 @@ const nunito = Nunito({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'PetQR - Protege a tu mascota con tecnología QR',
   description: 'Sistema de identificación QR para mascotas. Escanea el código y encuentra al dueño rápidamente.',
-  generator: 'v0.app',
+  generator: ' Next.js',
+  manifest: '/manifest.json',
   keywords: ['mascotas', 'QR', 'identificación', 'perros', 'gatos', 'perdidos'],
   icons: {
     icon: [
-      { url: '/icon-light-32x32.png', media: '(prefers-color-scheme: light)' },
-      { url: '/icon-dark-32x32.png', media: '(prefers-color-scheme: dark)' },
-      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: 'favicon.ico', media: '(prefers-color-scheme: light)' },
+      { url: '/icon.png', media: '(prefers-color-scheme: dark)' },
+      { url: 'PETQR_icono_solo_512.jpg', type: 'image/svg+xml' },
     ],
-    apple: '/apple-icon.png',
+    apple: '/icon.png',
   },
 }
 
