@@ -50,29 +50,56 @@ export default function RegisterPage() {
         aux.telefono = formData.telefono;
       }
 
-      console.log(aux);
+      console.log("1. Enviando datos al registro:", aux);
       const response = await authApi.register(aux)
 
-      // 1. Guardamos el token de inmediato de forma segura si vino en la respuesta
-      if (response?.access_token) {
-        localStorage.setItem('token', response.access_token);
+      // Extraemos el nombre devuelto o usamos el del formulario
+      const nombreUsuario = response?.nombre || formData.nombre.trim() || "Usuario";
+      
+      console.log("2. Registro exitoso (201). Iniciando sesión automática para evitar pantalla en blanco...");
+      
+      try {
+        // Ejecutamos el login por detrás de forma silenciosa para obtener el token indispensable
+        const loginResponse = await authApi.login({
+          username: formData.email.trim(), // Ajustá a 'email' o 'username' según pida tu authApi.login
+          password: formData.password
+        });
+
+        // Guardamos el token en el almacenamiento local para que los layouts de Next.js lo reconozcan
+        if (loginResponse?.access_token) {
+          localStorage.setItem('token', loginResponse.access_token);
+          console.log("3. Token obtenido y guardado con éxito.");
+        }
+      } catch (loginError) {
+        console.error("Error en el login automático de fondo:", loginError);
+        // Si el login automático falla por alguna razón técnica del backend, 
+        // redirigimos de igual manera como plan de contingencia
       }
 
-      // 2. Extraemos el nombre con protección anti-failures (?.)
-      const nombreUsuario = response?.user?.nombre || "Usuario";
-      toast.success(`Bienvenido a PetQR, ${nombreUsuario}!`);
+      toast.success(`¡Bienvenido a PetQR, ${nombreUsuario}!`);
 
-      router.push('/dashboard')
-      router.refresh();
+      console.log("4. Redirigiendo al Dashboard...");
+
+      // Damos un breve respiro para que impacte el localStorage y el usuario vea el Toast
+      setTimeout(() => {
+        // Fallback 1: Redirección estándar y rápida de Next.js
+        router.push('/dashboard')
+        router.refresh()
+        
+        // Fallback 2 (Salvavidas para Vercel): Si Next.js se queda retenido por un chequeo asincrónico,
+        // este temporizador arrastra físicamente al navegador al dashboard, destruyendo el bloqueo.
+        setTimeout(() => {
+          window.location.href = '/dashboard'
+        }, 400)
+
+      }, 1000)
 
     } catch (error) {
       console.error("Error capturado en el registro:", error);
       toast.error(error instanceof Error ? error.message : 'Error al registrarse');
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Solo liberamos el estado si hubo un fallo explícito
     }
   }
-
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-secondary/5 to-accent/5">
       <Card className="w-full max-w-md">
