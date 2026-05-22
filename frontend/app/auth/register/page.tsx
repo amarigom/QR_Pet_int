@@ -54,14 +54,14 @@ export default function RegisterPage() {
       const response = await authApi.register(aux)
 
       // Extraemos el nombre devuelto o usamos el del formulario
-      const nombreUsuario = response?.nombre || formData.nombre.trim() || "Usuario";
+      const nombreUsuario = formData.nombre.trim() || "Usuario";
       
       console.log("2. Registro exitoso (201). Iniciando sesión automática para evitar pantalla en blanco...");
       
       try {
         // Ejecutamos el login por detrás de forma silenciosa para obtener el token indispensable
         const loginResponse = await authApi.login({
-          username: formData.email.trim(), // Ajustá a 'email' o 'username' según pida tu authApi.login
+          email: formData.email.trim(), // Ajustá a 'email' o 'username' según pida tu authApi.login
           password: formData.password
         });
 

@@ -21,9 +21,9 @@ export const metadata: Metadata = {
   keywords: ['mascotas', 'QR', 'identificación', 'perros', 'gatos', 'perdidos'],
   icons: {
     icon: [
-      { url: 'favicon.ico', media: '(prefers-color-scheme: light)' },
+      { url: '/favicon.ico', media: '(prefers-color-scheme: light)' },
       { url: '/icon.png', media: '(prefers-color-scheme: dark)' },
-      { url: 'PETQR_icono_solo_512.jpg', type: 'image/svg+xml' },
+      { url: '/PETQR_icono_solo_512.jpg', type: 'image/svg+xml' },
     ],
     apple: '/icon.png',
   },
