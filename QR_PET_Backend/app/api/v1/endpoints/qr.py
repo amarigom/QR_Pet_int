@@ -16,15 +16,7 @@ from app.services.qr_service import QRService
 
 router = APIRouter(prefix="/qr", tags=["Códigos QR"])
 
-@router.post("/generate", response_model=Dict[str, Any], status_code=status.HTTP_201_CREATED)
-async def generate_qrs(
-    cantidad: int = Query(1, ge=1, le=100),
-    admin: dict = Depends(require_admin),
-    db: AsyncSession = Depends(get_db)
-):
-    """Admin: Genera nuevos códigos QR sin mascota asociada en lote."""
-    service = QRService(db)
-    return await service.generate_qrs(cantidad, admin_user=admin)
+
 
 @router.get("", response_model=Dict[str, Any])
 async def list_qrs(
@@ -66,7 +58,7 @@ async def activate_qr(
 ):
     """Usuario: Activa un código QR físico y lo vincula a una nueva mascota."""
     service = QRService(db)
-    return await service.activate_qr(user["id"], data)
+    return await service.activate_qr(user.id, data)
 
 @router.get("/check/{code}", response_model=QRCheckResponse)
 async def check_qr_availability(

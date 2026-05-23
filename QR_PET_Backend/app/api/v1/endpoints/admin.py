@@ -12,8 +12,20 @@ from app.schemas.composite import PetDetailResponse
 from app.core.database import get_db
 from ..dependencies import get_admin_service, require_admin
 from app.services.admin_service import AdminService
+from app.services.qr_service import QRService  
+
 
 router = APIRouter(prefix="/admin", tags=["Administración"])
+
+@router.post("/qr/generate", response_model=Dict[str, Any], status_code=status.HTTP_201_CREATED)
+async def generate_qrs(
+    cantidad: int = Query(1, ge=1, le=100),
+    admin: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Admin: Genera nuevos códigos QR sin mascota asociada en lote."""
+    service = QRService(db)
+    return await service.generate_qrs(cantidad, admin_user=admin)
 
 @router.get("/users", response_model=Dict[str, Any])
 async def get_all_users(

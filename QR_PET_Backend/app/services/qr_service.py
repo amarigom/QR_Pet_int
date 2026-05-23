@@ -10,6 +10,9 @@ from app.core.constants import MESSAGE_QR_NOT_FOUND, MESSAGE_QR_ALREADY_LINKED
 from app.schemas.qr import QRResponse, QRActivateData
 from app.schemas.composite import QRDetailResponse
 
+# Importamos la herramienta de renderizado físico de imágenes QR
+from app.utils.qr_generator import generar_qr_medalla
+
 class QRService:
     """Service para gestionar el ciclo de vida de los códigos QR"""
     
@@ -18,8 +21,8 @@ class QRService:
         self.qr_repo = QRRepository(db)
         self.pet_repo = PetRepository(db)
     
-    async def generate_qrs(self, cantidad: int,admin_user: dict) -> Dict[str, Any]:
-        """Genera múltiples QRs en lote (Batch operation)"""
+    async def generate_qrs(self, cantidad: int, admin_user: dict) -> Dict[str, Any]:
+        """Genera múltiples QRs en lote (Batch operation) y exporta sus PNGs físicos"""
         created_qrs = []
         
         for _ in range(cantidad):
@@ -28,8 +31,18 @@ class QRService:
             qr = await self.qr_repo.create(codigo=codigo, activo=True)
             created_qrs.append(qr)
         
-        # Guardamos todos los QRs de un solo golpe
+        # Guardamos todos los QRs de un solo golpe en la Base de Datos
         await self.db.commit()
+        
+        # Una vez impactada la DB con éxito, fabricamos los archivos de imagen correspondientes
+        for q in created_qrs:
+            try:
+                # Le pasamos el código alfanumérico único para que genere la URL/Ficha correcta
+                generar_qr_medalla(id_mascota=q.codigo)
+            except Exception as e:
+                # Logeamos si falla la escritura en disco (ej. falta de permisos en Vercel/VPS),
+                # pero no bloqueamos la respuesta HTTP del lote completo
+                print(f"Error al escribir imagen física para el código QR {q.codigo}: {e}")
         
         return {
             "created": len(created_qrs),
