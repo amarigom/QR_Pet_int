@@ -4,6 +4,7 @@ SQLAlchemy==2.0.48
 psycopg2-binary==2.9.11
 asyncpg==0.31.0
 greenlet==3.3.2
+PYTHON_VERSION=3.10
 
 # Validación (Sincronizados para evitar el ResolutionImpossible)
 pydantic>=2.9.2
