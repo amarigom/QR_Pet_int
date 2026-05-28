@@ -1,45 +1,50 @@
 """
 Gestión de autenticación JWT y hashing de contraseñas
 """
-import jwt
-import secrets
-from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
-from passlib.context import CryptContext
+
+
 from app.config import settings
 from app.core.exceptions import AuthenticationException
-from passlib.context import CryptContext
+from jwt.exceptions import InvalidTokenError
+
+import secrets
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, Optional
+import jwt
+from pwdlib import PasswordHash
+from pwdlib.hashers.bcrypt import BcryptHasher
 
 
-
-# Contexto para hashing de contraseñas
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+password_hash = PasswordHash((BcryptHasher(),))
 
 
 def hash_password(password: str) -> str:
-    """Genera hash de contraseña"""
-    return pwd_context.hash(password)
-
+    """Genera hash de contraseña de forma segura y compatible con Python 3.12/3.13"""
+    return password_hash.hash(password)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verifica la contraseña usando pwdlib, tolerando hashes previos de bcrypt"""
     try:
-        # Forzamos la verificación asegurándonos de que no haya nulos
+        # Aseguramos que no haya valores nulos o vacíos
         if not hashed_password or not plain_password:
             return False
-        return pwd_context.verify(plain_password, hashed_password)
-    except Exception as e:
-        print(f"Error en verificación: {e}")
+        
+        return password_hash.verify(plain_password, hashed_password)
+    except (PasswordValueError, Exception) as e:
+        print(f"Error en verificación de hash: {e}")
         return False
 
-
+# 2. Manejo de Tokens JWT
 def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
-    """Crea un token JWT"""
+    """Crea un token JWT usando la hora actual con zona horaria (limpio y sin deprecaciones)"""
     to_encode = data.copy()
     
+    # Usamos timezone.utc porque datetime.utcnow() está obsoleto en Python moderno
+    now = datetime.now(timezone.utc)
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = now + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(hours=settings.JWT_EXPIRATION_HOURS)
+        expire = now + timedelta(hours=settings.JWT_EXPIRATION_HOURS)
     
     to_encode.update({"exp": expire})
     
@@ -49,7 +54,6 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
         algorithm=settings.JWT_ALGORITHM
     )
     return encoded_jwt
-
 
 def decode_access_token(token: str) -> Dict[str, Any]:
     """Decodifica y valida un token JWT"""
@@ -65,7 +69,7 @@ def decode_access_token(token: str) -> Dict[str, Any]:
     except jwt.InvalidTokenError:
         raise AuthenticationException("Token inválido")
 
-
+# 3. Utilidades adicionales
 def generate_qr_code() -> str:
     """Genera un código QR único"""
     return secrets.token_urlsafe(8)[:12].upper()
