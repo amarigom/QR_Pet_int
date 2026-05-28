@@ -9,7 +9,7 @@ def setup_middleware(app: FastAPI):
         CORSMiddleware,
         # Especifica el origen exacto de tu Next.js
         allow_origins=["*"], 
-        allow_credentials=True,
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )
