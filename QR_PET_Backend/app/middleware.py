@@ -8,7 +8,7 @@ def setup_middleware(app: FastAPI):
     app.add_middleware(
         CORSMiddleware,
         # Especifica el origen exacto de tu Next.js
-        allow_origins=["http://localhost:3000","http://localhost:8000",r"https://qr-pet-.*\.vercel\.app"], 
+        allow_origins=["*"], 
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
