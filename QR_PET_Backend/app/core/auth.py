@@ -13,7 +13,7 @@ from passlib.context import CryptContext
 
 
 # Contexto para hashing de contraseñas
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__handle_long_passwords=True)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
