@@ -14,7 +14,7 @@ import {
   PawPrint, Phone, MessageCircle, MapPin, Calendar,
   Palette, FileText, AlertCircle, QrCode, Heart, Send, Loader2, User
 } from 'lucide-react'
-import { qrApi } from '@/lib/api/qr2'
+import { qrApi } from '@/lib/api/qr'
 import { toast } from 'sonner'
 import type { Pet } from '@/lib/types'
 

@@ -7,12 +7,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.common import SuccessResponse
 from app.schemas.user import UserResponse, DashboardStats
 from app.schemas.composite import PetDetailResponse
+from app.models.user import User
 
 # 2. Core y Seguridad (Importamos las dependencias necesarias)
 from app.core.database import get_db
-from ..dependencies import get_admin_service, require_admin
+from ..dependencies import get_admin_service, require_admin, get_qr_service
 from app.services.admin_service import AdminService
-from app.services.qr_service import QRService  
+from app.services.qr_service import QRService 
+# 
 
 
 router = APIRouter(prefix="/admin", tags=["Administración"])
@@ -92,3 +94,14 @@ async def admin_get_pet_detail(
     """Inspección profunda usando la vista compuesta"""
     return await service.get_pet_detail_admin(pet_id)
 
+@router.patch("/qrs/{codigo}/status")
+async def admin_toggle_qr(
+    codigo: str, 
+    qr_service: QRService = Depends(get_qr_service),
+    current_admin: User = Depends(require_admin)
+):
+    """
+    Endpoint de administración para inhabilitar o habilitar un QR por su código visible.
+    """
+    resultado = await qr_service.activar_desactivar_qr(codigo)
+    return resultado

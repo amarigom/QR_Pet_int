@@ -5,7 +5,11 @@ import { Scatter } from 'recharts';
 
 export const adminApi = {
   getStats: () => fetchAPI<AdminStats>('/admin/stats'),
-  
+  async toggleQRStatus(codigo: string) {
+  return await fetchAPI(`/admin/qrs/${codigo}/status`, {
+    method: 'PATCH',
+  });
+},
 
   getUsers: async (): Promise<User[]> => {
     const data = await fetchAPI<any>('/admin/users');

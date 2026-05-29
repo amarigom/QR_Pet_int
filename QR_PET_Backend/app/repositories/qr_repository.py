@@ -104,3 +104,13 @@ class QRRepository(BaseRepository[QRCode]):
         query = select(exists().where(QRCode.codigo == codigo.upper()))
         result = await self.session.execute(query)
         return result.scalar() or False
+    
+
+    async def update_status(self, db_qr: QRCode, activo: bool) -> QRCode:
+        """Modifica físicamente la columna 'activo' de la placa y persiste en BD"""
+        db_qr.activo = activo
+        
+        await self.session.commit()   
+        await self.session.refresh(db_qr) 
+        
+        return db_qr

@@ -1,7 +1,7 @@
 import uuid
 from typing import List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from fastapi import FastAPI, Depends, HTTPException, status
 from app.repositories.qr_repository import QRRepository
 from app.repositories.pet_repository import PetRepository
 from app.core.auth import generate_qr_code
@@ -125,4 +125,25 @@ class QRService:
             raise ResourceNotFoundException("Código QR")
         
         await self.db.commit()
-        return True
+        return True    
+    
+    async def activar_desactivar_qr(self, codigo: str):
+        # 1. El Servicio solicita al repositorio que busque el QR
+        qr = await self.qr_repo.get_by_code(codigo)
+        
+        if not qr:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No se encontró la placa con código {codigo.upper()}"
+            )
+                
+        
+        nuevo_estado = not qr.activo
+        
+        # 3. El Servicio le solicita formalmente al repositorio que guarde el nuevo estado
+        resultado = await self.qr_repo.update_status(db_qr=qr, activo=nuevo_estado)
+        
+        # 4. Confirmamos la transacción en la sesión asíncrona
+        await self.db.commit()
+        
+        return resultado
