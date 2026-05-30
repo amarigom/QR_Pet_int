@@ -16,6 +16,11 @@ from app.core.constants import UserRole
 # 2. Imports de persistencia (Repositorios y Modelos)
 from app.repositories.user_repository import UserRepository
 from app.models.user import User
+from app.repositories.qr_repository import QRRepository 
+
+# 3. Imports de Servicios
+from app.services.admin_service import AdminService
+from app.services.qr_service import QRService 
 
 # Definimos el esquema de seguridad
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -70,3 +75,16 @@ from app.services.admin_service import AdminService # Asegurate de importar el s
 async def get_admin_service(db: AsyncSession = Depends(get_db)) -> AdminService:
     """Proveedor del servicio de administración"""
     return AdminService(db)
+
+
+# =====================================================================
+# DEPENDENCIAS PARA MÓDULO QR 
+# =====================================================================
+
+async def get_qr_repository(db: AsyncSession = Depends(get_db)) -> QRRepository:
+    """Proveedor del repositorio de códigos QR, inyectando la sesión de BD"""
+    return QRRepository(db)
+
+async def get_qr_service(db: AsyncSession = Depends(get_db)) -> QRService:
+    """Proveedor del servicio pasándole la sesión limpia"""
+    return QRService(db=db)

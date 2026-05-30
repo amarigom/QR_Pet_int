@@ -13,8 +13,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { QrCode, Home, PawPrint, MapPin, Settings, LogOut, Menu, X } from 'lucide-react'
-import { authApi } from '@/lib/api';
+import { authApi } from '@/lib/api'
 import type { User } from '@/lib/types'
+import QrScannerModal  from '@/components/QrScannerModal' // Inyección limpia del escáner
 
 const navItems = [
   { href: '/dashboard', icon: Home, label: 'Inicio' },
@@ -50,7 +51,7 @@ export default function DashboardLayout({
   useEffect(() => {
     loadUser()
   }, [loadUser])
-
+  
   async function handleLogout() {
     try {
       await authApi.logout()
@@ -80,7 +81,7 @@ export default function DashboardLayout({
   if (!user) return null
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
@@ -181,6 +182,9 @@ export default function DashboardLayout({
       <main className="container mx-auto px-4 py-8 animate-in fade-in duration-500">
         {children}
       </main>
+
+      {/* Botón flotante del Escáner integrado sin romper el default export */}
+      <QrScannerModal />
     </div>
   )
 }

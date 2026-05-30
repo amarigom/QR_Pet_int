@@ -1,7 +1,7 @@
 import uuid
 from typing import List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from fastapi import FastAPI, Depends, HTTPException, status
 from app.repositories.qr_repository import QRRepository
 from app.repositories.pet_repository import PetRepository
 from app.core.auth import generate_qr_code
@@ -9,6 +9,9 @@ from app.core.exceptions import ResourceNotFoundException, InvalidDataException
 from app.core.constants import MESSAGE_QR_NOT_FOUND, MESSAGE_QR_ALREADY_LINKED
 from app.schemas.qr import QRResponse, QRActivateData
 from app.schemas.composite import QRDetailResponse
+
+# Importamos la herramienta de renderizado físico de imágenes QR
+from app.utils.qr_generator import generar_qr_medalla
 
 class QRService:
     """Service para gestionar el ciclo de vida de los códigos QR"""
@@ -18,8 +21,8 @@ class QRService:
         self.qr_repo = QRRepository(db)
         self.pet_repo = PetRepository(db)
     
-    async def generate_qrs(self, cantidad: int,admin_user: dict) -> Dict[str, Any]:
-        """Genera múltiples QRs en lote (Batch operation)"""
+    async def generate_qrs(self, cantidad: int, admin_user: dict) -> Dict[str, Any]:
+        """Genera múltiples QRs en lote (Batch operation) y exporta sus PNGs físicos"""
         created_qrs = []
         
         for _ in range(cantidad):
@@ -28,8 +31,18 @@ class QRService:
             qr = await self.qr_repo.create(codigo=codigo, activo=True)
             created_qrs.append(qr)
         
-        # Guardamos todos los QRs de un solo golpe
+        # Guardamos todos los QRs de un solo golpe en la Base de Datos
         await self.db.commit()
+        
+        # Una vez impactada la DB con éxito, fabricamos los archivos de imagen correspondientes
+        for q in created_qrs:
+            try:
+                # Le pasamos el código alfanumérico único para que genere la URL/Ficha correcta
+                generar_qr_medalla(id_mascota=q.codigo)
+            except Exception as e:
+                # Logeamos si falla la escritura en disco (ej. falta de permisos en Vercel/VPS),
+                # pero no bloqueamos la respuesta HTTP del lote completo
+                print(f"Error al escribir imagen física para el código QR {q.codigo}: {e}")
         
         return {
             "created": len(created_qrs),
@@ -112,4 +125,25 @@ class QRService:
             raise ResourceNotFoundException("Código QR")
         
         await self.db.commit()
-        return True
+        return True    
+    
+    async def activar_desactivar_qr(self, codigo: str):
+        # 1. El Servicio solicita al repositorio que busque el QR
+        qr = await self.qr_repo.get_by_code(codigo)
+        
+        if not qr:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No se encontró la placa con código {codigo.upper()}"
+            )
+                
+        
+        nuevo_estado = not qr.activo
+        
+        # 3. El Servicio le solicita formalmente al repositorio que guarde el nuevo estado
+        resultado = await self.qr_repo.update_status(db_qr=qr, activo=nuevo_estado)
+        
+        # 4. Confirmamos la transacción en la sesión asíncrona
+        await self.db.commit()
+        
+        return resultado

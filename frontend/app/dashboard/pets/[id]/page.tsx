@@ -33,7 +33,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { petsApi } from '@/lib/api/pets'
-import { qrApi } from '@/lib/api/qr2'
+import { qrApi } from '@/lib/api/qr'
 import { formatDateTime } from '@/lib/utils'
 import type { Pet, QRCode as QRCodeType, Scan } from '@/lib/types'
 import { QRCodeDisplay } from '@/components/qr-code-display'

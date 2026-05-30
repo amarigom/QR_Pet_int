@@ -3,6 +3,7 @@ Configuración centralizada de la aplicación
 """
 import os
 from typing import Optional
+from pathlib import Path
 
 class Settings:
     """Variables de entorno y configuración general"""
@@ -24,6 +25,7 @@ class Settings:
     # Entorno
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     DEBUG: bool = ENVIRONMENT == "development"
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
     
     # API
     API_V1_PREFIX: str = "/api/v1"
@@ -33,5 +35,8 @@ class Settings:
     # Pool de base de datos
     DB_MIN_SIZE: int = 5
     DB_MAX_SIZE: int = 20
+
+
+            
 
 settings = Settings()

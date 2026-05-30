@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams,useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MapPin, ShieldCheck, AlertTriangle } from 'lucide-react'
@@ -9,9 +9,47 @@ import { toast } from 'sonner'
 
 export default function PublicScanPage() {
   const { id } = useParams()
+  const router = useRouter()
+
+  const [checkingQR, setCheckingQR] = useState(true) // Estado para validar el QR al entrar
+  const [qrState, setQrState] = useState<{ associated: boolean } | null>(null)
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
+  
+  useEffect(() => {
+    async function checkQRStatus() {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/qrs/validar/${id}`)
+        if (response.ok) {
+          const data = await response.json() // Esperamos p.ej: { associated: false }
+          setQrState(data)
 
+          // Camino Alternativo: Si el QR NO está asociado a nadie, desviamos el flujo
+          if (!data.associated) {
+            toast.info("Este código QR está libre. Redirigiendo para su activación...")
+            
+            // Verificamos si ya hay sesión iniciada
+            const token = localStorage.getItem('token')
+            if (token) {
+              // Si está logueado, directo a crear la mascota arrastrando el QR
+              router.push(`/dashboard/mascotas/nueva?active_qr=${id}`)
+            } else {
+              // Si es usuario nuevo, al registro arrastrando el QR pendiente
+              router.push(`/auth/register?pending_qr=${id}`)
+            }
+            return
+          }
+        }
+      } catch (error) {
+        console.error("Error validando el QR:", error)
+        toast.error("No se pudo verificar el estado de la medalla")
+      } finally {
+        setCheckingQR(false)
+      }
+    }
+
+    if (id) checkQRStatus()
+  }, [id, router])
   const handleSendLocation = () => {
     setLoading(true)
 
