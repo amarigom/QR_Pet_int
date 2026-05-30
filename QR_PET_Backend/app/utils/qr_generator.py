@@ -13,7 +13,7 @@ def generar_qr_medalla(id_mascota: str, url_base: str = None) -> str:
     if url_base is None:
         
         base_limpia = settings.FRONTEND_URL.rstrip('/')
-        url_base = f"{base_limpia}/scan/"
+        url_base = f"{base_limpia}/scans/"
 
     os.makedirs(settings.STATIC_QR_DIR, exist_ok=True)
     
