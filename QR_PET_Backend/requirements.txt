@@ -1,0 +1,33 @@
+reportlab==4.5.1
+fastapi==0.110.0
+uvicorn==0.28.0
+SQLAlchemy==2.0.48
+psycopg2-binary==2.9.11
+asyncpg==0.31.0
+greenlet==3.3.2
+# Validación (Sincronizados para evitar el ResolutionImpossible)
+pydantic>=2.9.2
+pydantic-settings>=2.4.0
+pydantic_core>=2.28.0
+annotated-types==0.7.0
+typing_extensions==4.15.0
+idna==3.11
+
+# Seguridad (Limpios y sin duplicar)
+cryptography>=42.0.0
+PyJWT==2.10.1
+pwdlib[bcrypt]==0.2.1
+
+
+PyJWT>=2.8.0
+cryptography==42.0.5
+
+
+# Utilidades
+python-dotenv==1.0.0
+python-multipart==0.0.9
+email-validator==2.3.0
+qrcode==8.1
+pillow>=10.3.0
+pytest==7.3.1   
+pytest-asyncio==0.20.3
