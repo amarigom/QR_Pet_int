@@ -1,15 +1,15 @@
 import { fetchAPI } from './client';
 import type { AdminQR, RecentScan } from '../types/admin';
-import type { User, Pet, AdminStats, QRCode,PaginatedResponse, ScanWithLocation, ScanResponse } from '../types';
-import { Scatter } from 'recharts';
+import type { User, Pet, AdminStats, QRCode, PaginatedResponse, ScanWithLocation, ScanResponse } from '../types';
 
 export const adminApi = {
   getStats: () => fetchAPI<AdminStats>('/admin/stats'),
+
   async toggleQRStatus(codigo: string) {
-  return await fetchAPI(`/admin/qrs/${codigo}/status`, {
-    method: 'PATCH',
-  });
-},
+    return await fetchAPI(`/admin/qrs/${codigo}/status`, {
+      method: 'PATCH',
+    });
+  },
 
   getUsers: async (): Promise<User[]> => {
     const data = await fetchAPI<any>('/admin/users');
@@ -18,21 +18,21 @@ export const adminApi = {
     return Array.isArray(data) ? data : (data.items || []);
   },
 
-  // 1. Asegúrate de que el tipo sea consistente con tu interfaz Pet
-getPets: async (): Promise<Pet[]> => {
-    // 2. fetchAPI debe apuntar internamente al puerto 8000
+  // Asegúrate de que el tipo sea consistente con tu interfaz Pet
+  getPets: async (): Promise<Pet[]> => {
+    // fetchAPI debe apuntar internamente al puerto 8000
     const data = await fetchAPI<any>('/admin/pets');
 
-    // 3. Normalización limpia
+    // Normalización limpia
     const rawItems = Array.isArray(data) ? data : (data.items || []);
 
-    // 4. Mapeo (Si el backend manda 'owner', pero quieres asegurar compatibilidad)
+    // Mapeo (Si el backend manda 'owner', pero quieres asegurar compatibilidad)
     return rawItems.map((item: any) => ({
-        ...item,
-        // Si el backend manda 'owner', lo usamos. Si no, mantenemos consistencia.
-        owner: item.owner || item.datos_dueño || null 
+      ...item,
+      // Si el backend manda 'owner', lo usamos. Si no, mantenemos consistencia.
+      owner: item.owner || item.datos_dueño || null 
     })) as Pet[];
-},
+  },
 
   deleteUser: (userId: string) => fetchAPI(`/admin/users/${userId}`, { 
     method: 'DELETE' 
@@ -43,44 +43,44 @@ getPets: async (): Promise<Pet[]> => {
   }),
 
   getQRs: async (): Promise<AdminQR[]> => {
-  const response = await fetchAPI<PaginatedResponse<AdminQR>>('/qr');
-  
-  // Si por alguna razón el backend fallara y no enviara items, 
-  // devolvemos un array vacío para que el .map() no rompa la UI
-  return response?.items || [];
-},
+    const response = await fetchAPI<PaginatedResponse<AdminQR>>('/qr');
+    
+    // Si por alguna razón el backend fallara y no enviara items, 
+    // devolvemos un array vacío para que el .map() no rompa la UI
+    return response?.items || [];
+  },
 
-
-  generateQRs: (cantidad: number) => fetchAPI<{ created: number; qrs: QRCode[] }>('/admin/qr/generate', {
-    method: 'POST',
-    body: JSON.stringify({ cantidad }),
-  }),
+  generateQRs: (cantidad: number, lote: string) => 
+    fetchAPI<{ created: number; qrs: AdminQR[] }>(
+      `/admin/qr/generate?cantidad=${cantidad}&lote=${encodeURIComponent(lote.trim())}`, 
+      {
+        method: 'POST',
+      }
+    ),
 
   deleteQR: (qrId: string) => fetchAPI(`/admin/qr/${qrId}`, { 
     method: 'DELETE' 
   }),
 
+  getScans: async (page = 1, limit = 100) => {
+    // Ajustado a la ruta que Swagger confirmó que funciona
+    return fetchAPI<PaginatedResponse<any>>(`/scans?page=${page}&limit=${limit}`);
+  },
 
-getScans: async (page = 1, limit = 100) => {
-  // Ajustado a la ruta que Swagger confirmó que funciona
-  return fetchAPI<PaginatedResponse<any>>(`/scans?page=${page}&limit=${limit}`);
-},
+  // Gestión de una mascota específica
+  getPetById: async (id: string) => {
+    const token = localStorage.getItem('token'); // O la fuente que uses para el JWT
 
- // 5. Gestión de una mascota específica
-  
-getPetById: async (id: string) => {
-  const token = localStorage.getItem('token'); // O la fuente que uses para el JWT
+    const response = await fetch(`/admin/pets/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    return response.json();
+  },
 
-const response = await fetch(`/admin/pets/${id}`, {
-  headers: {
-    'Authorization': `Bearer ${token}`, // ESTO ES LO QUE FALTA
-    'Content-Type': 'application/json'
-  }
-})
-  return response.json();
-},
-
-getAllScans: async (page = 1, limit = 100): Promise<ScanWithLocation[]> => {
+  getAllScans: async (page = 1, limit = 100): Promise<ScanWithLocation[]> => {
     // Llamada al endpoint real que confirmaste
     const response = await fetchAPI<PaginatedResponse<any>>(`/scans?page=${page}&limit=${limit}`);
     
@@ -91,7 +91,6 @@ getAllScans: async (page = 1, limit = 100): Promise<ScanWithLocation[]> => {
       id: s.id,
       // Usamos Number() por si vienen como string, y manejamos el null
       latitud: s.latitud !== null ? Number(s.latitud) : 0,
-      
       longitud: s.longitud !== null ? Number(s.longitud) : 0,
       // Escudo para mascota null:
       pet_name: s.mascota?.nombre || `QR: ${s.qr_codigo}`,
@@ -100,5 +99,26 @@ getAllScans: async (page = 1, limit = 100): Promise<ScanWithLocation[]> => {
     }));
   },
 
-}
+  // 🚀 Descarga segura del lote de impresión en formato PDF binario (Blob)
+  async downloadLotePdf(lote: string): Promise<Blob> {
+    const token = localStorage.getItem('token');
+    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    
+    // Limpiamos la URL para evitar que se duplique el segmento /api/v1
+    const base = BACKEND_URL.endsWith('/api/v1') ? BACKEND_URL : `${BACKEND_URL}/api/v1`;
+    
+    const response = await fetch(`${base}/qr/download-pdf?lote=${encodeURIComponent(lote.trim())}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      }
+    });
 
+    if (!response.ok) {
+      throw new Error('Error al descargar el archivo PDF de la plantilla');
+    }
+
+    // Retorna el archivo crudo como un flujo binario directo de FastAPI
+    return await response.blob();
+  },
+}

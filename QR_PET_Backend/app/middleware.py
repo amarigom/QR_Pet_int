@@ -12,6 +12,7 @@ def setup_middleware(app: FastAPI):
         allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["*"],
     )
     @app.get("/health", tags=["Health"])
     async def health_check():

@@ -1,8 +1,8 @@
 import uuid
 from typing import Dict, Any
-from fastapi import APIRouter, Depends, Query, status,HTTPException
+from fastapi import APIRouter, Depends, Query, status, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-
 
 # 1. Imports de Esquemas (Atómicos y el Compuesto para detalle)
 from app.schemas.qr import QRActivateData, QRCheckResponse
@@ -17,7 +17,6 @@ from app.services.qr_service import QRService
 router = APIRouter(prefix="/qr", tags=["Códigos QR"])
 
 
-
 @router.get("", response_model=Dict[str, Any])
 async def list_qrs(
     page: int = Query(1, ge=1),
@@ -29,6 +28,19 @@ async def list_qrs(
     service = QRService(db)
     return await service.get_all_qrs(page, limit)
 
+
+@router.get("/download-pdf")
+async def download_lote_pdf(
+    lote: str = Query(..., description="Nombre o identificador único del lote a descargar"),
+    admin: dict = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """Admin: Genera y descarga una plantilla A4 en PDF con la grilla de QRs de un lote."""
+    service = QRService(db)
+    # Retorna directamente el StreamingResponse que armamos en el servicio
+    return await service.export_lote_to_pdf(lote)
+
+
 @router.get("/{qr_id}", response_model=QRDetailResponse)
 async def get_qr_details(
     qr_id: uuid.UUID, 
@@ -38,6 +50,7 @@ async def get_qr_details(
     """Admin: Obtiene detalles técnicos de un QR específico (incluye mascota y dueño)."""
     service = QRService(db)
     return await service.get_qr(qr_id)
+
 
 @router.delete("/{qr_id}", response_model=SuccessResponse)
 async def delete_qr(
@@ -50,6 +63,7 @@ async def delete_qr(
     await service.delete_qr(qr_id)
     return SuccessResponse(message="Código QR eliminado correctamente")
 
+
 @router.post("/activate", response_model=Dict[str, Any])
 async def activate_qr(
     data: QRActivateData,
@@ -59,6 +73,7 @@ async def activate_qr(
     """Usuario: Activa un código QR físico y lo vincula a una nueva mascota."""
     service = QRService(db)
     return await service.activate_qr(user.id, data)
+
 
 @router.get("/check/{code}", response_model=QRCheckResponse)
 async def check_qr_availability(

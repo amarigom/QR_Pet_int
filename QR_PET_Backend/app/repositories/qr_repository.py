@@ -31,16 +31,19 @@ class QRRepository(BaseRepository[QRCode]):
     async def create(
         self,
         codigo: str,
+        lote: Optional[str] = None,  # 🚀 Agregamos el parámetro lote opcional
         mascota_id: Optional[Union[str, uuid.UUID]] = None,
         activo: bool = True
     ) -> QRCode:
-        """Crea un nuevo QR asegurando el tipo de dato para mascota_id"""
+        """Crea un nuevo QR asegurando el tipo de dato para mascota_id y asignando lote si corresponde"""
         nuevo_qr = QRCode(
             codigo=codigo.upper(),
+            lote=lote,  
             mascota_id=self._force_uuid(mascota_id),
             activo=activo
         )
         self.session.add(nuevo_qr)
+        # El flush envía los cambios a Neon sin cerrar la transacción todavía
         await self.session.flush()
         await self.session.refresh(nuevo_qr)
         return nuevo_qr
@@ -60,6 +63,13 @@ class QRRepository(BaseRepository[QRCode]):
         query = select(QRCode).where(QRCode.mascota_id == m_id)
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
+    
+    async def get_by_lote(self, lote: str) -> List[QRCode]:
+        """Únicamente va a la base de datos y trae los registros puros"""
+        result = await self.session.execute(
+        select(QRCode).filter(QRCode.lote == lote).order_by(QRCode.codigo.asc())
+    )
+        return result.scalars().all()
 
     async def link_mascota(self, qr_id: Union[str, uuid.UUID], mascota_id: Union[str, uuid.UUID]) -> Optional[QRCode]:
         """Vincula un QR a una mascota asegurando tipos UUID"""
