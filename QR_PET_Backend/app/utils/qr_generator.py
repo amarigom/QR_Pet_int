@@ -47,11 +47,16 @@ def generar_qr_memoria(id_mascota: str) -> io.BytesIO:
 
 
 # --- LÓGICA B: EN DISCO (Para ejecuciones locales e imprenta) ---
-def generar_qr_medalla(id_mascota: str, url_base: str = os.getenv("FRONTEND_URL", "http://localhost:3000")) -> str:
+def generar_qr_medalla(id_mascota: str, url_base: str = None) -> str:
     """
     Genera un código QR con alta tolerancia a fallos
     y lo guarda físicamente en la ruta estática configurada en tu computadora.
     """
+    # Si viene en None (como cuando se llama con un solo parámetro), 
+    # evalúa la variable en caliente en este microsegundo
+    if url_base is None:
+        url_base = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
     try:
         os.makedirs(settings.STATIC_QR_DIR, exist_ok=True)
         
