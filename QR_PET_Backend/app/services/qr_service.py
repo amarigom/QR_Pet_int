@@ -108,7 +108,7 @@ class QRService:
             
             # Sanitizamos la URL base leyendo tus settings corporativos de producción/desarrollo
             base_limpia = settings.FRONTEND_URL.rstrip('/')
-            url_base = f"{base_limpia}/scans/"
+            url_base = f"{base_limpia}/scan/"
             
             for index, qr_db in enumerate(qrs_del_lote):
                 # Construimos el QR con corrección tipo H (soporta raspaduras y suciedad de calle)
