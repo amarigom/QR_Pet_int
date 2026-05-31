@@ -6,25 +6,24 @@ from fastapi import HTTPException
 from app.config import settings  
 
 # --- CONFIGURACIÓN CORE DEL QR ---
-def _configurar_objeto_qr(id_mascota: str, url_base: str = None) -> qrcode.QRCode:
+def configurar_objeto_qr(id_mascota: str, url_base: str = None) -> qrcode.QRCode:
     """
     Función interna para estructurar la URL y configurar el QR con alta tolerancia (ERROR_CORRECT_H).
     Evita repetir código en la versión de memoria y de archivo.
     """
-    if url_base is None:
-        base_limpia = settings.FRONTEND_URL.rstrip('/')
-        url_base = f"{base_limpia}/scans/"
-
-    url_final = f"https://qr-pet-int.vercel.app/scan/{id_mascota}"
-    
+    # 1. Inicializamos el objeto QR (asegurate de tener esta línea o como la tengas configurada)
     qr = qrcode.QRCode(
-        version=None,                                      # Permite que el tamaño se adapte automáticamente al texto
-        error_correction=qrcode.constants.ERROR_CORRECT_H, # Alta tolerancia para medallas de calle
-        box_size=10,                                       # Tamaño de los píxeles del QR
-        border=4,                                          # Margen blanco reglamentario
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_H,
+        box_size=10,
+        border=4,
     )
+
+    url_final = f"https://qr-pet-int-8ki3.vercel.app/scan/{id_mascota}"
+        
     qr.add_data(url_final)
     qr.make(fit=True)
+    
     return qr
 
 
