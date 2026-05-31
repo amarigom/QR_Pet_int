@@ -15,7 +15,7 @@ def _configurar_objeto_qr(id_mascota: str, url_base: str = None) -> qrcode.QRCod
         base_limpia = settings.FRONTEND_URL.rstrip('/')
         url_base = f"{base_limpia}/scans/"
 
-    url_final = f"https://qr-pet-int.vercel.app/scans/{id_mascota}"
+    url_final = f"https://qr-pet-int.vercel.app/scan/{id_mascota}"
     
     qr = qrcode.QRCode(
         version=None,                                      # Permite que el tamaño se adapte automáticamente al texto
