@@ -72,7 +72,7 @@ export default function ScanPage() {
         setIsLoading(true)
         
         // Primero verificamos con tu endpoint de disponibilidad pública
-        const checkRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/qr/check/${code}`)
+        const checkRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/qr/check/${code}`)
         const checkData = await checkRes.json()
 
         if (!checkRes.ok) {
