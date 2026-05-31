@@ -34,6 +34,7 @@ export interface AdminQR {
   codigo: string;
   activo: boolean;
   created_at: string;
+  lote?: string | null;
   mascota_id: string | null;
   mascota: {
     id: string;

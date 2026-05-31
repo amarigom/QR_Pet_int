@@ -4,7 +4,11 @@ Configuración centralizada de la aplicación
 import os
 from typing import Optional
 from pathlib import Path
+from dotenv import load_dotenv
 
+# Calculamos la raíz del proyecto 
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(dotenv_path=BASE_DIR / ".env")
 class Settings:
     """Variables de entorno y configuración general"""
     
@@ -36,7 +40,9 @@ class Settings:
     DB_MIN_SIZE: int = 5
     DB_MAX_SIZE: int = 20
 
-
+    #Frontend
+    STATIC_QR_DIR: Path = BASE_DIR / "static" / "qrs"
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
             
 
 settings = Settings()

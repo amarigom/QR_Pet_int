@@ -21,8 +21,10 @@ from app.schemas.base import QRBase, QRMinimal
 class QRCreate(BaseModel):
     """Schema para crear códigos QR (Request)"""
     cantidad: int = Field(1, ge=1, le=100)
+    lote:str = Field(..., min_length=1, max_length=50)
 
-
+    class Config:
+        from_attributes = True
 # ============================================================================
 # RESPUESTAS
 # ============================================================================
@@ -33,7 +35,7 @@ class QRResponse(QRBase):
     mascota_id: Optional[UUID] = None
     activo: bool
     created_at: datetime
-
+    lote: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 

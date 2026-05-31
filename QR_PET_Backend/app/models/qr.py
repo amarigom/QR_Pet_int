@@ -1,5 +1,5 @@
 # app/models/qr.py
-from sqlalchemy import String, DateTime, ForeignKey, Boolean, func
+from sqlalchemy import String, Boolean, ForeignKey, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
 from datetime import datetime
@@ -13,8 +13,7 @@ if TYPE_CHECKING:
 
 class QRCode(Base):
     __tablename__ = "codigos_qr"
-
-    # id ahora correctamente indentado dentro de la clase
+    
     id: Mapped[uuid.UUID] = mapped_column(
         PG_UUID(as_uuid=True), 
         primary_key=True, 
@@ -23,30 +22,27 @@ class QRCode(Base):
     
     # El código único que se imprime en la placa (ej: QR-12345)
     codigo: Mapped[str] = mapped_column(
-        String(50), 
-        unique=True, 
-        nullable=False, 
-        index=True
+        String(50), unique=True, nullable=False, index=True
     )
     
     # Un QR puede estar impreso pero no tener mascota asignada aún
     mascota_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        PG_UUID(as_uuid=True), 
-        ForeignKey("mascotas.id", ondelete="SET NULL"), 
-        nullable=True
+        PG_UUID(as_uuid=True), ForeignKey("mascotas.id", ondelete="SET NULL"), nullable=True
     )
     
     # Para saber si el QR está habilitado por el administrador
     activo: Mapped[bool] = mapped_column(
-        Boolean, 
-        default=True
+        Boolean, default=True
     )
     
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, 
-        server_default=func.now()
+        DateTime, server_default=func.now()  # Ahora sí va a funcionar sin errores
     )
-
+    
+    lote: Mapped[Optional[str]] = mapped_column(
+        String(50), nullable=True, index=True
+    )
+    
     # RELACIÓN: Un QR pertenece a una mascota
     mascota: Mapped[Optional["Pet"]] = relationship(
         "Pet", 
@@ -54,4 +50,4 @@ class QRCode(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<QRCode(codigo={self.codigo}, activo={self.activo})>"
+        return f"<QRCode(codigo={self.codigo}, activo={self.activo}, lote={self.lote})>"

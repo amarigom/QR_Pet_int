@@ -1,6 +1,10 @@
 import uuid
 from typing import Dict, Any, List
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status,HTTPException
+from fastapi.responses import StreamingResponse
+
+# 2. El import correcto y específico para la respuesta de streaming
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # 1. Imports de Esquemas
@@ -14,7 +18,10 @@ from app.core.database import get_db
 from ..dependencies import get_admin_service, require_admin, get_qr_service
 from app.services.admin_service import AdminService
 from app.services.qr_service import QRService 
-# 
+
+from app.core.database import get_db  # <--- Solucionado acá!
+from app.utils.qr_generator import generar_qr_memoria 
+from app.repositories.qr_repository import QRRepository
 
 
 router = APIRouter(prefix="/admin", tags=["Administración"])
@@ -22,12 +29,13 @@ router = APIRouter(prefix="/admin", tags=["Administración"])
 @router.post("/qr/generate", response_model=Dict[str, Any], status_code=status.HTTP_201_CREATED)
 async def generate_qrs(
     cantidad: int = Query(1, ge=1, le=100),
+    lote: str = Query(..., min_length=3, description="Identificador del lote (ej: LOTE-01)"),
     admin: dict = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
     """Admin: Genera nuevos códigos QR sin mascota asociada en lote."""
     service = QRService(db)
-    return await service.generate_qrs(cantidad, admin_user=admin)
+    return await service.generate_qrs(cantidad,lote=lote, admin_user=admin)
 
 @router.get("/users", response_model=Dict[str, Any])
 async def get_all_users(
@@ -105,3 +113,35 @@ async def admin_toggle_qr(
     """
     resultado = await qr_service.activar_desactivar_qr(codigo)
     return resultado
+
+@router.get("/admin/qr/{id_mascota}", summary="Previsualización de QR para el Administrador")
+async def obtener_qr_administrador(id_mascota: str, db: AsyncSession = Depends(get_db)):
+    """
+    Devuelve la imagen PNG del QR en tiempo real desde la memoria RAM.
+    Patrón Repositorio Asíncrono respetado al 100%.
+    """
+    id_limpio = id_mascota.strip()
+    if not id_limpio:
+        raise HTTPException(status_code=400, detail="El ID de la mascota no puede estar vacío.")
+    
+    # Instanciamos tu repositorio pasándole la sesión asíncrona real
+    repo = QRRepository(session=db)
+    
+    # Buscamos asincrónicamente usando tu método get_by_code
+    qr_existente = await repo.get_by_code(codigo=id_limpio)
+    
+    if not qr_existente:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"El código QR '{id_limpio.upper()}' no existe en el sistema."
+        )
+
+    try:
+        # Generación síncrona en la RAM (No usa await porque es pura memoria)
+        buffer_imagen = generar_qr_memoria(id_limpio)
+        
+        # Enviamos el flujo de bytes directo a la pantalla
+        return StreamingResponse(buffer_imagen, media_type="image/png")
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al renderizar el QR: {str(e)}")

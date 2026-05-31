@@ -1,7 +1,17 @@
 import uuid
+import io
 from typing import List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
+
+# Importes de reportlab y qrcode para la compilación del PDF
+import qrcode
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Image, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+
 from app.repositories.qr_repository import QRRepository
 from app.repositories.pet_repository import PetRepository
 from app.core.auth import generate_qr_code
@@ -9,9 +19,11 @@ from app.core.exceptions import ResourceNotFoundException, InvalidDataException
 from app.core.constants import MESSAGE_QR_NOT_FOUND, MESSAGE_QR_ALREADY_LINKED
 from app.schemas.qr import QRResponse, QRActivateData
 from app.schemas.composite import QRDetailResponse
+from app.config import settings  
 
 # Importamos la herramienta de renderizado físico de imágenes QR
 from app.utils.qr_generator import generar_qr_medalla
+
 
 class QRService:
     """Service para gestionar el ciclo de vida de los códigos QR"""
@@ -21,33 +33,131 @@ class QRService:
         self.qr_repo = QRRepository(db)
         self.pet_repo = PetRepository(db)
     
-    async def generate_qrs(self, cantidad: int, admin_user: dict) -> Dict[str, Any]:
+    async def generate_qrs(self, cantidad: int, lote: str, admin_user: dict) -> Dict[str, Any]:
         """Genera múltiples QRs en lote (Batch operation) y exporta sus PNGs físicos"""
         created_qrs = []
         
         for _ in range(cantidad):
             codigo = generate_qr_code()
-            # create() ya no hace commit, solo add()
-            qr = await self.qr_repo.create(codigo=codigo, activo=True)
+            # pasamos el parámetro 'lote' al repositorio
+            qr = await self.qr_repo.create(codigo=codigo, lote=lote, activo=True)
             created_qrs.append(qr)
         
-        # Guardamos todos los QRs de un solo golpe en la Base de Datos
         await self.db.commit()
-        
-        # Una vez impactada la DB con éxito, fabricamos los archivos de imagen correspondientes
+                
         for q in created_qrs:
             try:
-                # Le pasamos el código alfanumérico único para que genere la URL/Ficha correcta
                 generar_qr_medalla(id_mascota=q.codigo)
             except Exception as e:
-                # Logeamos si falla la escritura en disco (ej. falta de permisos en Vercel/VPS),
-                # pero no bloqueamos la respuesta HTTP del lote completo
                 print(f"Error al escribir imagen física para el código QR {q.codigo}: {e}")
         
         return {
+            "lote": lote,  # Reportamos el lote procesado en la respuesta HTTP
             "created": len(created_qrs),
             "qrs": [QRResponse.model_validate(q) for q in created_qrs],
         }
+
+    async def export_lote_to_pdf(self, lote: str) -> StreamingResponse:
+        """
+        Busca todos los QR pertenecientes a un lote específico y genera 
+        una plantilla A4 en PDF con una grilla de 3 columnas para imprenta.
+        """
+        # 1. Buscamos todas las placas que pertenezcan a ese lote
+        qrs_del_lote = await self.qr_repo.get_by_lote(lote) # Asegurate de tener este método en tu QRRepository
+        
+        if not qrs_del_lote:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No se encontraron códigos QR asociados al lote '{lote}'"
+            )
+            
+        try:
+            buffer = io.BytesIO()
+            doc = SimpleDocTemplate(
+                buffer, 
+                pagesize=A4, 
+                leftMargin=30, 
+                rightMargin=30, 
+                topMargin=30, 
+                bottomMargin=30
+            )
+            
+            styles = getSampleStyleSheet()
+            story = []
+            
+            titulo_style = ParagraphStyle(
+                'TituloLote', 
+                parent=styles['Heading1'], 
+                fontSize=18, 
+                leading=22, 
+                textColor=colors.HexColor('#1e3a8a')
+            )
+            meta_style = ParagraphStyle(
+                'MetaLote', 
+                parent=styles['Normal'], 
+                fontSize=9, 
+                textColor=colors.HexColor('#64748b')
+            )
+            
+            story.append(Paragraph("Plantilla de Producción - Medallas QR", titulo_style))
+            story.append(Paragraph(f"Identificador de Lote: <b>{lote}</b> | Cantidad: {len(qrs_del_lote)} unidades | Tolerancia: Alta (H)", meta_style))
+            story.append(Spacer(1, 20))
+            
+            tabla_datos = []
+            fila_actual = []
+            
+            # Sanitizamos la URL base leyendo tus settings corporativos de producción/desarrollo
+            base_limpia = settings.FRONTEND_URL.rstrip('/')
+            url_base = f"{base_limpia}/scans/"
+            
+            for index, qr_db in enumerate(qrs_del_lote):
+                # Construimos el QR con corrección tipo H (soporta raspaduras y suciedad de calle)
+                qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_H, box_size=10, border=1)
+                qr.add_data(f"{url_base}{qr_db.codigo}")
+                qr.make(fit=True)
+                
+                img_buffer = io.BytesIO()
+                img_pure = qr.make_image(fill_color="black", back_color="white")
+                img_pure.save(img_buffer, format="PNG")
+                img_buffer.seek(0)
+                
+                img_pdf = Image(img_buffer, width=110, height=110)
+                
+                # Metadata visual inferior para facilitar el corte y control del operador gráfico
+                info_medalla = f"<font face='Courier' size='10'><b>{qr_db.codigo}</b></font><br/><font size='7' color='#94a3b8'>✂️ LÍNEA DE CORTE</font>"
+                p_info = Paragraph(info_medalla, styles['Normal'])
+                
+                celda_contenedor = [img_pdf, Spacer(1, 4), p_info]
+                fila_actual.append(celda_contenedor)
+                
+                # Agrupamos en filas simétricas de 3 columnas
+                if (index + 1) % 3 == 0 or (index + 1) == len(qrs_del_lote):
+                    while len(fila_actual) < 3:
+                        fila_actual.append("")
+                    tabla_datos.append(fila_actual)
+                    fila_actual = []
+            
+            grilla_tabla = Table(tabla_datos, colWidths=[175, 175, 175])
+            grilla_tabla.setStyle(TableStyle([
+                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+                ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 12),
+                ('TOPPADDING', (0,0), (-1,-1), 12),
+            ]))
+            
+            story.append(grilla_tabla)
+            doc.build(story)
+            buffer.seek(0)
+            
+            return StreamingResponse(
+                buffer, 
+                media_type="application/pdf", 
+                headers={"Content-Disposition": f"attachment; filename=plantilla_lote_{lote}.pdf"}
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error al compilar el PDF del lote: {str(e)}")
     
     async def get_qr(self, qr_id: uuid.UUID) -> QRDetailResponse:
         """Obtiene detalles de un QR usando el objeto modelo"""
@@ -58,7 +168,7 @@ class QRService:
         return QRDetailResponse.model_validate(qr)
     
     async def get_all_qrs(self, page: int = 1, limit: int = 50) -> Dict[str, Any]:
-        """Listado administrativo de QRs con información de mascota y dueño"""
+        """Listado administrative de QRs con información de mascota y dueño"""
         offset = (page - 1) * limit
         qrs = await self.qr_repo.get_all_with_details(limit, offset)
         total = await self.qr_repo.count()
@@ -137,7 +247,6 @@ class QRService:
                 detail=f"No se encontró la placa con código {codigo.upper()}"
             )
                 
-        
         nuevo_estado = not qr.activo
         
         # 3. El Servicio le solicita formalmente al repositorio que guarde el nuevo estado
