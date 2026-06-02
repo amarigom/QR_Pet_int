@@ -63,7 +63,7 @@ async def get_pet(
         return await admin_service.get_pet_detail_admin(pet_id)
     
     pet_service = PetService(db)
-    return await pet_service.get_pet(user.id, pet_id)
+    return await pet_service.get_pet(user, pet_id)
 
 @router.patch("/{pet_id}", response_model=PetResponse)
 async def update_pet(

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -15,6 +15,12 @@ import { authApi } from '@/lib/api';
 
 export default function RegisterPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  
+  // 🎯 LIMPIEZA DE QA: Extraemos el redirect original y cortamos cualquier parámetro interno como _rsc=vfc
+  const rawRedirect = searchParams.get('redirect')
+  const redirectUrl = rawRedirect ? rawRedirect.split('&')[0].split('?')[0] : null
+
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     nombre: '',
@@ -53,53 +59,48 @@ export default function RegisterPage() {
       console.log("1. Enviando datos al registro:", aux);
       const response = await authApi.register(aux)
 
-      // Extraemos el nombre devuelto o usamos el del formulario
       const nombreUsuario = formData.nombre.trim() || "Usuario";
-      
-      console.log("2. Registro exitoso (201). Iniciando sesión automática para evitar pantalla en blanco...");
+      console.log("2. Registro exitoso (201). Iniciando sesión automática...");
       
       try {
-        // Ejecutamos el login por detrás de forma silenciosa para obtener el token indispensable
         const loginResponse = await authApi.login({
-          email: formData.email.trim(), // Ajustá a 'email' o 'username' según pida tu authApi.login
+          email: formData.email.trim(), 
           password: formData.password
         });
 
-        // Guardamos el token en el almacenamiento local para que los layouts de Next.js lo reconozcan
         if (loginResponse?.access_token) {
           localStorage.setItem('token', loginResponse.access_token);
           console.log("3. Token obtenido y guardado con éxito.");
         }
       } catch (loginError) {
         console.error("Error en el login automático de fondo:", loginError);
-        // Si el login automático falla por alguna razón técnica del backend, 
-        // redirigimos de igual manera como plan de contingencia
       }
 
       toast.success(`¡Bienvenido a PetQR, ${nombreUsuario}!`);
 
-      console.log("4. Redirigiendo al Dashboard...");
+      // 🎯 DIRECCIÓN SANITIZADA: Usamos la ruta limpia de Next.js
+      const targetDestination = redirectUrl || '/dashboard';
+      console.log(`4. Redirigiendo limpiamente a: ${targetDestination}...`);
 
-      // Damos un breve respiro para que impacte el localStorage y el usuario vea el Toast
       setTimeout(() => {
-        // Fallback 1: Redirección estándar y rápida de Next.js
-        router.push('/dashboard')
+        // Redirección por router de Next.js
+        router.push(targetDestination)
         router.refresh()
         
-        // Fallback 2 (Salvavidas para Vercel): Si Next.js se queda retenido por un chequeo asincrónico,
-        // este temporizador arrastra físicamente al navegador al dashboard, destruyendo el bloqueo.
+        // Salvavidas por si Next.js retiene la acción asincrónica en Vercel/Localhost
         setTimeout(() => {
-          window.location.href = '/dashboard'
-        }, 400)
+          window.location.href = targetDestination
+        }, 300)
 
       }, 1000)
 
     } catch (error) {
       console.error("Error capturado en el registro:", error);
       toast.error(error instanceof Error ? error.message : 'Error al registrarse');
-      setIsLoading(false); // Solo liberamos el estado si hubo un fallo explícito
+      setIsLoading(false);
     }
   }
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-secondary/5 to-accent/5">
       <Card className="w-full max-w-md">
@@ -249,7 +250,11 @@ export default function RegisterPage() {
 
           <p className="text-center text-sm text-muted-foreground">
             Ya tienes cuenta?{' '}
-            <Link href="/auth/login" className="text-primary hover:underline font-medium">
+            {/* 🎯 Pasamos la ruta limpia también al login por si cambia de opinión */}
+            <Link 
+              href={redirectUrl ? `/auth/login?redirect=${encodeURIComponent(redirectUrl)}` : '/auth/login'} 
+              className="text-primary hover:underline font-medium"
+            >
               Inicia sesion
             </Link>
           </p>

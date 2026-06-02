@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Textarea } from '@/components/ui/textarea' 
-import { Input } from '@/components/ui/input' // Para el formulario de alta
+import { Input } from '@/components/ui/input' 
 import {
   PawPrint, Phone, MessageCircle, MapPin, Calendar,
   Palette, FileText, AlertCircle, QrCode, Heart, Send, Loader2, User
@@ -65,7 +65,7 @@ export default function ScanPage() {
     )
   }, [])
 
-  // 2. Carga inicial de datos y Aduana
+  // 2. Carga inicial de datos y Aduana (Con protección de ruta integrada a /auth/login)
   useEffect(() => {
     async function initAduana() {
       try {
@@ -82,11 +82,20 @@ export default function ScanPage() {
         }
 
         if (checkData.available) {
-          // CASO A: QR Virgen -> Habilitamos formulario de carga
+          // 🎯 CONTROL DE QA: Validamos si tiene sesión activa en el celular
+          const token = localStorage.getItem('token')
+          if (!token) {
+            toast.error("Debes iniciar sesión para registrar una medalla nueva.")
+            // Redirigimos a la ruta real corregida /auth/login pasando la ruta actual
+            router.push(`/auth/login?redirect=/scan/${code}`)
+            return
+          }
+
+          // CASO A: QR Virgen y Usuario Logueado -> Habilitamos formulario de carga
           setIsAvailable(true)
           setIsLoading(false)
         } else if (checkData.has_pet) {
-          // CASO B: QR Asignado -> Inicializamos tu flujo de escaneo y alertas
+          // CASO B: QR Asignado -> Flujo público de reporte (No requiere estar logueado)
           setIsAvailable(false)
           const response = await qrApi.scan(code) 
           setData(response)
@@ -105,7 +114,7 @@ export default function ScanPage() {
     }
     
     if (code) initAduana()
-  }, [code, sendLocation])
+  }, [code, sendLocation, router])
 
   // 3. Función para enviar el mensaje manual (Flujo Reporte)
   const handleSendMessage = async () => {
@@ -125,13 +134,22 @@ export default function ScanPage() {
   // 4. Función para guardar y activar QR (Flujo Registro)
   const handleRegisterPet = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Doble candado de seguridad por si acaso
+    const token = localStorage.getItem('token')
+    if (!token) {
+      toast.error("Tu sesión expiró. Por favor, iniciá sesión nuevamente.")
+      router.push(`/auth/login?redirect=/scan/${code}`)
+      return
+    }
+
     setSubmitting(true)
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/qr/activate`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/qr/activate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // Token del dueño logeado
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           codigo: code,
@@ -142,7 +160,7 @@ export default function ScanPage() {
       const activationData = await res.json()
 
       if (res.ok) {
-        toast.success("¡Medalla activada y mascota vinculada!")
+        toast.success("¡Medalla activada y mascota vinculada con éxito!")
         router.push('/dashboard')
       } else {
         toast.error(activationData.message || "No se pudo activar la medalla.")
@@ -178,7 +196,7 @@ export default function ScanPage() {
     )
   }
 
-  // --- INTERFAZ 1: FORMULARIO DE ALTA (SI EL QR ESTÁ DISPONIBLE) ---
+  // --- INTERFAZ 1: FORMULARIO DE ALTA (SI EL QR ESTÁ DISPONIBLE Y LOGUEADO) ---
   if (isAvailable) {
     return (
       <div className="min-h-screen bg-muted/30 pb-10 flex items-center justify-center p-4">
@@ -240,7 +258,7 @@ export default function ScanPage() {
                 <Textarea 
                   placeholder="Ej: Es alérgico a la penicilina y requiere medicación diaria..."
                   className="resize-none"
-                  value={formData.notas}
+                  value={formData.notas} 
                   onChange={(e) => setFormData({...formData, notas: e.target.value})}
                 />
               </div>
@@ -262,14 +280,13 @@ export default function ScanPage() {
     )
   }
 
-  // --- INTERFAZ 2: VISTA DE REPORTE PÚBLICO (SI EL QR TIENE DUEÑO - TU CÓDIGO ORIGINAL) ---
+  // --- INTERFAZ 2: VISTA DE REPORTE PÚBLICO (SI EL QR TIENE DUEÑO) ---
   const whatsappUrl = data?.owner?.telefono 
     ? `https://wa.me/${data.owner.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(`¡Hola! Encontré a ${data.pet.nombre}.`)}`
     : null
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/5 to-accent/5 pb-10">
-      {/* Header dinámico */}
       <div className={`${data?.pet.estado === 'PERDIDO' ? 'bg-destructive' : 'bg-primary'} text-white py-6 px-4 text-center`}>
         <h1 className="text-2xl font-bold flex items-center justify-center gap-2">
           <Heart className="fill-current" /> {data?.pet.nombre}
@@ -278,7 +295,6 @@ export default function ScanPage() {
       </div>
 
       <div className="max-w-md mx-auto p-4 space-y-4 -mt-4">
-        {/* Alerta de Ubicación */}
         {locationStatus === 'sent' && (
           <Alert className="bg-green-50 border-green-200">
             <MapPin className="w-4 h-4 text-green-600" />
@@ -286,7 +302,6 @@ export default function ScanPage() {
           </Alert>
         )}
 
-        {/* Tarjeta de Mascota */}
         <Card className="overflow-hidden">
           <div className="aspect-square relative bg-muted">
              {data?.pet.foto_url && <img src={data.pet.foto_url} alt="Pet" className="object-cover w-full h-full" />}
@@ -302,7 +317,6 @@ export default function ScanPage() {
           </CardContent>
         </Card>
 
-        {/* Acciones Rápidas */}
         <div className="grid grid-cols-1 gap-3">
           <Button asChild size="lg" className="h-16 text-lg">
             <a href={`tel:${data?.owner.telefono}`}><Phone className="mr-2" /> Llamar al dueño</a>
@@ -314,7 +328,6 @@ export default function ScanPage() {
           )}
         </div>
 
-        {/* Formulario de Mensaje Extra */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">¿Ves algo más?</CardTitle>
