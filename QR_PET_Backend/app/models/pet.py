@@ -71,6 +71,7 @@ class Pet(Base):
     
     owner: Mapped["User"] = relationship("User", back_populates="pets")
     qr_code: Mapped[Optional["QRCode"]] = relationship("QRCode", back_populates="mascota", uselist=False)
+    
 
     def __repr__(self) -> str:
         return f"<Pet(nombre={self.nombre}, especie={self.especie}, estado={self.estado})>"

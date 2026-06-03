@@ -25,6 +25,7 @@ function RegisterForm() {
     nombre: '',
     email: '',
     password: '',
+    confirmPassword:'',
     telefono: ''
   })
 
@@ -39,6 +40,38 @@ function RegisterForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    // 🎯 1. VALIDACIÓN: Ningún campo obligatorio puede estar vacío (quitando espacios en blanco)
+    if (!formData.nombre.trim() || !formData.email.trim() || !formData.password.trim() || !formData.confirmPassword.trim()) {
+      toast.error("Por favor, completa todos los campos obligatorios.")
+      return
+    }
+
+    // 🎯 2. VALIDACIÓN: Formato de correo electrónico (algo@algo.ext)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email.trim())) {
+      toast.error("Por favor, ingresa un correo electrónico válido (ej: usuario@dominio.com).")
+      return
+    }
+
+    // 🎯 3. VALIDACIÓN: Largo de la contraseña (Mínimo 6 caracteres)
+    if (formData.password.length < 6) {
+      toast.error("La contraseña debe tener al menos 6 caracteres.")
+      return
+    }
+
+    // 🎯 4. VALIDACIÓN: Caracteres especiales en la contraseña
+    // Busca al menos un carácter que no sea letra ni número
+    const specialCharRegex = /[^A-Za-z0-9]/
+    if (!specialCharRegex.test(formData.password)) {
+      toast.error("La contraseña debe contener al menos un carácter especial (ej: @, #, $, %, *, !, ?).")
+      return
+    }
+
+    // 🎯 5. VALIDACIÓN: Coincidencia de contraseñas
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Las contraseñas no coinciden. Por favor, verifícalas.")
+      return
+    }
     setIsLoading(true)
 
     try {
@@ -47,7 +80,7 @@ function RegisterForm() {
         nombre: formData.nombre,
         email: formData.email,
         password: formData.password,
-        telefono: formData.telefono || undefined
+        telefono: formData.telefono.trim() || undefined,
       })
       
       toast.success("¡Cuenta creada con éxito! Redirigiendo...")

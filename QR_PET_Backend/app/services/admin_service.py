@@ -41,11 +41,8 @@ class AdminService:
         }
 
     async def get_all_pets(self, page: int = 1, limit: int = 50) -> Dict[str, Any]:
-        """Obtiene todas las mascotas usando la carga profunda del PetRepository"""
-        offset = (page - 1) * limit
-        
-        # Usamos el método que ya tiene los joins optimizados
-        pets = await self.pet_repo.get_all_with_owner(limit=limit, offset=offset)
+        """Obtiene todas las mascotas incluyendo su QR asociado en singular"""
+        pets = await self.pet_repo.get_all_with_owner(limit=limit, offset=(page - 1) * limit)
         total = await self.pet_repo.count()
         
         return {
@@ -56,7 +53,13 @@ class AdminService:
                     "especie": p.especie,
                     "owner_name": p.owner.nombre if p.owner else "Sin dueño",
                     "estado": p.estado,
-                    "created_at": p.created_at
+                    "created_at": p.created_at,
+                    # 🎯 Cambiamos el bucle por un mapeo directo en singular de qr_code
+                    "qr": {
+                        "id": str(p.qr_code.id),
+                        "codigo": p.qr_code.codigo,
+                        "activo": p.qr_code.activo
+                    } if p.qr_code else None
                 } for p in pets
             ],
             "total": total,

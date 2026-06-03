@@ -43,15 +43,14 @@ class PetRepository(BaseRepository[Pet]):
         return list(result.scalars().all())
 
     async def get_by_qr_code(self, qr_code_str: str) -> Optional[Pet]:
-        """Obtiene la mascota asociada a un CÓDIGO de QR (ej: 'PET-123')."""
+        """Obtiene la mascota asociada a un string de código QR físico."""
         query = (
-        select(Pet)
-        .join(Pet.qr_code) # <-- Usamos el nombre de la relación definida en el modelo Pet
-        .where(QRCode.codigo == qr_code_str)
-        .options(selectinload(Pet.owner))
+            select(Pet)
+            .join(QRCode, QRCode.mascota_id == Pet.id) 
+            .where(QRCode.codigo == qr_code_str)
+            .options(selectinload(Pet.owner), selectinload(Pet.codigos_qr)) 
         )
-        result = await self.session.execute(query)
-        return result.scalar_one_or_none()
+        return (await self.session.execute(query)).scalar_one_or_none()
 
     # --- MÉTODOS DE CONTEO (Para el Service / Dashboard) ---
 
@@ -102,7 +101,7 @@ class PetRepository(BaseRepository[Pet]):
         """Listado optimizado con joinedload para administración."""
         query = (
             select(Pet)
-            .options(joinedload(Pet.owner))
+            .options(joinedload(Pet.owner),joinedload(Pet.qr_code))
             .order_by(Pet.created_at.desc())
             .limit(limit)
             .offset(offset)

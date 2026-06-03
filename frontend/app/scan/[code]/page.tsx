@@ -82,7 +82,7 @@ export default function ScanPage() {
         }
 
         if (checkData.available) {
-          // 🎯 CONTROL DE QA: Validamos si tiene sesión activa en el celular
+          // CONTROL DE QA: Validamos si tiene sesión activa en el celular
           const token = localStorage.getItem('token')
           if (!token) {
             toast.error("Debes iniciar sesión para registrar una medalla nueva.")
@@ -304,8 +304,8 @@ export default function ScanPage() {
 
         <Card className="overflow-hidden">
           <div className="aspect-square relative bg-muted">
-             {data?.pet.foto_url && <img src={data.pet.foto_url} alt="Pet" className="object-cover w-full h-full" />}
-             <Badge className="absolute top-2 right-2">{data?.pet.raza || data?.pet.especie}</Badge>
+            {data?.pet.foto_url && <img src={data.pet.foto_url} alt="Pet" className="object-cover w-full h-full" />}
+            <Badge className="absolute top-2 right-2">{data?.pet.raza || data?.pet.especie}</Badge>
           </div>
           <CardContent className="pt-4">
             {data?.pet.notas && (
