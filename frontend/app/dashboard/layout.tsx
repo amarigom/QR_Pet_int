@@ -163,6 +163,17 @@ export default function DashboardLayout({
         {/* Mobile Nav Overlay */}
         {mobileMenuOpen && (
           <nav className="md:hidden border-t bg-card px-4 py-4 space-y-2 animate-in slide-in-from-top-2 duration-200">
+            {user.rol === 'admin' && pathname.startsWith('/admin') && (
+              <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
+                <Button
+                  variant="secondary" // Resaltado para que se note que es una acción de retorno
+                  className="w-full justify-start text-base font-semibold bg-primary/10 text-primary hover:bg-primary/20"
+                >
+                  <Home className="w-5 h-5 mr-3" />
+                  Volver a mi Dashboard
+                </Button>
+              </Link>
+            )}
             {navItems.map((item) => (
               <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}>
                 <Button
