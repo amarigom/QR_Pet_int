@@ -123,7 +123,7 @@ export default function AdminPetsPage() {
 
                       <TableCell className="text-right pr-6">
                         <Link 
-                          href={`/admin/pets/${pet.id}`} 
+                          href={`/dashboard/admin/pets/${pet.id}`} 
                           className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 px-3 py-1.5 rounded-md text-xs font-semibold transition-all border border-muted-foreground/10"
                         >
                           <Eye className="w-3.5 h-3.5" />

@@ -1,3 +1,4 @@
+// 📂 Ubicación: app/dashboard/layout.tsx
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
@@ -12,15 +13,37 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { QrCode, Home, PawPrint, MapPin, Settings, LogOut, Menu, X } from 'lucide-react'
+import { 
+  QrCode, 
+  Home, 
+  PawPrint, 
+  MapPin, 
+  Settings, 
+  LogOut, 
+  Menu, 
+  X, 
+  LayoutDashboard, 
+  Users, 
+  ArrowLeft 
+} from 'lucide-react'
 import { authApi } from '@/lib/api'
 import type { User } from '@/lib/types'
-import QrScannerModal  from '@/components/QrScannerModal' // Inyección limpia del escáner
+import QrScannerModal from '@/components/QrScannerModal'
 
-const navItems = [
+// 🟢 Menú para cuando se navega como Usuario Común
+const userNavItems = [
   { href: '/dashboard', icon: Home, label: 'Inicio' },
   { href: '/dashboard/pets', icon: PawPrint, label: 'Mis Mascotas' },
   { href: '/dashboard/map', icon: MapPin, label: 'Mapa de Escaneos' },
+]
+
+// 🏛️ Menú para cuando se navega en el Panel de Administración (Subrutas unificadas)
+const adminNavItems = [
+  { href: '/dashboard/admin', icon: LayoutDashboard, label: 'Dashboard Admin' },
+  { href: '/dashboard/admin/qr', icon: QrCode, label: 'Códigos QR' },
+  { href: '/dashboard/admin/users', icon: Users, label: 'Usuarios' },
+  { href: '/dashboard/admin/pets', icon: PawPrint, label: 'Mascotas' },
+  { href: '/dashboard/admin/scans', icon: MapPin, label: 'Escaneos' },
 ]
 
 export default function DashboardLayout({
@@ -34,7 +57,12 @@ export default function DashboardLayout({
   const [isLoading, setIsLoading] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  // Memorizamos la carga del usuario para evitar recrear la función
+  // 🎯 DETECTAMOS SI EL USUARIO ESTÁ DENTRO DE LA ZONA DE ADMINISTRACIÓN
+  const isAdminZone = pathname.startsWith('/dashboard/admin')
+  
+  // Seleccionamos dinámicamente qué botones mostrar en la barra
+  const activeNavItems = isAdminZone ? adminNavItems : userNavItems
+
   const loadUser = useCallback(async () => {
     try {
       setIsLoading(true)
@@ -58,12 +86,10 @@ export default function DashboardLayout({
     } catch (error) {
       console.error("Error al cerrar sesión:", error)
     } finally {
-      // Siempre redirigimos al inicio, falle o no la API
       router.push('/')
     }
   }
 
-  // Estado de carga con branding
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background">
@@ -77,7 +103,6 @@ export default function DashboardLayout({
     )
   }
 
-  // Si no hay usuario y terminó de cargar (el useEffect ya estará redirigiendo)
   if (!user) return null
 
   return (
@@ -95,7 +120,17 @@ export default function DashboardLayout({
 
             {/* Desktop Nav */}
             <nav className="hidden md:flex items-center gap-1">
-              {navItems.map((item) => {
+              {/* 🎯 BOTÓN VOLVER (PC): Aparece solo en la zona de admin para regresar al panel de usuario */}
+              {isAdminZone && (
+                <Link href="/dashboard">
+                  <Button variant="ghost" size="sm" className="text-primary font-semibold hover:bg-primary/10 mr-2">
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Vista Usuario
+                  </Button>
+                </Link>
+              )}
+
+              {activeNavItems.map((item) => {
                 const isActive = pathname === item.href
                 return (
                   <Link key={item.href} href={item.href}>
@@ -134,7 +169,7 @@ export default function DashboardLayout({
                 
                 {user.rol === 'admin' && (
                   <DropdownMenuItem asChild>
-                    <Link href="/admin" className="cursor-pointer">
+                    <Link href="/dashboard/admin" className="cursor-pointer">
                       <Settings className="w-4 h-4 mr-2" />
                       Panel Admin
                     </Link>
@@ -160,21 +195,23 @@ export default function DashboardLayout({
           </div>
         </div>
 
-        {/* Mobile Nav Overlay */}
+        {/* Mobile Nav Overlay (Menú hamburguesa en Celulares) */}
         {mobileMenuOpen && (
           <nav className="md:hidden border-t bg-card px-4 py-4 space-y-2 animate-in slide-in-from-top-2 duration-200">
-            {user.rol === 'admin' && pathname.startsWith('/admin') && (
+            {/* 🎯 BOTÓN VOLVER (CELULAR): Se inyecta arriba de todo si estás gestionando la plataforma */}
+            {user.rol === 'admin' && isAdminZone && (
               <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
                 <Button
-                  variant="secondary" // Resaltado para que se note que es una acción de retorno
-                  className="w-full justify-start text-base font-semibold bg-primary/10 text-primary hover:bg-primary/20"
+                  variant="secondary"
+                  className="w-full justify-start text-base font-semibold bg-primary/10 text-primary hover:bg-primary/20 mb-2"
                 >
-                  <Home className="w-5 h-5 mr-3" />
+                  <ArrowLeft className="w-5 h-5 mr-3" />
                   Volver a mi Dashboard
                 </Button>
               </Link>
             )}
-            {navItems.map((item) => (
+
+            {activeNavItems.map((item) => (
               <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}>
                 <Button
                   variant={pathname === item.href ? 'secondary' : 'ghost'}
@@ -194,7 +231,6 @@ export default function DashboardLayout({
         {children}
       </main>
 
-      {/* Botón flotante del Escáner integrado sin romper el default export */}
       <QrScannerModal />
     </div>
   )

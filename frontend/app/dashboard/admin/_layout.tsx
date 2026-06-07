@@ -26,12 +26,14 @@ import {
 import { authApi } from '@/lib/api'
 import type { User } from '@/lib/types'
 
+
+
 const navItems = [
-  { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/admin/qr', icon: QrCode, label: 'Codigos QR' },
-  { href: '/admin/users', icon: Users, label: 'Usuarios' },
-  { href: '/admin/pets', icon: PawPrint, label: 'Mascotas' },
-  { href: '/admin/scans', icon: MapPin, label: 'Escaneos' },
+  { href: '/dashboard/admin', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/dashboard/admin/qr', icon: QrCode, label: 'Codigos QR' },
+  { href: '/dashboard/admin/users', icon: Users, label: 'Usuarios' },
+  { href: '/dashboard/admin/pets', icon: PawPrint, label: 'Mascotas' },
+  { href: '/dashboard/admin/scans', icon: MapPin, label: 'Escaneos' },
 ]
 
 export default function AdminLayout({
@@ -85,7 +87,7 @@ export default function AdminLayout({
       {/* Sidebar */}
       <aside className="fixed left-0 top-0 h-full w-64 bg-card border-r hidden lg:block">
         <div className="p-4 border-b">
-          <Link href="/admin" className="flex items-center gap-2">
+          <Link href="/dashboard/admin" className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
               <QrCode className="w-5 h-5 text-primary-foreground" />
             </div>
@@ -129,7 +131,7 @@ export default function AdminLayout({
           <div className="flex items-center justify-between px-4 py-3">
             {/* Mobile Nav */}
             <div className="flex items-center gap-2 lg:hidden">
-              <Link href="/admin" className="flex items-center gap-2">
+              <Link href="/dashboard/admin" className="flex items-center gap-2">
                 <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
                   <QrCode className="w-5 h-5 text-primary-foreground" />
                 </div>

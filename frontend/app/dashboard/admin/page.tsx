@@ -66,7 +66,7 @@ export default function AdminDashboardPage() {
             Resumen general del sistema PetQR
           </p>
         </div>
-        <Link href="/admin/qr">
+        <Link href="/dashboard/admin/qr">
           <Button>
             <Plus className="w-4 h-4 mr-2" />
             Generar QRs
@@ -185,7 +185,7 @@ export default function AdminDashboardPage() {
 
       {/* Quick Links */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Link href="/admin/qr">
+        <Link href="/dashboard/admin/qr">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
@@ -201,7 +201,7 @@ export default function AdminDashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/admin/users">
+        <Link href="/dashboard/admin/users">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
@@ -217,7 +217,7 @@ export default function AdminDashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/admin/pets">
+        <Link href="/dashboard/admin/pets">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
