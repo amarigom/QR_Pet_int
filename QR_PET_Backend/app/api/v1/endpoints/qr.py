@@ -83,3 +83,4 @@ async def check_qr_availability(
     """Público: Verifica el estado de un QR (Disponible, Vinculado o No existe)."""
     service = QRService(db)
     return await service.check_qr_availability(code)
+

@@ -132,13 +132,13 @@ export default function PetsPage() {
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between pt-2 border-t">
-                      <Link href={`/dashboard/pets/${pet.id}`} className="w-full">
+                    <div className="flex items-center justify-between pt-2 border-t w-full">
+                      
                         <Button variant="ghost" size="sm" className="text-muted-foreground w-full justify-start">
                           <Eye className="w-4 h-4 mr-1" />
                           Ver detalles
                         </Button>
-                      </Link>
+                      
                     </div>
                   </div>
                 </CardContent>
