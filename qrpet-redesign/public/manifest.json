@@ -1,0 +1,24 @@
+
+{
+  "name": "PetQR",
+  "short_name": "PetQR",
+  "description": "Plataforma de identificación de mascotas mediante códigos QR",
+  "start_url": "/auth/login",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/PETQR_icono_solo_512.jpg",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/PETQR_icono-512.jpg",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
