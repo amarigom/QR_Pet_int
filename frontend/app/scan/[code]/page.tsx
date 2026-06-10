@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+
+// Componentes de tu carpeta UI utilizados para simplificar y estilizar
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -10,9 +12,12 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Textarea } from '@/components/ui/textarea' 
 import { Input } from '@/components/ui/input' 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
+
 import {
-  PawPrint, Phone, MessageCircle, MapPin, Calendar,
-  Palette, FileText, AlertCircle, QrCode, Heart, Send, Loader2, User
+  PawPrint, Phone, MessageCircle, MapPin, 
+  AlertCircle, QrCode, Heart, Send, Loader2
 } from 'lucide-react'
 import { qrApi } from '@/lib/api/qr'
 import { toast } from 'sonner'
@@ -44,7 +49,7 @@ export default function ScanPage() {
   })
   const [submitting, setSubmitting] = useState(false)
 
-  // 1. Función para enviar ubicación (se dispara sola si ya tiene dueño)
+  // 1. Envío de ubicación automática
   const sendLocation = useCallback(async (id: string) => {
     if (!navigator.geolocation) return
 
@@ -65,13 +70,12 @@ export default function ScanPage() {
     )
   }, [])
 
-  // 2. Carga inicial de datos y Aduana (Con protección de ruta integrada a /auth/login)
+  // 2. Carga inicial y Aduana pública/privada
   useEffect(() => {
     async function initAduana() {
       try {
         setIsLoading(true)
         
-        // Primero verificamos con tu endpoint de disponibilidad pública
         const checkRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/qr/check/${code}`)
         const checkData = await checkRes.json()
 
@@ -82,20 +86,16 @@ export default function ScanPage() {
         }
 
         if (checkData.available) {
-          // CONTROL DE QA: Validamos si tiene sesión activa en el celular
           const token = localStorage.getItem('token')
           if (!token) {
             toast.error("Debes iniciar sesión para registrar una medalla nueva.")
-            // Redirigimos a la ruta real corregida /auth/login pasando la ruta actual
             router.push(`/auth/login?redirect=/scan/${code}`)
             return
           }
 
-          // CASO A: QR Virgen y Usuario Logueado -> Habilitamos formulario de carga
           setIsAvailable(true)
           setIsLoading(false)
         } else if (checkData.has_pet) {
-          // CASO B: QR Asignado -> Flujo público de reporte (No requiere estar logueado)
           setIsAvailable(false)
           const response = await qrApi.scan(code) 
           setData(response)
@@ -116,7 +116,7 @@ export default function ScanPage() {
     if (code) initAduana()
   }, [code, sendLocation, router])
 
-  // 3. Función para enviar el mensaje manual (Flujo Reporte)
+  // 3. Enviar mensaje manual al dueño
   const handleSendMessage = async () => {
     if (!scanId || !extraMessage.trim()) return
     setIsSendingMessage(true)
@@ -131,11 +131,10 @@ export default function ScanPage() {
     }
   }
 
-  // 4. Función para guardar y activar QR (Flujo Registro)
+  // 4. Guardar y activar QR (Vincular mascota)
   const handleRegisterPet = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Doble candado de seguridad por si acaso
     const token = localStorage.getItem('token')
     if (!token) {
       toast.error("Tu sesión expiró. Por favor, iniciá sesión nuevamente.")
@@ -172,13 +171,21 @@ export default function ScanPage() {
     }
   }
 
-  // --- RENDERS DE CONTROL ---
+  // --- RENDERS DE CONTROL (Simplificados con tus UI Skeletons) ---
   if (isLoading) {
     return (
-      <div className="max-w-md mx-auto p-8 space-y-4">
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-64 w-full" />
-        <Skeleton className="h-24 w-full" />
+      <div className="max-w-md mx-auto p-6 space-y-6 mt-10">
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-2/3" />
+            <Skeleton className="h-4 w-full" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Skeleton className="h-40 w-full rounded-md" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -186,9 +193,11 @@ export default function ScanPage() {
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center bg-background">
-        <AlertCircle className="w-12 h-12 text-destructive mb-2" />
-        <h2 className="text-xl font-bold text-foreground">Código Inválido</h2>
-        <p className="text-sm text-muted-foreground mt-1">{error}</p>
+        <Alert variant="destructive" className="max-w-md">
+          <AlertCircle className="w-4 h-4" />
+          <AlertTitle>Código Inválido</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
         <Button asChild className="mt-4">
           <Link href="/">Volver al inicio</Link>
         </Button>
@@ -196,7 +205,7 @@ export default function ScanPage() {
     )
   }
 
-  // --- INTERFAZ 1: FORMULARIO DE ALTA (SI EL QR ESTÁ DISPONIBLE Y LOGUEADO) ---
+  // --- INTERFAZ 1: FORMULARIO DE ALTA (Mejorado con Select y Label de tu carpeta UI) ---
   if (isAvailable) {
     return (
       <div className="min-h-screen bg-muted/30 pb-10 flex items-center justify-center p-4">
@@ -216,11 +225,12 @@ export default function ScanPage() {
           
           <CardContent className="pt-6">
             <form onSubmit={handleRegisterPet} className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-1">Nombre de la Mascota</label>
+              <div className="space-y-1.5">
+                <Label htmlFor="nombre" className="text-xs uppercase font-bold tracking-wider text-muted-foreground">Nombre de la Mascota</Label>
                 <div className="relative">
                   <Heart className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
                   <Input 
+                    id="nombre"
                     required
                     placeholder="Ej: Rocco, Lola, Toby..."
                     className="pl-9"
@@ -231,21 +241,26 @@ export default function ScanPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-1">Especie</label>
-                  <select 
-                    className="w-full h-10 px-3 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    value={formData.especie}
-                    onChange={(e) => setFormData({...formData, especie: e.target.value})}
+                <div className="space-y-1.5">
+                  <Label className="text-xs uppercase font-bold tracking-wider text-muted-foreground">Especie</Label>
+                  <Select 
+                    value={formData.especie} 
+                    onValueChange={(value) => setFormData({...formData, especie: value})}
                   >
-                    <option value="perro">Perro</option>
-                    <option value="gato">Gato</option>
-                    <option value="otro">Otro</option>
-                  </select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Especie" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="perro">Perro</SelectItem>
+                      <SelectItem value="gato">Gato</SelectItem>
+                      <SelectItem value="otro">Otro</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div>
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-1">Raza</label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="raza" className="text-xs uppercase font-bold tracking-wider text-muted-foreground">Raza</Label>
                   <Input 
+                    id="raza"
                     placeholder="Mestizo, Ovejero..."
                     value={formData.raza}
                     onChange={(e) => setFormData({...formData, raza: e.target.value})}
@@ -253,9 +268,10 @@ export default function ScanPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-1">Notas importantes médicos / cuidados</label>
+              <div className="space-y-1.5">
+                <Label htmlFor="notas" className="text-xs uppercase font-bold tracking-wider text-muted-foreground">Notas Médicas / Cuidados</Label>
                 <Textarea 
+                  id="notas"
                   placeholder="Ej: Es alérgico a la penicilina y requiere medicación diaria..."
                   className="resize-none"
                   value={formData.notas} 
@@ -280,10 +296,13 @@ export default function ScanPage() {
     )
   }
 
-  // --- INTERFAZ 2: VISTA DE REPORTE PÚBLICO (SI EL QR TIENE DUEÑO) ---
+  // --- INTERFAZ 2: VISTA DE REPORTE PÚBLICO (Con protección de foto contra textos basura como "string") ---
   const whatsappUrl = data?.owner?.telefono 
     ? `https://wa.me/${data.owner.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(`¡Hola! Encontré a ${data.pet.nombre}.`)}`
     : null
+
+  // Protección robusta de renderizado de imagen de mascota
+  const tieneFotoValida = data?.pet.foto_url && data.pet.foto_url !== 'string' && data.pet.foto_url.trim() !== ''
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/5 to-accent/5 pb-10">
@@ -298,52 +317,74 @@ export default function ScanPage() {
         {locationStatus === 'sent' && (
           <Alert className="bg-green-50 border-green-200">
             <MapPin className="w-4 h-4 text-green-600" />
-            <AlertDescription className="text-green-700">Tu ubicación fue enviada automáticamente al dueño.</AlertDescription>
+            <AlertDescription className="text-green-700 font-medium">
+              Tu ubicación fue enviada automáticamente al dueño.
+            </AlertDescription>
           </Alert>
         )}
 
-        <Card className="overflow-hidden">
-          <div className="aspect-square relative bg-muted">
-            {data?.pet.foto_url && <img src={data.pet.foto_url} alt="Pet" className="object-cover w-full h-full" />}
-            <Badge className="absolute top-2 right-2">{data?.pet.raza || data?.pet.especie}</Badge>
+        <Card className="overflow-hidden shadow-md">
+          <div className="aspect-square relative bg-muted flex items-center justify-center">
+            {tieneFotoValida ? (
+              <img 
+                src={data?.pet.foto_url?? undefined} 
+                alt={data?.pet.nombre} 
+                className="object-cover w-full h-full" 
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/5 text-muted-foreground/40">
+                <PawPrint className="w-20 h-20 text-primary/20 mb-2" />
+                <span className="text-xs font-medium">Sin foto de perfil</span>
+              </div>
+            )}
+            <Badge className="absolute top-2 right-2 shadow-sm capitalize">
+              {data?.pet.raza || data?.pet.especie}
+            </Badge>
           </div>
+          
           <CardContent className="pt-4">
             {data?.pet.notas && (
-              <div className="bg-amber-50 p-3 rounded-md border border-amber-100 flex gap-2">
-                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
-                <p className="text-sm text-amber-800"><strong>Importante:</strong> {data.pet.notas}</p>
+              <div className="bg-amber-50 p-3 rounded-lg border border-amber-100 flex gap-2.5">
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-900 leading-relaxed">
+                  <strong className="font-bold">Importante:</strong> {data.pet.notas}
+                </p>
               </div>
             )}
           </CardContent>
         </Card>
 
         <div className="grid grid-cols-1 gap-3">
-          <Button asChild size="lg" className="h-16 text-lg">
-            <a href={`tel:${data?.owner.telefono}`}><Phone className="mr-2" /> Llamar al dueño</a>
+          <Button asChild size="lg" className="h-16 text-lg font-semibold shadow-md">
+            <a href={`tel:${data?.owner.telefono}`}>
+              <Phone className="mr-2 w-5 h-5" /> Llamar al dueño
+            </a>
           </Button>
           {whatsappUrl && (
-            <Button asChild variant="outline" size="lg" className="h-16 text-lg border-green-500 text-green-600 hover:bg-green-50">
-              <a href={whatsappUrl} target="_blank"><MessageCircle className="mr-2" /> Enviar WhatsApp</a>
+            <Button asChild variant="outline" size="lg" className="h-16 text-lg font-semibold border-green-500 text-green-600 hover:bg-green-50/50 shadow-sm bg-background">
+              <a href={whatsappUrl} target="_blank">
+                <MessageCircle className="mr-2 w-5 h-5" /> Enviar WhatsApp
+              </a>
             </Button>
           )}
         </div>
 
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">¿Ves algo más?</CardTitle>
-            <CardDescription>Envía un mensaje rápido sobre el estado de la mascota.</CardDescription>
+            <CardTitle className="text-sm font-bold">¿Ves algo más?</CardTitle>
+            <CardDescription>Envía un mensaje rápido sobre el estado o ubicación de la mascota.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-3">
             <Textarea 
               placeholder="Ej: Está asustado bajo un auto rojo en la calle 9 de Julio..."
               value={extraMessage}
               onChange={(e) => setExtraMessage(e.target.value)}
-              className="resize-none"
+              className="resize-none min-h-[80px]"
             />
             <Button 
               onClick={handleSendMessage} 
               disabled={isSendingMessage || !extraMessage.trim()} 
-              className="w-full flex items-center justify-center gap-2"
+              className="w-full h-10 font-medium flex items-center justify-center gap-2"
             >
               {isSendingMessage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               Enviar Mensaje de Reporte

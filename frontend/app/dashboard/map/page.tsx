@@ -1,22 +1,23 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { MapPin, Clock, PawPrint } from 'lucide-react'
-import { adminApi, petsApi } from '@/lib/api' // Importamos ambos servicios existentes
-import { useAuth } from '@/app/context/auth/AuthContext' // Tu hook de autenticación
+import { adminApi, petsApi } from '@/lib/api'
+import { useAuth } from '@/app/context/auth/AuthContext'
 import { formatDateTime } from '@/lib/utils'
 import type { DashboardStats, Pet, RecentScan } from '@/lib/types'
 
 // Ubicación por defecto (Tandil)
 const TANDIL_DEFAULT = { lat: -37.32, lng: -59.13 };
 
+// Cargamos el mapa de forma dinámica deshabilitando SSR
 const ScanMap = dynamic(() => import('@/components/scan-map'), {
   ssr: false,
-  loading: () => <Skeleton className="w-full h-[400px] rounded-lg" />,
+  loading: () => <Skeleton className="w-full h-[450px] rounded-lg" />,
 })
 
 export default function MapPage() {
@@ -26,42 +27,54 @@ export default function MapPage() {
   const [scans, setScans] = useState<RecentScan[]>([]) 
   const [isLoading, setIsLoading] = useState(true)
 
+  // 🛡️ CANDADO MASTER DE QA: Evita ejecuciones paralelas simultáneas en milisegundos
+  const estaCargandoRef = useRef(false);
+  const datosCargadosRef = useRef(false);
+
+  // Extraemos variables primitivas seguras para romper las referencias falsas en memoria del objeto user
+  const userId = user?.id || user?.email || '';
+  const userRol = user?.rol || '';
+
   useEffect(() => {
+    // 1. Si el contexto de autenticación sigue procesando, congelamos la ejecución
+    if (authLoading || !userId || !userRol) {
+      return;
+    }
+
+    // 2. Si ya hay una petición en vuelo o si ya se completó con éxito,
+    // interceptamos el doble disparo simultáneo inmediatamente.
+    if (estaCargandoRef.current || datosCargadosRef.current) {
+      return;
+    }
+
     async function loadData() {
-      // Si la sesión sigue cargando o no hay un usuario válido, esperamos
-      if (authLoading || !user) return;
-
       try {
+        // Activamos los candados físicos antes del proceso asíncrono
+        estaCargandoRef.current = true;
         setIsLoading(true);
-        const isAdmin = user.rol === 'admin';
-
+        
+        const isAdmin = userRol === 'admin';
         let petsRes: any;
         let scansRes: any;
 
         if (isAdmin) {
-          // --- FLUJO ADMINISTRADOR: Datos globales ---
           console.log("MAPA: Cargando datos globales como Administrador...");
           [petsRes, scansRes] = await Promise.all([
             adminApi.getPets(),
             adminApi.getAllScans(1, 200)
           ]);
         } else {
-          // --- FLUJO USUARIO COMÚN: Datos protegidos ---
           console.log("MAPA: Cargando datos del usuario común...");
-          
-          // Usamos petsApi para traer sus mascotas y un resolved seguro para los scans
-          // por si todavía no creaste el endpoint /scans/me o similar en el backend.
           [petsRes, scansRes] = await Promise.all([
             petsApi.getAll(), 
             Promise.resolve({ items: [] }) 
           ]);
         }
 
-        // Adaptación flexible si el backend devuelve data paginada { items: [...] } o un array directo
         const rawPets = petsRes?.items || (Array.isArray(petsRes) ? petsRes : []);
         const rawScans = scansRes?.items || (Array.isArray(scansRes) ? scansRes : []);
 
-        // MAPEO: Transformamos los datos del backend al tipo RecentScan que necesita tu UI
+        // Mapeo seguro transformando los datos del backend
         const formattedScans: RecentScan[] = rawScans.map((scan: any) => ({
           ...scan,
           id: String(scan.id ?? Math.random()),
@@ -76,34 +89,40 @@ export default function MapPage() {
         setPets(rawPets);
         setScans(formattedScans);
         
-        // Sincronizamos con los stats locales de la vista
         setStats({
           scans_count: formattedScans.length,
           pets_count: rawPets.length,
           recent_scans: formattedScans.slice(0, 10) 
         } as DashboardStats);
 
+        // Confirmamos éxito de la carga de datos
+        datosCargadosRef.current = true;
+
       } catch (error) {
         console.error('Error loading data in MapPage:', error);
       } finally {
+        // Liberamos el candado de ejecución para permitir recargas si cambian los parámetros base
+        estaCargandoRef.current = false;
         setIsLoading(false);
       }
     }
 
     loadData();
-  }, [user, authLoading]);
 
-  if (authLoading || isLoading) {
+  // Sincronizado estrictamente por tipos primitivos puros
+  }, [userId, userRol, authLoading]);
+
+  if (authLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-[400px]" />
+        <Skeleton className="h-[450px]" />
         <Skeleton className="h-48" />
       </div>
     )
   }
 
-  // Filtramos solo los escaneos que tienen coordenadas válidas para el mapa
+  // Filtramos los escaneos que realmente tienen lat y lng válidas
   const scansWithLocation = scans.filter(
     (s) => s.latitud !== null && s.longitud !== null
   );
@@ -136,22 +155,34 @@ export default function MapPage() {
         </CardHeader>
         <CardContent>
           <div className="h-[450px] rounded-lg overflow-hidden border bg-muted/20 relative">
-            <ScanMap 
-              scans={scansWithLocation} 
-              pets={pets} 
-              initialCenter={TANDIL_DEFAULT} 
-            />
             
-            {scansWithLocation.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center bg-background/40 pointer-events-none z-[1000]">
-                <Badge variant="outline" className="bg-background">Sin coordenadas para mostrar</Badge>
+            {/* 🎯 CONTROL ESTRICTO: El mapa nace únicamente cuando la API resolvió los datos 
+                y tenemos elementos listos para pintar, eliminando el warning de arrays vacíos. */}
+            {!isLoading && scansWithLocation.length > 0 ? (
+              <ScanMap 
+                scans={scansWithLocation} 
+                pets={pets} 
+                initialCenter={TANDIL_DEFAULT} 
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/50 gap-2">
+                {isLoading ? (
+                  <span className="text-sm text-muted-foreground animate-pulse">
+                    Sincronizando coordenadas con el mapa...
+                  </span>
+                ) : (
+                  <Badge variant="outline" className="bg-background">
+                    Sin coordenadas para mostrar
+                  </Badge>
+                )}
               </div>
             )}
+            
           </div>
         </CardContent>
       </Card>
 
-      {/* Lista de Escaneos Recientes debajo del mapa */}
+      {/* Lista de Escaneos Recientes */}
       {scans.length > 0 && (
         <Card>
           <CardHeader>

@@ -3,20 +3,29 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { PawPrint, QrCode, PlusCircle } from 'lucide-react'
+import { PawPrint, QrCode, PlusCircle, Map } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { UserDashboardData,PetData } from '@/lib/types/dashboard' // Tu archivo de tipos
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { UserDashboardData, PetData } from '@/lib/types/dashboard'
+
+// Importación del nuevo mapa unificado y optimizado
+import { ScanMapProvider } from '@/components/map/map-provider'
 
 interface UserDashboardProps {
   data: UserDashboardData
   user: any
-};
+}
 
 export default function UserDashboard({ data }: UserDashboardProps) {
-  // 🎯 Red de seguridad de QA contra nulos o respuestas inesperadas de la API
+  // Red de seguridad de QA contra nulos o respuestas inesperadas de la API
   const pets = data?.pets || []
   const summary = data?.summary || { total_pets: 0, active_qrs: 0 }
+  
+  // Extraemos los escaneos del payload (ajusta la propiedad según cómo la envíe tu backend, ej: data.recent_scans)
+  // @ts-ignore - Ajuste temporal hasta mapear el tipo exacto en UserDashboardData
+  const misScans = data?.recent_scans || data?.scans || []
 
   return (
     <div className="space-y-6 p-6">
@@ -28,19 +37,17 @@ export default function UserDashboard({ data }: UserDashboardProps) {
             Gestioná tus mascotas y controlá el estado de tus códigos QR.
           </p>
         </div>
-        {/* Botón rápido de acción por si quieren activar otro QR */}
-        <Link href="/dashboard/activate">
-          <Button className="flex items-center gap-2 w-full sm:w-auto">
+        <Link href="/dashboard/activate" passHref>
+          <Button className="flex items-center gap-2 w-full sm:w-auto shadow-sm">
             <PlusCircle className="w-4 h-4" />
             Activar nuevo QR
           </Button>
         </Link>
       </div>
 
-      {/* 📊 SECCIÓN DE CONTADORES (Stat Cards) */}
+      {/* SECCIÓN DE CONTADORES (Stat Cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Tarjeta 1: Total de Mascotas */}
-        <Card className="border-muted/60">
+        <Card className="border-muted/60 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Mascotas Registradas
@@ -48,15 +55,14 @@ export default function UserDashboard({ data }: UserDashboardProps) {
             <PawPrint className="w-5 h-5 text-primary/70" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{summary.total_pets}</div>
+            <div className="text-3xl font-bold tracking-tight">{summary.total_pets}</div>
             <p className="text-xs text-muted-foreground mt-1">
               {summary.total_pets === 1 ? '1 mascota protegida' : `${summary.total_pets} mascotas protegidas`}
             </p>
           </CardContent>
         </Card>
 
-        {/* Tarjeta 2: QRs Activos */}
-        <Card className="border-muted/60">
+        <Card className="border-muted/60 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Códigos QR Activos
@@ -64,7 +70,7 @@ export default function UserDashboard({ data }: UserDashboardProps) {
             <QrCode className="w-5 h-5 text-emerald-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-emerald-600">
+            <div className="text-3xl font-bold tracking-tight text-emerald-600">
               {summary.active_qrs}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -74,8 +80,26 @@ export default function UserDashboard({ data }: UserDashboardProps) {
         </Card>
       </div>
 
+      {/* 🗺️ SECCIÓN DEL MAPA DE ESCANEOS RECIENTES */}
+      <Card className="border-muted/60 shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Map className="w-5 h-5 text-primary" /> Ubicaciones de Escaneo
+          </CardTitle>
+          <CardDescription>
+            Últimos lugares reportados donde las personas escanearon las chapitas de tus mascotas.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {/* El Provider se encarga del lazy loading y evita que falle en SSR/Vercel */}
+          <div className="rounded-lg overflow-hidden border bg-card">
+            <ScanMapProvider scans={misScans} />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* 🐾 GRILLA DE MASCOTAS */}
-      <Card className="border-muted/60">
+      <Card className="border-muted/60 shadow-sm">
         <CardHeader>
           <CardTitle>Mis Mascotas</CardTitle>
           <CardDescription>
@@ -84,52 +108,61 @@ export default function UserDashboard({ data }: UserDashboardProps) {
         </CardHeader>
         <CardContent>
           {pets.length === 0 ? (
-            <div className="text-center py-12 border-2 border-dashed rounded-lg">
-              <PawPrint className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
+            <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/10">
+              <PawPrint className="w-12 h-12 mx-auto text-muted-foreground/40 mb-4" />
               <h3 className="text-lg font-medium">No hay mascotas registradas</h3>
-              <p className="text-muted-foreground mb-6 text-sm">
-                Comenzá activando un código QR para tu mascota.
+              <p className="text-muted-foreground mb-6 text-sm max-w-xs mx-auto">
+                Comenzá activando un código QR para vincular tu primer perfil.
               </p>
-              <Link href="/dashboard/activate">
+              <Link href="/dashboard/activate" passHref>
                 <Button variant="outline">Activar mi primer QR</Button>
               </Link>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {pets.map((pet: PetData) => (
-                <Link key={pet.id} href={`/dashboard/pets/${pet.id}`}>
-                  <Card className="hover:shadow-md transition-all hover:border-primary/40 cursor-pointer h-full border-muted/60 flex flex-col justify-between">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-lg bg-primary/5 flex items-center justify-center shrink-0 overflow-hidden border">
-                          {pet.foto_url ? (
-                            <img 
-                              src={pet.foto_url} 
-                              alt={pet.nombre} 
-                              className="w-full h-full object-cover" 
-                            />
-                          ) : (
-                            <PawPrint className="w-8 h-8 text-primary/40" />
-                          )}
+              {pets.map((pet: PetData) => {
+                const tieneFotoValida = pet.foto_url && pet.foto_url !== 'string' && pet.foto_url.trim() !== ''
+
+                return (
+                  <Link key={pet.id} href={`/dashboard/pets/${pet.id}`} passHref>
+                    <Card className="hover:shadow-md transition-all hover:border-primary/40 cursor-pointer h-full border-muted/60 flex flex-col justify-between group bg-card">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-4">
+                          <Avatar className="w-16 h-16 rounded-lg border bg-muted/40 shrink-0">
+                            {tieneFotoValida ? (
+                              <AvatarImage 
+                                src={pet.foto_url} 
+                                alt={pet.nombre} 
+                                className="object-cover"
+                              />
+                            ) : null}
+                            <AvatarFallback className="rounded-lg bg-primary/5">
+                              <PawPrint className="w-7 h-7 text-primary/40 group-hover:scale-110 transition-transform" />
+                            </AvatarFallback>
+                          </Avatar>
+
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <h3 className="font-bold text-base leading-none truncate text-foreground group-hover:text-primary transition-colors">
+                              {pet.nombre}
+                            </h3>
+                            <p className="text-xs text-muted-foreground capitalize truncate">
+                              {pet.especie} {pet.raza && `• ${pet.raza}`}
+                            </p>
+                            
+                            {pet.qr && (
+                              <div className="pt-0.5">
+                                <Badge variant="outline" className="font-mono text-[10px] tracking-tight bg-background px-1.5 py-0">
+                                  QR: {pet.qr.codigo}
+                                </Badge>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-lg truncate text-foreground">
-                            {pet.nombre}
-                          </h3>
-                          <p className="text-sm text-muted-foreground capitalize truncate">
-                            {pet.especie} {pet.raza && `• ${pet.raza}`}
-                          </p>
-                          {pet.qr && (
-                            <span className="inline-block mt-1 text-[10px] bg-secondary text-secondary-foreground px-2 py-0.5 rounded font-mono border">
-                              QR: {pet.qr.codigo}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
+                      </CardContent>
+                    </Card>
+                  </Link>
+                )
+              })}
             </div>
           )}
         </CardContent>

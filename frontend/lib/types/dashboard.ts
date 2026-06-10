@@ -13,7 +13,7 @@ export interface PetData {
   estado: string;
   foto_url?: string;
   created_at: string;
-  qr?: QRInfo | null; // 🎯 En singular, tal como lo dejamos en el backend
+  qr?: QRInfo | null; 
 }
 
 export interface RecentScanData {
@@ -25,7 +25,7 @@ export interface RecentScanData {
   created_at: string;
 }
 
-// 🎯 Este es el contrato exacto de lo que tu API le va a inyectar al UserDashboard
+//lo que la API le va a inyectar al UserDashboard
 export interface UserDashboardData {
   role: 'user';
   summary: {

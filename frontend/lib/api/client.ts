@@ -1,19 +1,21 @@
 // lib/api/client.ts
-// Definimos la constante que falta
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 export async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   console.log("--- AUDITORÍA DE FETCH ---");
   console.log("Endpoint:", endpoint);
-  console.log("Contenido del body recibido:", options.body);
+  if (options.body) {
+    console.log("Contenido del body enviado:", options.body);
+  }
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
-  // 1. 🛡️ Inicializamos Headers nativos usando lo que venga del servicio (si viene algo)
+  // 1. 🛡️ Inicializamos Headers nativos
   const headers = new Headers(options.headers);
 
-  // 2. Si el servicio NO configuró un Content-Type, le ponemos application/json por defecto
-  if (!headers.has('content-type') && !headers.has('Content-Type')) {
+  // 2. 🎯 CORRECCIÓN DE QA: Solo seteamos Content-Type si la petición TIENE un cuerpo (POST, PUT, PATCH)
+  // Evitamos inyectarlo en peticiones GET, previniendo conflictos de red y bucles de re-intento.
+  if (options.body && !headers.has('content-type') && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
@@ -27,16 +29,16 @@ export async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): 
     ? JSON.stringify(options.body)
     : options.body;
 
-  // 5. Hacemos el fetch limpio pasando las opciones originales pero sobreescribiendo body y headers
+  // 5. Hacemos el fetch limpio pasando las opciones unificadas
   const res = await fetch(`${API_BASE}${endpoint}`, { 
     ...options, 
-    headers,        // 👈 Instancia nativa unificada de Headers
+    headers,
     body: bodyProcesado 
   });
-  //AUDITORÍA 
+
+  // AUDITORÍA DE RESPUESTA
   console.log("--- RESPUESTA DEL SERVIDOR ---");
-  console.log("Status Code:", res.status);
-  console.log("Status Text:", res.statusText);
+  console.log(`[${res.status}] ${res.statusText} ➔ ${endpoint}`);
   
   // Manejo de errores robusto para evitar el [object Object]
   if (!res.ok) {

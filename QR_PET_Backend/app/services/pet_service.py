@@ -95,13 +95,13 @@ class PetService:
         """Actualiza datos de la mascota validando propiedad"""
         pet = await self.pet_repo.get_by_id(pet_id)
     
-        if not pet or pet.owner_id != user_id:
+        if not pet or pet.usuario_id != user_id:
             raise ResourceNotFoundException("Mascota")
     
         update_dict = pet_data.model_dump(exclude_unset=True)
-        for key, value in update_dict.items():
-            setattr(pet, key, value)
-    
+        if update_dict:
+                await self.pet_repo.update(pet, update_dict)
+        
         await self.db.commit()
         await self.db.refresh(pet)
     

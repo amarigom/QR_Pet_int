@@ -44,7 +44,7 @@ class PetResponse(PetBase):
     usuario_id: UUID
     estado: PetStatus
     created_at: datetime
-
+    foto_url: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 class PetDetailResponse(BaseModel):

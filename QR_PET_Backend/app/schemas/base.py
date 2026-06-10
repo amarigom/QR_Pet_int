@@ -74,7 +74,7 @@ class PetBase(BaseModel):
     especie: AnimalSpecies
     raza: Optional[str] = Field(None, max_length=100)
     color: Optional[str] = Field(None, max_length=100)
-    edad_aproximada: Optional[str] = None
+    edad_aproximada: Optional[str] = Field(default=None, json_schema_extra={"example": None})
     foto_url: Optional[str] = None
     notas: Optional[str] = None
 

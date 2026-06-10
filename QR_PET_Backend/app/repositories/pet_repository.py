@@ -122,3 +122,24 @@ class PetRepository(BaseRepository[Pet]):
         result = await self.session.execute(query)
         # .unique() es importante cuando usas joinedload para evitar filas duplicadas
         return result.scalars().unique().first()
+    
+# --- MÉTODOS DE MUTACIÓN (Actualización y Eliminación) ---
+
+    async def update(self, db_obj: Pet, update_data: dict) -> Pet:
+        """
+        Recibe el objeto mascota mapeado por el ORM y un diccionario con los cambios.
+        Actualiza los valores en memoria y prepara los cambios para la transacción.
+        """
+        for key, value in update_data.items():
+            setattr(db_obj, key, value)
+        
+        # Le avisamos a SQLAlchemy que el objeto cambió
+        self.session.add(db_obj)
+        return db_obj
+
+    async def delete(self, db_obj: Pet) -> bool:
+        """
+        Elimina de forma física el registro de la mascota de la base de datos.
+        """
+        await self.session.delete(db_obj)
+        return True    
