@@ -87,16 +87,27 @@ export const adminApi = {
     const rawItems = response?.items || [];
     console.log(`Scans obtenidos del backend: ${rawItems.length}`);
 
-    return rawItems.map((s: any): ScanWithLocation => ({
-      id: s.id,
-      // Usamos Number() por si vienen como string, y manejamos el null
-      latitud: s.latitud !== null ? Number(s.latitud) : 0,
-      longitud: s.longitud !== null ? Number(s.longitud) : 0,
-      // Escudo para mascota null:
-      pet_name: s.mascota?.nombre || `QR: ${s.qr_codigo}`,
-      escaneado_en: s.escaneado_en || s.created_at || new Date().toISOString(),
-      direccion_aproximada: s.direccion_aproximada || "Sin dirección registrada",
-    }));
+    return rawItems.map((s: any): ScanWithLocation => {
+      // 🎯 Conservamos el null real para saber si el usuario compartió o no el GPS
+      const lat = s.latitud !== null && s.latitud !== undefined ? Number(s.latitud) : null;
+      const lng = s.longitud !== null && s.longitud !== undefined ? Number(s.longitud) : null;
+
+      return {
+        id: s.id,
+        latitud: lat,
+        longitud: lng,
+        
+        // 🎯 Sincronizado: el backend ya manda 'pet_name' y 'qr_codigo' directos
+        pet_name: s.pet_name || "Mascota sin asignar",
+        qr_codigo: s.qr_codigo || "N/A",
+        
+        // 🎯 Sincronizado con los nombres de tu backend antiguo y nuevo para que nunca falle
+        escaneado_en: s.escaneado_en || s.fecha || s.created_at || new Date().toISOString(),
+        
+        // 🎯 Si el backend manda un texto real lo usa, sino se evalúa el componente inverso
+        direccion_aproximada: s.direccion_aproximada || ""
+      };
+    });
   },
 
   // 🚀 Descarga segura del lote de impresión en formato PDF binario (Blob)

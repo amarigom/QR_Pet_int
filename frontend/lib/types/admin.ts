@@ -10,7 +10,8 @@ export interface RecentScan {
   created_at: string;
   direccion_aproximada?: string; // Opcional por si el backend no la manda
   escaneado_en?: string;  
-  fecha?:   string;   // Opcional
+  fecha?:   string;
+  qr_codigo: string;
 }
 export interface DashboardStats {
   pets_count?: number;

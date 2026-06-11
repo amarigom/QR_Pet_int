@@ -26,6 +26,38 @@ export default function AdminDashboardPage() {
     async function loadStats() {
       try {
         const data = await adminApi.getStats()
+        
+        // 🛡️ CONTROL DE CALIDAD (QA): Sanitizamos y formateamos los escaneos recientes 
+        // apenas llegan de la API para corregir direcciones y congelar las horas reales.
+        if (data && data.recent_scans) {
+          data.recent_scans = data.recent_scans.map((scan: any) => {
+            const lat = scan.latitud != null ? Number(scan.latitud) : null;
+            const lng = scan.longitud != null ? Number(scan.longitud) : null;
+
+            // Gestión de dirección aproximada por coordenadas de respaldo
+            let direccion = scan.direccion_aproximada || scan.direccion;
+            if (!direccion && lat !== null && lng !== null) {
+              direccion = `Coordenadas: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            } else if (!direccion) {
+              direccion = "Ubicación no disponible";
+            }
+
+            // Captura estricta del horario real del evento en la base de datos
+            const horarioReal = scan.created_at || scan.fecha || scan.escaneado_en || scan.timestamp || null;
+
+            return {
+              ...scan,
+              id: String(scan.id ?? Math.random()),
+              latitud: lat,
+              longitud: lng,
+              mascota_nombre: scan.pet_name || scan.mascota_nombre || "Mascota",
+              direccion_aproximada: direccion,
+              created_at: horarioReal, // Mantiene la hora histórica real del escaneo
+              qr_codigo: scan.qr_codigo || ""
+            };
+          });
+        }
+
         setStats(data)
       } catch (error) {
         console.error('Error loading admin stats:', error)
@@ -52,10 +84,12 @@ export default function AdminDashboardPage() {
   if (!stats) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">Error al cargar estadisticas</p>
+        <p className="text-muted-foreground">Error al cargar estadísticas</p>
       </div>
     )
-  }
+  
+  
+}
 
   return (
     <div className="space-y-6">

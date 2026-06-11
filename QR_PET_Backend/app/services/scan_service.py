@@ -139,22 +139,21 @@ class ScanService:
             "items": [
                 {
                     "id": str(s.id),
-                    "qr_codigo": s.qr.codigo if s.qr else "N/A",
-                    "mascota_nombre": s.qr.mascota.nombre if s.qr and s.qr.mascota else "Sin asignar",
-                    "fecha": s.created_at,
-                    "direccion": s.direccion_aproximada or "Ubicación aproximada",
-                    # CLAVE: Enviamos los campos individuales como espera el Esquema y el TS
+                    # 🎯 Según tu log, s.qr tiene la relación a codigos_qr y el campo se llama 'codigo'
+                    "qr_codigo": s.qr.codigo if s.qr else "N/A", 
+                    # 🎯 Según tu log, la relación pasa por qr -> mascota -> nombre
+                    "pet_name": s.qr.mascota.nombre if s.qr and s.qr.mascota else "Sin asignar", 
+                    # 🎯 Usamos created_at directamente que es el campo real de tu tabla escaneos
+                    "escaneado_en": s.created_at, 
+                    "direccion_aproximada": s.direccion_aproximada or "",
                     "latitud": s.latitud,
                     "longitud": s.longitud,
-                    # Mantenemos esto solo si lo usás en alguna tabla como texto:
-                    "coordenadas_texto": f"{s.latitud}, {s.longitud}" if s.latitud else "No proporcionada"
                 } for s in scans
             ],
             "total": total,
             "page": page,
             "limit": limit,
         }
-        
     async def get_admin_heatmap_data(self) -> List[Dict[str, Any]]:
         """Lógica de negocio para el mapa de calor"""
         scans = await self.scan_repo.get_all_scans_with_coords()

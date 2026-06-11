@@ -1,69 +1,83 @@
-"""
-Esquemas de Escaneo (Scan)
-- ScanBase: Base para operaciones CRUD
-- ScanCreate: Request para crear escaneo
-- ScanUpdate: Request para actualizar escaneo
-- ScanResponse: Response estándar de escaneo
-- ScanLocation: Específico para mapa (Frontend)
-"""
-
-from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional
 from datetime import datetime
-from uuid import UUID
-from app.schemas.base import ScanBase, ScanMinimal, UserMinimal
+from typing import Optional
+from pydantic import BaseModel, ConfigDict, Field
+from app.schemas.base import UserMinimal
 
 
 # ============================================================================
-# OPERACIONES CRUD
+# ESQUEMAS DE CREACIÓN / REGISTRO
 # ============================================================================
 
-class ScanCreate(ScanBase):
-    """Schema para crear un escaneo (Request)"""
-    codigo: str = Field(..., min_length=1)
-
-
-class ScanUpdate(BaseModel):
-    """Schema para actualizar un escaneo (Request)"""
+class ScanCreate(BaseModel):
+    """
+    📥 ESQUEMA DE CREACIÓN
+    Requerido para registrar un nuevo escaneo de QR desde el frontend.
+    """
+    qr_codigo: str
     latitud: Optional[float] = None
     longitud: Optional[float] = None
-    direccion_aproximada: Optional[str] = None
-    mensaje_encontrador: Optional[str] = None
+    direccion: Optional[str] = None
 
-
+    model_config = ConfigDict(from_attributes=True)
 # ============================================================================
-# RESPUESTAS
+# ESQUEMAS DE MODIFICACIÓN / EDICIÓN
 # ============================================================================
 
-class ScanResponse(ScanMinimal, ScanBase):
-    """Response estándar de escaneo (sin relaciones)"""
+class ScanUpdate(BaseModel):
+    """
+    🛠️ ESQUEMA DE ACTUALIZACIÓN (Requerido por los endpoints)
+    Mantiene la compatibilidad para operaciones PUT/PATCH en el router.
+    """
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
+    direccion: Optional[str] = None
+    
     model_config = ConfigDict(from_attributes=True)
 
+# ============================================================================
+# RESPUESTAS BASE CORREGIDAS
+# ============================================================================
+
+class ScanResponse(BaseModel):
+    """
+    Response estándar de escaneo corregida a nivel global.
+    Sana los conflictos de UUIDs y nomenclatura de fechas de la BD.
+    """
+    # 1. Cambiamos int a str para soportar tus UUIDs de texto libremente
+    id: str 
+    qr_codigo: str
+    
+    # 2. Mapeamos 'fecha' de la base de datos a 'created_at' por si otros endpoints lo usan así
+    created_at: datetime = Field(validation_alias="fecha")
+    
+    # 3. Traemos los campos opcionales de geolocalización de manera segura
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
+    direccion: Optional[str] = Field(default="Ubicación aproximada")
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
 
 # ============================================================================
-# RESPUESTAS ESPECIALIZADAS
+# RESPUESTAS ESPECIALIZADAS (Mantienen consistencia automáticamente)
 # ============================================================================
 
 class ScanWithUserResponse(ScanResponse):
     """Escaneo con datos del usuario que lo reportó"""
     usuario: Optional[UserMinimal] = None
-    
-    model_config = ConfigDict(from_attributes=True)
-
 
 class ScanAdminResponse(ScanResponse):
     """Response para el panel de admin"""
     usuario: Optional[UserMinimal] = None
-    
-    model_config = ConfigDict(from_attributes=True)
 
 
 class ScanLocation(BaseModel):
-    """Response específico para mapa de Tandil (Frontend)"""
-    id: int
-    latitud: float
-    longitud: float
-    mascota_nombre: str
-    fecha: datetime
+    id: str
+    qr_codigo: str # 🎯 Lee directo de 'qr_codigo'
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
+    pet_name: str # 🎯 Lee directo de 'pet_name'
+    escaneado_en: datetime # 🎯 Lee directo de 'escaneado_en' (Fecha histórica real garantizada)
+    direccion_aproximada: str # 🎯 Lee directo de 'direccion_aproximada'
 
     model_config = ConfigDict(from_attributes=True)

@@ -22,12 +22,17 @@ export interface ScanResponse {
 
 export interface ScanWithLocation {
   id: string | number;
-  latitud: number;
-  longitud: number;
+  qr_codigo: string;
+  latitud: number| null;
+  longitud: number| null;
   pet_name: string;
   escaneado_en: string; // ISO String de la fecha
   direccion_aproximada?: string;
 }
+
+
+
+
 /**
  * Para el estado del Dashboard (Ajustado)
  */

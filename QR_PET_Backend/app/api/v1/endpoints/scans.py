@@ -12,7 +12,7 @@ from app.schemas.common import SuccessResponse, PaginatedResponse
 from app.core.database import get_db
 from app.api.v1.dependencies import get_current_user, require_admin
 from app.services.scan_service import ScanService
-from app.schemas.scan import ScanUpdate
+from app.schemas.scan import ScanUpdate,ScanResponse, ScanLocation
 from uuid import UUID
 
 router = APIRouter(prefix="/scans", tags=["Escaneos (Scans)"])
@@ -49,7 +49,7 @@ async def update_scan(
     
     return updated_scan
 
-@router.get("", response_model=PaginatedResponse[ScanResponse])
+@router.get("", response_model=PaginatedResponse[ScanLocation])
 async def get_all_scans(
     page: int = Query(1, ge=1),
     limit: int = Query(100, ge=1, le=500),

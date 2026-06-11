@@ -86,7 +86,7 @@ class ScanBase(BaseModel):
     direccion_aproximada: Optional[str] = None
     mensaje_encontrador: Optional[str] = None
     telefono_encontrador: Optional[str] = None
-
+    
 
 class QRBase(BaseModel):
     """Base para datos de QR"""
