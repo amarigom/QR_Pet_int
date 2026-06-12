@@ -18,7 +18,7 @@ getById: (id: string) => fetchAPI<Pet>(`/pets/${id}`),
   }),
   
   update: (id: string, data: Partial<PetFormData>) => fetchAPI<Pet>(`/pets/${id}`, {
-    method: 'PUT',
+    method: 'PATCH',
     body: JSON.stringify(data),
   }),
   

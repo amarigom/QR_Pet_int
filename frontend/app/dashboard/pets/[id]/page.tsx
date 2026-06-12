@@ -3,11 +3,15 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+
+// Componentes UI de tu carpeta local
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +24,18 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog'
+
+// Iconos y librerías externas
+import {
   ArrowLeft,
   PawPrint,
   QrCode,
@@ -30,18 +46,21 @@ import {
   Trash2,
   MapPin,
   Copy,
+  Edit2,
+  Save,
+  X,
+  Camera,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { petsApi } from '@/lib/api/pets'
 import { qrApi } from '@/lib/api/qr'
 import { formatDateTime } from '@/lib/utils'
-import type { Pet, QRCode as QRCodeType, Scan } from '@/lib/types'
+import type { Pet, PetFormData, QRCode as QRCodeType, Scan } from '@/lib/types'
 import { QRCodeDisplay } from '@/components/qr-code-display'
 
 export default function PetDetailPage() {
   const params = useParams()
   const router = useRouter()
-  // Usamos un fallback por si params.id no está disponible inmediatamente
   const petId = params?.id as string
 
   const [pet, setPet] = useState<Pet | null>(null)
@@ -51,19 +70,40 @@ export default function PetDetailPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
+  // Estados locales para la gestión de cambios y formularios
+  const [isEditingData, setIsEditingData] = useState(false)
+  const [isSavingData, setIsSavingData] = useState(false)
+  const [tempFotoUrl, setTempFotoUrl] = useState('')
+  const [formData, setFormData] = useState({
+    color: '',
+    edad_aproximada: '',
+    notas: '',
+    estado: 'en_casa',
+    foto_url: ''
+  })
+
   useEffect(() => {
-  async function loadPet() {
-    if (!petId) return
-    setIsLoading(true) // Asegúrate de que empiece en true
-    
-    try {
-      const data = await petsApi.getById(petId)
+    async function loadPet() {
+      if (!petId) return
+      setIsLoading(true)
       
-      // GUARDAR LOS DATOS (Esto es lo que faltaba)
+      try {
+      const data = await petsApi.getById(petId)
       setPet(data)
       
-      
-      
+      setFormData({
+        color: data.color || '',
+        edad_aproximada: data.edad_aproximada || '',
+        notas: data.notas || '',
+        estado: (data as any).estado || 'en_casa', // Evitamos también si 'estado' no está en Pet
+        foto_url: data.foto_url || ''
+      })
+      setTempFotoUrl(data.foto_url || '')
+
+      // 🎯 SOLUCIÓN AL ERROR: Forzamos la lectura con 'as any' para saltar el estricto de TypeScript
+      if ((data as any).qr_code) setQr((data as any).qr_code)
+      if ((data as any).scans) setScans((data as any).scans)
+
     } catch (error) {
       console.error('Error loading pet:', error)
       toast.error('Error al cargar la mascota')
@@ -71,9 +111,70 @@ export default function PetDetailPage() {
     } finally {
       setIsLoading(false)
     }
+    }
+    loadPet()
+  }, [petId, router])
+
+  // Manejador unificado de tipeo para inputs y textareas
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
   }
-  loadPet()
-}, [petId, router])
+
+  async function handleSaveChanges() {
+    if (!petId || !pet) return
+    setIsSavingData(true)
+    try {
+      
+      const payload: PetFormData = {
+        nombre: pet.nombre,              // Obligatorio en tu tipo
+        especie: pet.especie,            // Obligatorio en tu tipo
+        raza: pet.raza || null,
+        color: formData.color || null,
+        edad_aproximada: formData.edad_aproximada || null,
+        foto_url: formData.foto_url || null,
+        notas: formData.notas || null,   // Confirmado: en español con "a"
+      }
+
+      // Ahora la petición viaja con todos sus campos y FastAPI no la va a rechazar
+      const updatedPet = await petsApi.update(petId, payload)
+      
+      setPet(updatedPet)
+      
+      // Sincronizamos el estado del formulario con la respuesta limpia del servidor
+      setFormData({
+        color: updatedPet.color || '',
+        edad_aproximada: updatedPet.edad_aproximada || '',
+        notas: updatedPet.notas || '',
+        estado: updatedPet.estado || 'en_casa',
+        foto_url: updatedPet.foto_url || ''
+      })
+      
+      setIsEditingData(false)
+      toast.success('Mascota actualizada correctamente')
+    } catch (error) {
+      console.error('Error updating pet:', error)
+      toast.error(error instanceof Error ? error.message : 'Error al guardar los cambios')
+    } finally {
+      setIsSavingData(false)
+    }
+  }
+  function handleCancelEdit() {
+    if (pet) {
+      setFormData({
+        color: pet.color || '',
+        edad_aproximada: pet.edad_aproximada || '',
+        notas: pet.notas || '',
+        estado: pet.estado || 'en_casa',
+        foto_url: pet.foto_url || ''
+      })
+      setTempFotoUrl(pet.foto_url || '')
+    }
+    setIsEditingData(false)
+  }
 
   async function handleGenerateQR() {
     if (!petId) return
@@ -122,7 +223,6 @@ export default function PetDetailPage() {
     )
   }
 
-  // Si no hay mascota después de cargar, mostramos un aviso en lugar de pantalla en blanco
   if (!pet) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px]">
@@ -136,50 +236,91 @@ export default function PetDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 p-4">
+      
+      {/* Cabecera de la Ficha */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-1 min-w-0">
           <Link href="/dashboard/pets">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold">{pet?.nombre || 'Sin nombre'}</h1>
-            <p className="text-muted-foreground capitalize text-sm">
-              {pet?.especie} {pet?.raza && `- ${pet.raza}`}
+          
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-bold truncate">{pet.nombre || 'Sin nombre'}</h1>
+            <p className="text-muted-foreground capitalize text-sm truncate">
+              {pet.especie} {pet.raza && `- ${pet.raza}`}
             </p>
           </div>
-          <Badge variant={pet?.estado === 'en_casa' ? 'default' : 'destructive'}>
-            {pet?.estado === 'en_casa' ? 'En casa' : pet?.estado === 'perdido' ? 'Perdido' : pet?.estado}
-          </Badge>
+
+          {/* Selector Dinámico de Estado */}
+          {isEditingData ? (
+            <select
+              name="estado"
+              value={formData.estado}
+              className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm font-medium focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
+              onChange={handleInputChange}
+            >
+              <option value="en_casa">En casa</option>
+              <option value="perdido">Perdido</option>
+            </select>
+          ) : (
+            <Badge variant={pet.estado === 'en_casa' ? 'default' : 'destructive'} className="shrink-0">
+              {pet.estado === 'en_casa' ? 'En casa' : pet.estado === 'perdido' ? 'Perdido' : pet.estado}
+            </Badge>
+          )}
         </div>
 
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="sm">
-              <Trash2 className="w-4 h-4 mr-2" />
-              Eliminar
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Eliminar mascota</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta acción no se puede deshacer. Se eliminarán todos los datos y códigos QR de {pet?.nombre}.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                {isDeleting ? 'Eliminando...' : 'Eliminar'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {/* Botonera de flujo de Estados (Editar/Guardar/Eliminar) */}
+        <div className="flex items-center gap-2 justify-end">
+          {isEditingData ? (
+            <>
+              <Button variant="outline" size="sm" onClick={handleCancelEdit} disabled={isSavingData}>
+                <X className="w-4 h-4 mr-2" />
+                Cancelar
+              </Button>
+              <Button size="sm" onClick={handleSaveChanges} disabled={isSavingData}>
+                <Save className="w-4 h-4 mr-2" />
+                {isSavingData ? 'Guardando...' : 'Guardar'}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" size="sm" onClick={() => setIsEditingData(true)}>
+                <Edit2 className="w-4 h-4 mr-2" />
+                Editar Datos
+              </Button>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm">
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Eliminar
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Eliminar mascota</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta acción no se puede deshacer. Se eliminarán todos los datos y códigos QR de {pet.nombre}.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      {isDeleting ? 'Eliminando...' : 'Eliminar'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Columna Izquierda: Info de Mascota */}
+        
+        {/* Columna Izquierda: Información Detallada */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -188,11 +329,12 @@ export default function PetDetailPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Foto */}
-            <div className="aspect-video rounded-lg overflow-hidden bg-muted relative">
-              {pet?.foto_url ? (
+            
+            {/* Foto con capa interactiva de Edición */}
+            <div className="aspect-video rounded-lg overflow-hidden bg-muted relative group border">
+              {formData.foto_url ? (
                 <img
-                  src={pet.foto_url}
+                  src={formData.foto_url}
                   alt={pet.nombre}
                   className="w-full h-full object-cover"
                 />
@@ -201,51 +343,125 @@ export default function PetDetailPage() {
                   <PawPrint className="w-24 h-24 text-primary/20" />
                 </div>
               )}
+
+              {isEditingData && (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2 cursor-pointer text-white font-medium text-sm animate-fade-in">
+                      <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                        <Camera className="w-6 h-6 text-white" />
+                      </div>
+                      Cambiar Enlace de Foto
+                    </div>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Actualizar foto de la mascota</DialogTitle>
+                      <DialogDescription>
+                        Pegá la URL directa de la nueva imagen (ej. de Firebase, Cloudinary, Imgur).
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3 py-2">
+                      <Input
+                        type="url"
+                        placeholder="https://ejemplo.com/foto.jpg"
+                        value={tempFotoUrl}
+                        onChange={(e) => setTempFotoUrl(e.target.value)}
+                      />
+                    </div>
+                    <DialogFooter className="sm:justify-end gap-2">
+                      <Button type="button" variant="secondary" size="sm" onClick={() => setTempFotoUrl(formData.foto_url)}>
+                        Cancelar
+                      </Button>
+                      <DialogClose asChild>
+                        <Button 
+                          type="button" 
+                          size="sm"
+                          onClick={() => setFormData({ ...formData, foto_url: tempFotoUrl })}
+                        >
+                          Confirmar Foto
+                        </Button>
+                      </DialogClose>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
 
-            {/* Detalles Rápidos */}
+            {/* Atributos: Color y Edad */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {pet?.color && (
-                <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
-                  <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center shadow-sm">
-                    <Palette className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase font-bold text-muted-foreground">Color</p>
-                    <p className="font-medium">{pet.color}</p>
-                  </div>
+              
+              {/* Caja Color */}
+              <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
+                <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center shadow-sm shrink-0">
+                  <Palette className="w-5 h-5 text-muted-foreground" />
                 </div>
-              )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Color</p>
+                  {isEditingData ? (
+                    <Input
+                      name="color"
+                      value={formData.color}
+                      className="h-8 text-xs mt-1 bg-background"
+                      onChange={handleInputChange}
+                    />
+                  ) : (
+                    <p className="font-medium truncate">{formData.color || 'No especificado'}</p>
+                  )}
+                </div>
+              </div>
 
-              {pet?.edad_aproximada && (
-                <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
-                  <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center shadow-sm">
-                    <Calendar className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase font-bold text-muted-foreground">Edad</p>
-                    <p className="font-medium">{pet.edad_aproximada}</p>
-                  </div>
+              {/* Caja Edad */}
+              <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
+                <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center shadow-sm shrink-0">
+                  <Calendar className="w-5 h-5 text-muted-foreground" />
                 </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Edad Aproximada</p>
+                  {isEditingData ? (
+                    <Input
+                      name="edad_aproximada"
+                      value={formData.edad_aproximada}
+                      className="h-8 text-xs mt-1 bg-background"
+                      onChange={handleInputChange}
+                    />
+                  ) : (
+                    <p className="font-medium truncate">{formData.edad_aproximada || 'No especificada'}</p>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Sección de Comentarios / Notas Adicionales */}
+            <div className="space-y-2 pt-2">
+              <Separator className="my-4" />
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-primary" />
+                <p className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Notas Adicionales / Comentarios</p>
+              </div>
+              
+              {isEditingData ? (
+                <Textarea
+                  name="notas" // Cambiado temporalmente si tu backend mapea estricto a notas, mapeará a handleInputChange por el 'name' adjunto abajo
+                  
+                  value={formData.notas}
+                  rows={4}
+                  placeholder="Indicaciones médicas, temperamento, teléfonos de respaldo..."
+                  className="text-sm mt-2 bg-background"
+                  onChange={handleInputChange}
+                />
+              ) : (
+                <p className="text-sm leading-relaxed text-muted-foreground bg-muted/20 p-3 rounded-lg border border-muted min-h-[40px]">
+                  {formData.notas || 'Sin notas adicionales asociadas.'}
+                </p>
               )}
             </div>
 
-            {pet?.notas && (
-              <div className="space-y-2 pt-2">
-                <Separator className="my-4" />
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-primary" />
-                  <p className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Notas Adicionales</p>
-                </div>
-                <p className="text-sm leading-relaxed text-muted-foreground bg-muted/20 p-3 rounded-lg border border-muted">
-                  {pet.notas}
-                </p>
-              </div>
-            )}
           </CardContent>
         </Card>
 
-        {/* Columna Derecha: QR y Escaneos */}
+        {/* Columna Derecha: QR y Panel de Escaneos */}
         <div className="space-y-6">
           <Card className="overflow-hidden">
             <CardHeader className="bg-primary/[0.03]">
@@ -262,11 +478,7 @@ export default function PetDetailPage() {
                 <>
                   <QRCodeDisplay code={qr.codigo} petName={pet.nombre} />
                   <div className="grid grid-cols-2 gap-2 mt-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => copyQRLink(qr.codigo)}
-                    >
+                    <Button variant="outline" size="sm" onClick={() => copyQRLink(qr.codigo)}>
                       <Copy className="w-4 h-4 mr-2" />
                       Link
                     </Button>
@@ -281,9 +493,7 @@ export default function PetDetailPage() {
                   <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                     <QrCode className="w-8 h-8 text-muted-foreground/40" />
                   </div>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Sin código QR activo
-                  </p>
+                  <p className="text-sm text-muted-foreground mb-4">Sin código QR activo</p>
                   <Button onClick={handleGenerateQR} disabled={isGenerating} className="w-full">
                     {isGenerating ? 'Generando...' : 'Generar QR Ahora'}
                   </Button>
@@ -292,6 +502,7 @@ export default function PetDetailPage() {
             </CardContent>
           </Card>
 
+          {/* Lista de Actividad / Escaneos */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
@@ -327,6 +538,7 @@ export default function PetDetailPage() {
             </CardContent>
           </Card>
         </div>
+
       </div>
     </div>
   )

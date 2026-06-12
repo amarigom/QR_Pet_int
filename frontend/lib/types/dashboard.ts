@@ -9,11 +9,12 @@ export interface PetData {
   id: string;
   nombre: string;
   especie: string;
-  raza?: string;
+  raza?: string| null;
   estado: string;
   foto_url?: string;
   created_at: string;
   qr?: QRInfo | null; 
+  qr_code?: QRInfo | null;
 }
 
 export interface RecentScanData {

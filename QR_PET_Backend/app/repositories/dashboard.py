@@ -17,14 +17,19 @@ class DashboardRepository:
         pets_count_query = select(func.count(Pet.id)).where(Pet.usuario_id == usuario_id)
         total_pets = (await db.session.execute(pets_count_query)).scalar() or 0
 
-        # Conteo de QRs activos haciendo join
+        
+        #OPCIÓN ORM SEGURO: Contamos las mascotas del usuario filtrando por la relación qr_code
         qrs_count_query = (
-            select(func.count(QRCode.id))
-            .join(Pet, QRCode.mascota_id == Pet.id)
-            .where(Pet.usuario_id == usuario_id, QRCode.activo == True)
+            select(func.count(Pet.id))
+            .join(Pet.qr_code) # Usamos el atributo de relación que ya está en tu modelo Pet
+            .where(
+                Pet.usuario_id == usuario_id,
+                # Accedemos al estado activo a través de la propiedad del modelo relacionado
+                Pet.qr_code.has(activo=True) 
+            )
         )
+        
         active_qrs = (await db.session.execute(qrs_count_query)).scalar() or 0
-
         # Listado de entidades mascota
         pets_query = select(Pet).where(Pet.usuario_id == usuario_id)
         result = await db.session.execute(pets_query)

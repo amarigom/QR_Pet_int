@@ -11,7 +11,7 @@ from typing import Optional
 from datetime import datetime
 from uuid import UUID
 from app.core.constants import PetStatus, AnimalSpecies
-from app.schemas.base import PetBase, PetMinimal,UserMinimal
+from app.schemas.base import PetBase, PetMinimal,UserMinimal,QRMinimal
 
 
 # ============================================================================
@@ -25,8 +25,7 @@ class PetCreate(PetBase):
 
 class PetUpdate(BaseModel):
     """Schema para actualizar una mascota (Request)"""
-    nombre: Optional[str] = Field(None, min_length=1, max_length=100)
-    raza: Optional[str] = Field(None, max_length=100)
+   
     color: Optional[str] = Field(None, max_length=100)
     edad_aproximada: Optional[str] = None
     foto_url: Optional[str] = None
@@ -45,6 +44,7 @@ class PetResponse(PetBase):
     estado: PetStatus
     created_at: datetime
     foto_url: Optional[str] = None
+    qr_code: Optional[QRMinimal] = None
     model_config = ConfigDict(from_attributes=True)
 
 class PetDetailResponse(BaseModel):
@@ -59,7 +59,7 @@ class PetDetailResponse(BaseModel):
     estado: str
     usuario_id: UUID
     created_at: datetime
-    
+    qr_code: Optional[QRMinimal] = None
     # Aquí incluimos la relación que el repo ya cargó con selectinload
     owner: Optional[UserMinimal] = None 
     
@@ -70,3 +70,4 @@ class PetDetailResponse(BaseModel):
 # ============================================================================
 
 PetResponse.model_rebuild()
+PetDetailResponse.model_rebuild()

@@ -21,8 +21,10 @@ interface UserDashboardProps {
 export default function UserDashboard({ data }: UserDashboardProps) {
   // Red de seguridad de QA contra nulos o respuestas inesperadas de la API
   const pets = data?.pets || []
-  const summary = data?.summary || { total_pets: 0, active_qrs: 0 }
-  
+  const summary = {
+    total_pets: pets.length,
+    active_qrs: pets.filter(pet => pet.qr || pet.qr_code).length
+  }
   // Extraemos los escaneos del payload (ajusta la propiedad según cómo la envíe tu backend, ej: data.recent_scans)
   // @ts-ignore - Ajuste temporal hasta mapear el tipo exacto en UserDashboardData
   const misScans = data?.recent_scans || data?.scans || []
@@ -71,7 +73,7 @@ export default function UserDashboard({ data }: UserDashboardProps) {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold tracking-tight text-emerald-600">
-              {summary.active_qrs}
+              {summary.total_pets}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Chapitas vinculadas y operativas
