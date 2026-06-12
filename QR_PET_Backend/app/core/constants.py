@@ -14,7 +14,8 @@ class PetStatus(str, Enum):
     ACTIVO = "activo"
     ENCONTRADO = "encontrado"
     FALLECIDO = "fallecido"
-    OTRO = "otro"
+    PERDIDO= "perdido"
+    LIBRE="libre"
     EN_CASA = "en_casa"  
 
 

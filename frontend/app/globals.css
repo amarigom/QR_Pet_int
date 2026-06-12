@@ -3,7 +3,17 @@
 /* ... tus otros estilos */
 @import 'tailwindcss';
 /*@import 'tw-animate-css';*/
+.leaflet-container {
+  width: 100% ;
+  height: 100% ;
+  /* Evita que el mapa colapse internamente o se desplace */
+  display: block ; 
+}
 
+/* Restablece las capas internas táctiles para que no se muevan solas en el celular */
+.leaflet-pane {
+  z-index: 1 ;
+}
 
 /*@variant dark (&:where(.dark, .dark *));*/
 

@@ -28,6 +28,7 @@ export type PetFormData = {
   edad_aproximada?: string | null;
   foto_url?: string | null;
   notas?: string | null;
+  estado?: 'activo' | 'en_casa' | 'libre' | 'perdido'
 };
 
 export interface PaginatedPets {

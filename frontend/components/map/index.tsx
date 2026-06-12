@@ -24,6 +24,7 @@ export default function UnifiedScanMap({ scans, isAdmin = false }: UnifiedScanMa
   const defaultCenter: [number, number] = [-37.3217, -59.1332] // Tandil
 
   // 1. EFECTO DE INICIALIZACIÓN DE MAPA (Se ejecuta una única vez)
+  
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return
 
@@ -33,14 +34,18 @@ export default function UnifiedScanMap({ scans, isAdmin = false }: UnifiedScanMa
       attribution: '© OpenStreetMap'
     }).addTo(map)
     
-    // Inicializamos el grupo aislado exclusivamente para los marcadores
     const markersLayer = L.layerGroup().addTo(map)
     
     mapInstanceRef.current = map
     markersLayerRef.current = markersLayer
     console.log("Mapa inicializado por primera vez de forma nativa");
 
-    // Limpieza física total al desmontar para evitar fugas de memoria
+    // 🎯 EL ÚNICO AGREGADO: Le decimos a Leaflet nativo que apenas termine
+    // de cargar sus propias imágenes, recalcule su tamaño interno.
+    map.whenReady(() => {
+      map.invalidateSize();
+    });
+
     return () => {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove()
@@ -50,7 +55,7 @@ export default function UnifiedScanMap({ scans, isAdmin = false }: UnifiedScanMa
       }
     }
   }, [isAdmin])
-
+   
   // 2. EFECTO DE ACTUALIZACIÓN DE MARCADORES (Con candado de control estricto de QA)
   useEffect(() => {
     const map = mapInstanceRef.current
@@ -65,6 +70,10 @@ export default function UnifiedScanMap({ scans, isAdmin = false }: UnifiedScanMa
       return
     }
 
+    // 🎯 SALVAVIDAS PARA "MIS MASCOTAS": 
+    // Cuando los datos llegan tarde, forzamos al mapa a recalcular su tamaño real antes de dibujar.
+    map.invalidateSize()
+
     // Normalizamos el array habiendo pasado el control de sanidad
     const normalizedScans = normalizeScans(scans)
     
@@ -76,16 +85,12 @@ export default function UnifiedScanMap({ scans, isAdmin = false }: UnifiedScanMa
     const coordenadasUsadas = new Set<string>()
 
     normalizedScans.forEach(scan => {
-      // Control inteligente de tipos para evitar errores de compilación en TS
       let lat = typeof scan.latitud === 'number' ? scan.latitud : parseFloat(scan.latitud || '0')
       let lng = typeof scan.longitud === 'number' ? scan.longitud : parseFloat(scan.longitud || '0')
 
-      // Filtro defensivo para omitir coordenadas vacías o inválidas
       if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
         const coordKey = `${lat.toFixed(5)},${lng.toFixed(5)}`
 
-        // 🎯 EFECTO JITTER: Si la coordenada se repite, le aplicamos dispersión 
-        // para que se separen físicamente y puedas verlos de forma individual.
         if (coordenadasUsadas.has(coordKey)) {
           lat += (Math.random() - 0.5) * 0.0004
           lng += (Math.random() - 0.5) * 0.0004
@@ -117,10 +122,8 @@ export default function UnifiedScanMap({ scans, isAdmin = false }: UnifiedScanMa
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 })
     }
 
-  // 🎯 Serializamos el array en la dependencia para que React compare el CONTENIDO 
-  // real de los datos en vez de las referencias de memoria, matando el bucle infinito.
   }, [JSON.stringify(scans), isAdmin])
-
+  
   return (
     <div className="w-full h-full min-h-[450px] border rounded-lg overflow-hidden shadow-sm bg-muted/20">
       <div

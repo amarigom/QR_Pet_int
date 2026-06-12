@@ -310,7 +310,7 @@ export default function ScanPage() {
         <h1 className="text-2xl font-bold flex items-center justify-center gap-2">
           <Heart className="fill-current" /> {data?.pet.nombre}
         </h1>
-        <p className="opacity-90">{data?.pet.estado === 'PERDIDO' ? '¡ESTOY PERDIDO! AYÚDAME' : 'Mascota Protegida'}</p>
+        <p className="opacity-90">{data?.pet.estado === 'perdido' ? '¡ESTOY PERDIDO! AYÚDAME' : 'Mascota Protegida'}</p>
       </div>
 
       <div className="max-w-md mx-auto p-4 space-y-4 -mt-4">
