@@ -58,7 +58,7 @@ export default function AdminPetsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Base de Datos de Mascotas</h1>
-          <p className="text-sm text-muted-foreground">Panel de control de todos los registros del sistema</p>
+          <p className="text-sm text-muted-foreground">Panel de control control control; CONTROOL de todos los registros del sistema</p>
         </div>
         <div className="relative w-full md:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
