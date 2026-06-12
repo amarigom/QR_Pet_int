@@ -130,7 +130,7 @@ export default function PetDetailPage() {
         edad_aproximada: formData.edad_aproximada || null,
         foto_url: formData.foto_url || null,
         notas: formData.notas || null, 
-        estado: formData.estado || pet.estado || 'activo',  
+        estado: (formData.estado || pet.estado || 'activo') as 'activo' | 'en_casa' | 'libre' | 'perdido',
       }
 
       const updatedPet = await petsApi.update(petId, payload)
