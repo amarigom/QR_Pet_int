@@ -42,7 +42,6 @@ import {
   Calendar,
   Palette,
   FileText,
-  Download,
   Trash2,
   MapPin,
   Copy,
@@ -53,10 +52,8 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { petsApi } from '@/lib/api/pets'
-import { qrApi } from '@/lib/api/qr'
 import { formatDateTime } from '@/lib/utils'
 import type { Pet, PetFormData, QRCode as QRCodeType, Scan } from '@/lib/types'
-import { QRCodeDisplay } from '@/components/qr-code-display'
 
 export default function PetDetailPage() {
   const params = useParams()
@@ -67,7 +64,6 @@ export default function PetDetailPage() {
   const [qr, setQr] = useState<QRCodeType | null>(null)
   const [scans, setScans] = useState<Scan[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [isGenerating, setIsGenerating] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
   // Estados locales para la gestión de cambios y formularios
@@ -88,34 +84,32 @@ export default function PetDetailPage() {
       setIsLoading(true)
       
       try {
-      const data = await petsApi.getById(petId)
-      setPet(data)
-      
-      setFormData({
-        color: data.color || '',
-        edad_aproximada: data.edad_aproximada || '',
-        notas: data.notas || '',
-        estado: (data as any).estado || 'en_casa', // Evitamos también si 'estado' no está en Pet
-        foto_url: data.foto_url || ''
-      })
-      setTempFotoUrl(data.foto_url || '')
+        const data = await petsApi.getById(petId)
+        setPet(data)
+        
+        setFormData({
+          color: data.color || '',
+          edad_aproximada: data.edad_aproximada || '',
+          notas: data.notas || '',
+          estado: (data as any).estado || 'en_casa', 
+          foto_url: data.foto_url || ''
+        })
+        setTempFotoUrl(data.foto_url || '')
 
-      // 🎯 SOLUCIÓN AL ERROR: Forzamos la lectura con 'as any' para saltar el estricto de TypeScript
-      if ((data as any).qr_code) setQr((data as any).qr_code)
-      if ((data as any).scans) setScans((data as any).scans)
+        if ((data as any).qr_code) setQr((data as any).qr_code)
+        if ((data as any).scans) setScans((data as any).scans)
 
-    } catch (error) {
-      console.error('Error loading pet:', error)
-      toast.error('Error al cargar la mascota')
-      router.push('/dashboard/pets')
-    } finally {
-      setIsLoading(false)
-    }
+      } catch (error) {
+        console.error('Error loading pet:', error)
+        toast.error('Error al cargar la mascota')
+        router.push('/dashboard/pets')
+      } finally {
+        setIsLoading(false)
+      }
     }
     loadPet()
   }, [petId, router])
 
-  // Manejador unificado de tipeo para inputs y textareas
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({
@@ -128,23 +122,19 @@ export default function PetDetailPage() {
     if (!petId || !pet) return
     setIsSavingData(true)
     try {
-      
       const payload: PetFormData = {
-        nombre: pet.nombre,              // Obligatorio en tu tipo
-        especie: pet.especie,            // Obligatorio en tu tipo
+        nombre: pet.nombre,              
+        especie: pet.especie,            
         raza: pet.raza || null,
         color: formData.color || null,
         edad_aproximada: formData.edad_aproximada || null,
         foto_url: formData.foto_url || null,
-        notas: formData.notas || null,   // Confirmado: en español con "a"
+        notas: formData.notas || null,   
       }
 
-      // Ahora la petición viaja con todos sus campos y FastAPI no la va a rechazar
       const updatedPet = await petsApi.update(petId, payload)
       
       setPet(updatedPet)
-      
-      // Sincronizamos el estado del formulario con la respuesta limpia del servidor
       setFormData({
         color: updatedPet.color || '',
         edad_aproximada: updatedPet.edad_aproximada || '',
@@ -162,6 +152,7 @@ export default function PetDetailPage() {
       setIsSavingData(false)
     }
   }
+
   function handleCancelEdit() {
     if (pet) {
       setFormData({
@@ -176,26 +167,12 @@ export default function PetDetailPage() {
     setIsEditingData(false)
   }
 
-  async function handleGenerateQR() {
-    if (!petId) return
-    setIsGenerating(true)
-    try {
-      const newQr = await qrApi.generate(petId)
-      setQr(newQr)
-      toast.success('Código QR generado exitosamente')
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error al generar QR')
-    } finally {
-      setIsGenerating(false)
-    }
-  }
-
   async function handleDelete() {
     if (!petId) return
     setIsDeleting(true)
     try {
       await petsApi.delete(petId)
-      toast.success('Mascota eliminada')
+      toast.success('Mascota almacenada o eliminada')
       router.push('/dashboard/pets')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error al eliminar')
@@ -271,7 +248,7 @@ export default function PetDetailPage() {
           )}
         </div>
 
-        {/* Botonera de flujo de Estados (Editar/Guardar/Eliminar) */}
+        {/* Botonera de flujo de Estados */}
         <div className="flex items-center gap-2 justify-end">
           {isEditingData ? (
             <>
@@ -295,24 +272,25 @@ export default function PetDetailPage() {
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" size="sm">
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Eliminar
-                  </Button>
+                      Eliminar
+                    </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Eliminar mascota</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Esta acción no se puede deshacer. Se eliminarán todos los datos y códigos QR de {pet.nombre}.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                      {isDeleting ? 'Eliminando...' : 'Eliminar'}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+  <AlertDialogContent>
+    
+    <AlertDialogHeader>
+      <AlertDialogTitle>Eliminar mascota</AlertDialogTitle>
+      <AlertDialogDescription>
+        Esta acción no se puede deshacer. Se eliminarán todos los datos y códigos QR de {pet.nombre}.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+      <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+        {isDeleting ? 'Eliminando...' : 'Eliminar'}
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>  
             </>
           )}
         </div>
@@ -358,7 +336,7 @@ export default function PetDetailPage() {
                     <DialogHeader>
                       <DialogTitle>Actualizar foto de la mascota</DialogTitle>
                       <DialogDescription>
-                        Pegá la URL directa de la nueva imagen (ej. de Firebase, Cloudinary, Imgur).
+                        Pegá la URL directa de la nueva imagen.
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-3 py-2">
@@ -390,8 +368,6 @@ export default function PetDetailPage() {
 
             {/* Atributos: Color y Edad */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              
-              {/* Caja Color */}
               <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
                 <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center shadow-sm shrink-0">
                   <Palette className="w-5 h-5 text-muted-foreground" />
@@ -411,7 +387,6 @@ export default function PetDetailPage() {
                 </div>
               </div>
 
-              {/* Caja Edad */}
               <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
                 <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center shadow-sm shrink-0">
                   <Calendar className="w-5 h-5 text-muted-foreground" />
@@ -430,10 +405,9 @@ export default function PetDetailPage() {
                   )}
                 </div>
               </div>
-
             </div>
 
-            {/* Sección de Comentarios / Notas Adicionales */}
+            {/* Sección de Comentarios / Notas */}
             <div className="space-y-2 pt-2">
               <Separator className="my-4" />
               <div className="flex items-center gap-2">
@@ -443,8 +417,7 @@ export default function PetDetailPage() {
               
               {isEditingData ? (
                 <Textarea
-                  name="notas" // Cambiado temporalmente si tu backend mapea estricto a notas, mapeará a handleInputChange por el 'name' adjunto abajo
-                  
+                  name="notas"
                   value={formData.notas}
                   rows={4}
                   placeholder="Indicaciones médicas, temperamento, teléfonos de respaldo..."
@@ -461,42 +434,53 @@ export default function PetDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Columna Derecha: QR y Panel de Escaneos */}
+        {/* Columna Derecha: Trazabilidad y Panel de Escaneos */}
         <div className="space-y-6">
           <Card className="overflow-hidden">
             <CardHeader className="bg-primary/[0.03]">
               <CardTitle className="flex items-center gap-2">
                 <QrCode className="w-5 h-5 text-primary" />
-                Código QR
+                Identificador del Collar
               </CardTitle>
               <CardDescription>
-                Identificación digital para el collar
+                Código único de hardware y estado de asignación digital
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-6 space-y-4 text-center">
-              {qr?.codigo && qr?.activo ? (
-                <>
-                  <QRCodeDisplay code={qr.codigo} petName={pet.nombre} />
-                  <div className="grid grid-cols-2 gap-2 mt-4">
-                    <Button variant="outline" size="sm" onClick={() => copyQRLink(qr.codigo)}>
-                      <Copy className="w-4 h-4 mr-2" />
-                      Link
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Download className="w-4 h-4 mr-2" />
-                      Imagen
-                    </Button>
+            <CardContent className="pt-6 space-y-4">
+              {qr?.codigo ? (
+                <div className="space-y-4">
+                  {/* Caja de Datos Técnicos en lugar del Dibujo QR */}
+                  <div className="p-4 bg-muted/40 rounded-xl border border-muted/70 text-left space-y-2">
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground">Código de Trazabilidad</p>
+                      <code className="text-xs font-mono font-bold block mt-0.5 bg-background border px-2 py-1 rounded text-primary select-all break-all">
+                        {qr.codigo}
+                      </code>
+                    </div>
+                    
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-xs text-muted-foreground font-medium">Estado del dispositivo:</span>
+                      <Badge variant={qr.activo ? "outline" : "secondary"} className={qr.activo ? "text-green-600 border-green-200 bg-green-50" : ""}>
+                        {qr.activo ? "Vinculado y Activo" : "Inactivo"}
+                      </Badge>
+                    </div>
                   </div>
-                </>
+
+                  {/* Único botón disponible: Copiar Link de Escaneo */}
+                  <Button variant="outline" size="sm" className="w-full shadow-sm" onClick={() => copyQRLink(qr.codigo)}>
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copiar Enlace de Ficha Pública
+                  </Button>
+                </div>
               ) : (
-                <div className="py-6">
+                <div className="py-6 text-center">
                   <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                     <QrCode className="w-8 h-8 text-muted-foreground/40" />
                   </div>
-                  <p className="text-sm text-muted-foreground mb-4">Sin código QR activo</p>
-                  <Button onClick={handleGenerateQR} disabled={isGenerating} className="w-full">
-                    {isGenerating ? 'Generando...' : 'Generar QR Ahora'}
-                  </Button>
+                  <p className="text-sm text-muted-foreground font-medium">Dispositivo no verificado</p>
+                  <p className="text-xs text-muted-foreground/70 max-w-[200px] mx-auto mt-1">
+                    Esta mascota no cuenta con un identificador homologado en el sistema.
+                  </p>
                 </div>
               )}
             </CardContent>

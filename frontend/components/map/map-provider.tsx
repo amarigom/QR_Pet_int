@@ -19,5 +19,14 @@ interface MapProviderProps {
 }
 
 export function ScanMapProvider({ scans, isAdmin }: MapProviderProps) {
-  return <LazyMap scans={scans} isAdmin={isAdmin} />
+  return (
+    /*  MURO DE CONTENCIÓN DE QA:
+       - relative: Crea un nuevo contexto de posición.
+       - overflow-hidden: Recorta cualquier pedazo de mapa que intente salirse al moverlo.
+       - z-0: Resetea la prioridad visual para que los menús (z-40 o z-50) pasen siempre por arriba.
+       - w-full h-[450px]: Le da la dimensión exacta. */
+    <div className="relative w-full h-[450px] overflow-hidden rounded-xl border bg-card z-0">
+      <LazyMap scans={scans} isAdmin={isAdmin} />
+    </div>
+  )
 }

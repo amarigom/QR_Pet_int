@@ -117,7 +117,7 @@ export default function AdminDashboard({ user, data }: AdminDashboardProps) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="rounded-lg overflow-hidden border bg-card h-[400px] relative">
+              <div className="relative w-full h-[400px] rounded-xl border bg-card overflow-hidden z-0">
                 <ScanMapProvider scans={scansParaMapa} isAdmin={true} />
               </div>
             </CardContent>
