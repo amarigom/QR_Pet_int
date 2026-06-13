@@ -92,22 +92,26 @@ class QRRepository(BaseRepository[QRCode]):
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
-    async def get_all_with_details(self, limit: int = 100, offset: int = 0) -> List[QRCode]:
-        """
-        Obtiene todos los QRs cargando la mascota y su dueño en una sola consulta.
-        """
-        query = (
-            select(QRCode)
-            .options(
-                joinedload(QRCode.mascota)
-                .joinedload(Pet.owner)
-            )
-            .order_by(QRCode.created_at.desc())
-            .limit(limit)
-            .offset(offset)
+    # 🎯 Asegurate de que empiece con "async def"
+async def get_all_with_details(self, limit: int = 100, offset: int = 0) -> List[QRCode]:
+    """
+    Obtiene todos los QRs cargando la mascota, su dueño y la relación inversa del QR 
+    en una sola consulta para evitar la carga perezosa en Pydantic.
+    """
+    query = (
+        select(QRCode)
+        .options(
+            joinedload(QRCode.mascota).joinedload(Pet.owner),
+            joinedload(QRCode.mascota).joinedload(Pet.qr_code)
         )
-        result = await self.session.execute(query)
-        return list(result.scalars().unique().all())
+        .order_by(QRCode.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    
+    # El await acá adentro ahora va a funcionar perfectamente
+    result = await self.session.execute(query)
+    return list(result.scalars().unique().all())
 
     async def code_exists(self, codigo: str) -> bool:
         """Verifica existencia de código de forma rápida"""

@@ -33,13 +33,14 @@ export interface AdminStats {
 export interface AdminQR {
   id: string;
   codigo: string;
-  activo: boolean;
+  activo: boolean; // Mantenemos el booleano del sistema por compatibilidad con el switch
   created_at: string;
   lote?: string | null;
   mascota_id: string | null;
   mascota: {
     id: string;
     nombre: string;
+    estado?: 'activo' | 'en_casa' | 'perdido'; // 🎯 ¡ACÁ VA! El estado le pertenece a la mascota
     owner: {
       nombre: string;
       email: string;

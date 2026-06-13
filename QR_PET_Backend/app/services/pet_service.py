@@ -41,7 +41,7 @@ class PetService:
     async def create_pet(self, user_id: uuid.UUID, pet_data: PetCreate) -> PetDetailResponse:
         """Crea una mascota vinculada al usuario actual"""
         new_pet = await self.pet_repo.create(
-            owner_id=user_id,
+            usuario_id=user_id,
             **pet_data.model_dump()
         )
         await self.db.commit()

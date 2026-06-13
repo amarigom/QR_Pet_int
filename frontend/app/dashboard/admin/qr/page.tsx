@@ -10,11 +10,19 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Spinner } from '@/components/ui/spinner'
-import { Plus, Trash2, Power, PowerOff, Layers, Printer } from 'lucide-react' 
+import { Plus, Trash2, ShieldCheck, ShieldAlert, Layers, Printer, Home, HeartCrack, CheckCircle } from 'lucide-react' 
 import { toast } from 'sonner'
 import { adminApi } from '@/lib/api/admin' 
 import { formatDateTime } from '@/lib/utils'
 import type { AdminQR } from '@/lib/types/admin'
+
+// 🎨 Mapeo de estilos y componentes visuales según el estado extendido de la mascota
+const ESTADOS_MASCOTA = {
+  libre: { label: 'Libre', color: 'bg-slate-100 text-slate-800 border-slate-200', icon: CheckCircle },
+  activo: { label: 'Activo', color: 'bg-green-100 text-green-800 border-green-200', icon: ShieldCheck },
+  en_casa: { label: 'En Casa', color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Home },
+  perdido: { label: 'Perdido', color: 'bg-red-100 text-red-800 border-red-200', icon: HeartCrack },
+}
 
 export default function AdminQRPage() {
   const [qrs, setQrs] = useState<AdminQR[]>([])
@@ -45,7 +53,7 @@ export default function AdminQRPage() {
     loadQRs()
   }, [])
 
-  // Acción de alternar estado
+  // Acción de alternar estado (Mantenemos la firma pero adaptada internamente si cambia la lógica)
   async function handleToggleStatus(codigo: string, currentStatus: boolean) {
     setIsUpdatingStatus(codigo)
     try {
@@ -87,7 +95,7 @@ export default function AdminQRPage() {
     }
   }
 
-  // 3. Descargar Plantilla PDF mediante stream binario seguro (Evita el 401)
+  // 3. Descargar Plantilla PDF mediante stream binario seguro
   async function handleDownloadPDF() {
     if (!lotePdf.trim()) {
       toast.error('Por favor, ingresá el nombre del lote a exportar')
@@ -96,18 +104,11 @@ export default function AdminQRPage() {
 
     setIsDownloadingPdf(true)
     try {
-      // 🚀 Llamamos a la API inyectando el token seguro en las cabeceras
       const blob = await adminApi.downloadLotePdf(lotePdf.trim());
-      
-      // Creamos un link virtual temporal en memoria para descargar el blob recibido
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      
-      // Asignamos el nombre final al PDF descargado
       link.setAttribute('download', `Lote_Impresion_${lotePdf.trim().toUpperCase()}.pdf`);
-      
-      // Forzamos el click de guardado y destruimos el link para liberar memoria
       document.body.appendChild(link);
       link.click();
       link.parentNode?.removeChild(link);
@@ -124,6 +125,13 @@ export default function AdminQRPage() {
     }
   }
 
+  // Helper de QA para resolver dinámicamente qué estado renderizar
+  function getQrEstado(qr: AdminQR) {
+    if (!qr.mascota) return 'libre'
+    // Si la mascota tiene un campo estado, lo usamos. Si no, resolvemos por fallback activo
+    return qr.mascota.estado || (qr.activo ? 'activo' : 'libre')
+  }
+
   if (isLoading) return <div className="p-8"><Skeleton className="h-80 w-full" /></div>
 
   return (
@@ -131,10 +139,9 @@ export default function AdminQRPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold tracking-tight">Gestión de QRs</h1>
 
-        {/* Contenedor de Botones alineado al tema de PetQR */}
         <div className="flex items-center gap-2">
           
-          {/* Modal para Imprimir Lote PDF (Estilizado con Turquesa) */}
+          {/* Modal para Imprimir Lote PDF */}
           <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
             <DialogTrigger asChild>
               <Button 
@@ -179,7 +186,7 @@ export default function AdminQRPage() {
             </DialogContent>
           </Dialog>
 
-          {/* Diálogo para Generar Lote (Estilizado con Coral) */}
+          {/* Diálogo para Generar Lote */}
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium transition-all shadow-sm">
@@ -246,8 +253,8 @@ export default function AdminQRPage() {
               <TableRow>
                 <TableHead>Código</TableHead>
                 <TableHead>Lote</TableHead>
-                <TableHead>Disponibilidad</TableHead>
-                <TableHead className="text-center">Accion</TableHead>
+                <TableHead>Asignación</TableHead>
+                <TableHead className="text-center">Estado del Sistema</TableHead>
                 <TableHead>Mascota</TableHead>
                 <TableHead>Dueño</TableHead>
                 <TableHead>Fecha</TableHead>
@@ -255,68 +262,71 @@ export default function AdminQRPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {qrs.map((qr) => (
-                <TableRow key={qr.id}>
-                  <TableCell className="font-mono text-xs font-semibold">{qr.codigo}</TableCell>
+              {qrs.map((qr) => {
+                // Obtenemos los detalles específicos del estado actual
+                const estadoClave = getQrEstado(qr) as keyof typeof ESTADOS_MASCOTA;
+                const configEstado = ESTADOS_MASCOTA[estadoClave] || ESTADOS_MASCOTA.libre;
+                const IconoEstado = configEstado.icon;
 
-                  <TableCell>
-                    {qr.lote ? (
-                      <div className="flex items-center text-xs text-muted-foreground bg-muted w-fit px-2 py-0.5 rounded border border-border">
-                        <Layers className="w-3 h-3 mr-1 text-muted-foreground/80" />
-                        <span className="font-medium text-foreground/80">{qr.lote}</span>
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground text-xs italic">Sin lote</span>
-                    )}
-                  </TableCell>
+                return (
+                  <TableRow key={qr.id}>
+                    <TableCell className="font-mono text-xs font-semibold">{qr.codigo}</TableCell>
 
-                  <TableCell>
-                    <Badge variant={qr.mascota ? "default" : "secondary"}>
-                      {qr.mascota ? "Vinculado" : "Libre"}
-                    </Badge>
-                  </TableCell>
-
-                  <TableCell className="text-center">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className={
-                        qr.activo 
-                          ? "bg-green-100/70 hover:bg-green-200 text-green-800 border border-green-200 font-medium h-7 px-3 rounded-full transition-all" 
-                          : "bg-red-100/70 hover:bg-red-200 text-red-800 border border-red-200 font-medium h-7 px-3 rounded-full transition-all"
-                      }
-                      disabled={isUpdatingStatus === qr.codigo}
-                      onClick={() => handleToggleStatus(qr.codigo, !!qr.activo)}
-                      title={qr.activo ? "Click para desactivar placa" : "Click para activar placa"}
-                    >
-                      {isUpdatingStatus === qr.codigo ? (
-                        <Spinner className="w-3 h-3 mr-1" />
-                      ) : qr.activo ? (
-                        <Power className="w-3 h-3 mr-1 text-green-600 animate-pulse" />
+                    <TableCell>
+                      {qr.lote ? (
+                        <div className="flex items-center text-xs text-muted-foreground bg-muted w-fit px-2 py-0.5 rounded border border-border">
+                          <Layers className="w-3 h-3 mr-1 text-muted-foreground/80" />
+                          <span className="font-medium text-foreground/80">{qr.lote}</span>
+                        </div>
                       ) : (
-                        <PowerOff className="w-3 h-3 mr-1 text-red-500" />
+                        <span className="text-muted-foreground text-xs italic">Sin lote</span>
                       )}
-                      {qr.activo ? "Activo" : "Desactivado"}
-                    </Button>
-                  </TableCell>
+                    </TableCell>
 
-                  <TableCell>{qr.mascota ? qr.mascota.nombre : <span className="text-muted-foreground">-</span>}</TableCell>
-                  <TableCell>{qr.mascota?.owner ? qr.mascota.owner.nombre : <span className="text-muted-foreground">-</span>}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{formatDateTime(qr.created_at)}</TableCell>
+                    {/* Badge de Disponibilidad de la Medalla */}
+                    <TableCell>
+                      <Badge variant={qr.mascota ? "default" : "secondary"}>
+                        {qr.mascota ? "Vinculado" : "Libre"}
+                      </Badge>
+                    </TableCell>
 
-                  <TableCell className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="text-muted-foreground opacity-30 cursor-not-allowed"
-                      disabled
-                      title="Acción reservada para Superusuario"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+                    {/* 🎯 ACÁ ESTÁ EL CAMBIO PRINCIPAL: Render dinámico multiestado */}
+                    <TableCell className="text-center">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className={`${configEstado.color} border font-medium h-7 px-3 rounded-full transition-all`}
+                        disabled={isUpdatingStatus === qr.codigo || !qr.mascota}
+                        onClick={() => handleToggleStatus(qr.codigo, !!qr.activo)}
+                        title={qr.mascota ? "Cambiar estado de la placa" : "Falta vincular mascota"}
+                      >
+                        {isUpdatingStatus === qr.codigo ? (
+                          <Spinner className="w-3 h-3 mr-1" />
+                        ) : (
+                          <IconoEstado className={`w-3 h-3 mr-1 ${estadoClave === 'perdido' ? 'animate-bounce' : ''}`} />
+                        )}
+                        {configEstado.label}
+                      </Button>
+                    </TableCell>
+
+                    <TableCell>{qr.mascota ? qr.mascota.nombre : <span className="text-muted-foreground">-</span>}</TableCell>
+                    <TableCell>{qr.mascota?.owner ? qr.mascota.owner.nombre : <span className="text-muted-foreground">-</span>}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{formatDateTime(qr.created_at)}</TableCell>
+
+                    <TableCell className="text-right">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="text-muted-foreground opacity-30 cursor-not-allowed"
+                        disabled
+                        title="Acción reservada para Superusuario"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
