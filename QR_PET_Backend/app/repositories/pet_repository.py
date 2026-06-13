@@ -139,7 +139,7 @@ class PetRepository(BaseRepository[Pet]):
 
     async def delete(self, db_obj: Pet) -> bool:
         """
-        Elimina de forma física el registro de la mascota de la base de datos.
+        Elimina de forma física el registro de la mascota  base de datos.
         """
         await self.session.delete(db_obj)
         return True    

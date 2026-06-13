@@ -13,7 +13,7 @@ export interface UserDashboardStats {
 pets_count: number;
 qrs_count: number;
 scans_count: number;
-recent_scans: RecentScan[]; // Podés tiparlo mejor si tenés el ScanResponse
+recent_scans: RecentScan[]; 
 }
 
 

@@ -40,7 +40,7 @@ export interface AdminQR {
   mascota: {
     id: string;
     nombre: string;
-    estado?: 'activo' | 'en_casa' | 'perdido'; // 🎯 ¡ACÁ VA! El estado le pertenece a la mascota
+    estado?: 'activo' | 'en_casa' | 'perdido'; 
     owner: {
       nombre: string;
       email: string;
