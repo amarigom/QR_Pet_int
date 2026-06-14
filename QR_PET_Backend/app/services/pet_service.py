@@ -49,12 +49,12 @@ class PetService:
         # Recargamos con relaciones (owner, qr_code) para el esquema Detail
         pet_full = await self.pet_repo.get_by_id(new_pet.id)
         if not pet_full:
-            raise ResourceNotFoundException("Mascota reciénhjgghfghffsdasgffgjhhkhfdsdaasdhjk creada")
+            raise ResourceNotFoundException("Mascota recién creada")
         
         return PetDetailResponse.model_validate(pet_full)
     
     async def get_pet(self, current_user: User, pet_id: uuid.UUID) -> PetDetailResponse:
-        """Obtiene detalles de una mascota validando propiedad o rol nnbnnnnnnnnnnnnnnde admin"""
+        """Obtiene detalles de una mascota validando propiedad o rol de admin"""
         pet = await self.pet_repo.get_by_id(pet_id)
         
         if not pet:
