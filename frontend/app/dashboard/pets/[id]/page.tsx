@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import imageCompression from 'browser-image-compression';
 
 // Componentes UI de tu carpeta local
 import { Button } from '@/components/ui/button'
@@ -65,6 +66,7 @@ export default function PetDetailPage() {
   const [scans, setScans] = useState<Scan[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isUploadingFoto, setIsUploadingFoto] = useState(false)
 
   // Estados locales para la gestión de cambios y formularios
   const [isEditingData, setIsEditingData] = useState(false)
@@ -117,7 +119,50 @@ export default function PetDetailPage() {
       [name]: value,
     }))
   }
+async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  const file = e.target.files?.[0];
+  if (!file) return;
 
+  setIsUploadingFoto(true);
+  toast.info("Optimizando y subiendo imagen...");
+
+  const opcionesCompresion = {
+    maxSizeMB: 1,
+    maxWidthOrHeight: 1024,
+    useWebWorker: true,
+  };
+
+  try {
+    // 1. Comprimimos la imagen en el navegador del cliente
+    const archivoComprimido = await imageCompression(file, opcionesCompresion);
+
+    // 2. Preparamos el FormData para ImgBB
+    const formDataImg = new FormData();
+    formDataImg.append("image", archivoComprimido);
+
+    // 3. Subimos directo a ImgBB (reemplazá con tu API Key real)
+    const response = await fetch("https://api.imgbb.com/1/upload?key=8ed6cfe2cbe9d5ecd6f39110524c925d", {
+      method: "POST",
+      body: formDataImg,
+    });
+
+    if (!response.ok) throw new Error("Error en el servidor de imágenes");
+
+    const resData = await response.json();
+    const urlPublica = resData.data.url;
+
+    // 4. Impactamos la URL en tus estados locales del formulario
+    setFormData((prev) => ({ ...prev, foto_url: urlPublica }));
+    setTempFotoUrl(urlPublica);
+    
+    toast.success("¡Imagen cargada correctamente!");
+  } catch (error) {
+    console.error("Error al subir imagen:", error);
+    toast.error("No se pudo subir la imagen. Intentá con otra.");
+  } finally {
+    setIsUploadingFoto(false);
+  }
+}
   async function handleSaveChanges() {
     if (!petId || !pet) return
     setIsSavingData(true)
@@ -322,49 +367,33 @@ export default function PetDetailPage() {
                   <PawPrint className="w-24 h-24 text-primary/20" />
                 </div>
               )}
-
-              {isEditingData && (
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2 cursor-pointer text-white font-medium text-sm animate-fade-in">
-                      <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                        <Camera className="w-6 h-6 text-white" />
-                      </div>
-                      Cambiar Enlace de Foto
-                    </div>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Actualizar foto de la mascota</DialogTitle>
-                      <DialogDescription>
-                        Pegá la URL directa de la nueva imagen.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-3 py-2">
-                      <Input
-                        type="url"
-                        placeholder="https://ejemplo.com/foto.jpg"
-                        value={tempFotoUrl}
-                        onChange={(e) => setTempFotoUrl(e.target.value)}
-                      />
-                    </div>
-                    <DialogFooter className="sm:justify-end gap-2">
-                      <Button type="button" variant="secondary" size="sm" onClick={() => setTempFotoUrl(formData.foto_url)}>
-                        Cancelar
-                      </Button>
-                      <DialogClose asChild>
-                        <Button 
-                          type="button" 
-                          size="sm"
-                          onClick={() => setFormData({ ...formData, foto_url: tempFotoUrl })}
-                        >
-                          Confirmar Foto
-                        </Button>
-                      </DialogClose>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              )}
+{isEditingData && (
+  <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-2 text-white font-medium text-sm animate-fade-in">
+    {isUploadingFoto ? (
+      <div className="flex flex-col items-center gap-2">
+        {/* Un spinner simple de carga */}
+        <div className="w-8 h-8 rounded-full border-4 border-white/30 border-t-white animate-spin" />
+        <p className="text-xs">Procesando foto...</p>
+      </div>
+    ) : (
+      <label className="cursor-pointer flex flex-col items-center gap-2 group/btn">
+        <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30 group-hover/btn:bg-white/30 transition-all shadow-md">
+          <Camera className="w-6 h-6 text-white" />
+        </div>
+        <span>Subir foto desde el dispositivo</span>
+        {/* Input oculto para capturar el archivo */}
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileChange}
+          disabled={isUploadingFoto}
+        />
+      </label>
+    )}
+  </div>
+)} 
+        
             </div>
 
             {/* Atributos: Color y Edad */}
