@@ -29,7 +29,9 @@ export async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): 
     ? JSON.stringify(options.body)
     : options.body;
 
-  // 5. Hacemos el fetch limpio pasando las opciones unificadas
+  const metodo = options.method || 'GET';
+  const cacheConfig = options.cache || (metodo === 'GET' ? 'no-store' : undefined);
+    // 5. Hacemos el fetch limpio pasando las opciones unificadas
   const res = await fetch(`${API_BASE}${endpoint}`, { 
     ...options, 
     headers,

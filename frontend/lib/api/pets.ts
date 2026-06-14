@@ -10,7 +10,7 @@ export const petsApi = {
     fetchAPI<{ items: Pet[]; total: number }>(`/pets?page=${page}&limit=${limit}`),
   
   // api/pets.ts
-getById: (id: string) => fetchAPI<Pet>(`/pets/${id}`),
+  getById: (id: string) => fetchAPI<Pet>(`/pets/${id}`),
   
   create: (data: PetFormData) => fetchAPI<Pet>('/pets', {
     method: 'POST',

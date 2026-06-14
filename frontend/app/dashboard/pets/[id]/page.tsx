@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import imageCompression from 'browser-image-compression'
+
 // Componentes UI de tu carpeta local
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -65,7 +65,6 @@ export default function PetDetailPage() {
   const [scans, setScans] = useState<Scan[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [isUploadingFoto, setIsUploadingFoto] = useState(false)
 
   // Estados locales para la gestión de cambios y formularios
   const [isEditingData, setIsEditingData] = useState(false)
@@ -118,50 +117,6 @@ export default function PetDetailPage() {
       [name]: value,
     }))
   }
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-  const file = e.target.files?.[0];
-  if (!file) return;
-
-  setIsUploadingFoto(true);
-  toast.info("Optimizando y subiendo imagen...");
-
-  const opcionesCompresion = {
-    maxSizeMB: 1,
-    maxWidthOrHeight: 1024,
-    useWebWorker: true,
-  };
-
-  try {
-    // 1. Comprimimos la imagen en el navegador del cliente
-    const archivoComprimido = await imageCompression(file, opcionesCompresion);
-
-    // 2. Preparamos el FormData para ImgBB
-    const formDataImg = new FormData();
-    formDataImg.append("image", archivoComprimido);
-
-    // 3. Subimos directo a ImgBB (reemplazá con tu API Key real)
-    const response = await fetch("https://api.imgbb.com/1/upload?key=8ed6cfe2cbe9d5ecd6f39110524c925d", {
-      method: "POST",
-      body: formDataImg,
-    });
-
-    if (!response.ok) throw new Error("Error en el servidor de imágenes");
-
-    const resData = await response.json();
-    const urlPublica = resData.data.url;
-
-    // 4. Impactamos la URL en tus estados locales del formulario
-    setFormData((prev) => ({ ...prev, foto_url: urlPublica }));
-    setTempFotoUrl(urlPublica);
-    
-    toast.success("¡Imagen cargada correctamente!");
-  } catch (error) {
-    console.error("Error al subir imagen:", error);
-    toast.error("No se pudo subir la imagen. Intentá con otra.");
-  } finally {
-    setIsUploadingFoto(false);
-  }
-}
 
   async function handleSaveChanges() {
     if (!petId || !pet) return
@@ -227,7 +182,6 @@ export default function PetDetailPage() {
     }
   }
 
-
   function copyQRLink(code: string) {
     if (!code) return
     const url = `${window.location.origin}/scan/${code}`
@@ -259,280 +213,318 @@ export default function PetDetailPage() {
   }
 
   return (
-  <div className="max-w-4xl mx-auto space-y-6 p-4">
-    
-    {/* Cabecera de la Ficha */}
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div className="flex items-center gap-4 flex-1 min-w-0">
-        <Link href="/dashboard/pets">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-        </Link>
-        
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold truncate">{pet.nombre || 'Sin nombre'}</h1>
-          <p className="text-muted-foreground capitalize text-sm truncate">
-            {pet.especie} {pet.raza && `- ${pet.raza}`}
-          </p>
-        </div>
-        {/* 🎯 BUG CORREGIDO: Se eliminó el bloque condicional duplicado con 'absolute inset-0 bg-black/50' que tapaba la pantalla */}
-      </div>
-
-      {/* Botonera de flujo de Estados */}
-      <div className="flex items-center gap-2 justify-end">
-        {isEditingData ? (
-          <>
-            <Button variant="outline" size="sm" onClick={handleCancelEdit} disabled={isSavingData}>
-              <X className="w-4 h-4 mr-2" />
-              Cancelar
-            </Button>
-            <Button size="sm" onClick={handleSaveChanges} disabled={isSavingData}>
-              <Save className="w-4 h-4 mr-2" />
-              {isSavingData ? 'Guardando...' : 'Guardar'}
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button variant="outline" size="sm" onClick={() => setIsEditingData(true)}>
-              <Edit2 className="w-4 h-4 mr-2" />
-              Editar Datos
-            </Button>
-
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm">
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Eliminar
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Eliminar mascota</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Esta acción no se puede deshacer. Se eliminarán todos los datos y códigos QR de {pet.nombre}.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                    {isDeleting ? 'Eliminando...' : 'Eliminar'}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>  
-          </>
-        )}
-      </div>
-    </div>
-
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="max-w-4xl mx-auto space-y-6 p-4">
       
-      {/* Columna Izquierda: Información Detallada */}
-      <Card className="lg:col-span-2">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <PawPrint className="w-5 h-5 text-primary" />
-            Información de la Mascota
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      {/* Cabecera de la Ficha */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          <Link href="/dashboard/pets">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
           
-          {/* Foto de la Mascota */}
-          <div className="aspect-video rounded-lg overflow-hidden bg-muted relative border">
-            {formData.foto_url ? (
-              <img
-                src={formData.foto_url}
-                alt={pet.nombre}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/5">
-                <PawPrint className="w-24 h-24 text-primary/20" />
-              </div>
-            )}
-
-            {/* Capa de carga automática de QA: Solo aparece mientras sube a ImgBB */}
-            {isUploadingFoto && (
-              <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2 text-white text-sm">
-                <div className="w-8 h-8 rounded-full border-4 border-white/30 border-t-white animate-spin" />
-                <p className="text-xs">Optimizando y subiendo foto...</p>
-              </div>
-            )}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-bold truncate">{pet.nombre || 'Sin nombre'}</h1>
+            <p className="text-muted-foreground capitalize text-sm truncate">
+              {pet.especie} {pet.raza && `- ${pet.raza}`}
+            </p>
           </div>
 
-          {/* Botón de carga desde el dispositivo */}
-          {isEditingData && (
-            <div className="mt-2 flex items-center justify-center">
-              <label className="flex items-center gap-2 px-4 py-2 rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 text-xs font-medium cursor-pointer transition-colors shadow-sm border">
-                <Camera className="w-4 h-4" />
-                <span>{formData.foto_url ? 'Cambiar foto del dispositivo' : 'Subir foto del dispositivo'}</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFileChange}
-                  disabled={isUploadingFoto}
-                />
-              </label>
-            </div>
+          {/* Selector Dinámico de Estado */}
+          {isEditingData ? (
+            <select
+              name="estado"
+              value={formData.estado}
+              className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm font-medium focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
+              onChange={handleInputChange}
+            >
+              <option value="en_casa">En casa</option>
+              <option value="perdido">Perdido</option>
+            </select>
+          ) : (
+            <Badge variant={pet.estado === 'en_casa' ? 'default' : 'destructive'} className="shrink-0">
+              {pet.estado === 'en_casa' ? 'En casa' : pet.estado === 'perdido' ? 'Perdido' : pet.estado}
+            </Badge>
           )}
+        </div>
+
+        {/* Botonera de flujo de Estados */}
+        <div className="flex items-center gap-2 justify-end">
+          {isEditingData ? (
+            <>
+              <Button variant="outline" size="sm" onClick={handleCancelEdit} disabled={isSavingData}>
+                <X className="w-4 h-4 mr-2" />
+                Cancelar
+              </Button>
+              <Button size="sm" onClick={handleSaveChanges} disabled={isSavingData}>
+                <Save className="w-4 h-4 mr-2" />
+                {isSavingData ? 'Guardando...' : 'Guardar'}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" size="sm" onClick={() => setIsEditingData(true)}>
+                <Edit2 className="w-4 h-4 mr-2" />
+                Editar Datos
+              </Button>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm">
+                    <Trash2 className="w-4 h-4 mr-2" />
+                      Eliminar
+                    </Button>
+                </AlertDialogTrigger>
+  <AlertDialogContent>
+    
+    <AlertDialogHeader>
+      <AlertDialogTitle>Eliminar mascota</AlertDialogTitle>
+      <AlertDialogDescription>
+        Esta acción no se puede deshacer. Se eliminarán todos los datos y códigos QR de {pet.nombre}.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+      <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+        {isDeleting ? 'Eliminando...' : 'Eliminar'}
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>  
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-          {/* Atributos: Color y Edad */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
-              <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center shadow-sm shrink-0">
-                <Palette className="w-5 h-5 text-muted-foreground" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground">Color</p>
-                {isEditingData ? (
-                  <Input
-                    name="color"
-                    value={formData.color}
-                    className="h-8 text-xs mt-1 bg-background"
-                    onChange={handleInputChange}
-                  />
-                ) : (
-                  <p className="font-medium truncate">{formData.color || 'No especificado'}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
-              <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center shadow-sm shrink-0">
-                <Calendar className="w-5 h-5 text-muted-foreground" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] uppercase font-bold text-muted-foreground">Edad Aproximada</p>
-                {isEditingData ? (
-                  <Input
-                    name="edad_aproximada"
-                    value={formData.edad_aproximada}
-                    className="h-8 text-xs mt-1 bg-background"
-                    onChange={handleInputChange}
-                  />
-                ) : (
-                  <p className="font-medium truncate">{formData.edad_aproximada || 'No especificada'}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Sección de Comentarios / Notas */}
-          <div className="space-y-2 pt-2">
-            <Separator className="my-4" />
-            <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-primary" />
-              <p className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Notas Adicionales / Comentarios</p>
-            </div>
-            
-            {isEditingData ? (
-              <Textarea
-                name="notas"
-                value={formData.notas}
-                rows={4}
-                placeholder="Indicaciones médicas, temperamento, teléfonos de respaldo..."
-                className="text-sm mt-2 bg-background"
-                onChange={handleInputChange}
-              />
-            ) : (
-              <p className="text-sm leading-relaxed text-muted-foreground bg-muted/20 p-3 rounded-lg border border-muted min-h-[40px]">
-                {formData.notas || 'Sin notas adicionales asociadas.'}
-              </p>
-            )}
-          </div>
-
-        </CardContent>
-      </Card>
-
-      {/* Columna Derecha: Trazabilidad y Panel de Escaneos */}
-      <div className="space-y-6">
-        <Card className="overflow-hidden">
-          <CardHeader className="bg-primary/[0.03]">
+        {/* Columna Izquierda: Información Detallada */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <QrCode className="w-5 h-5 text-primary" />
-              Identificador del Collar
+              <PawPrint className="w-5 h-5 text-primary" />
+              Información de la Mascota
             </CardTitle>
-            <CardDescription>
-              Código único de hardware y estado de asignación digital
-            </CardDescription>
           </CardHeader>
-          <CardContent className="pt-6 space-y-4">
-            {qr?.codigo ? (
-              <div className="space-y-4">
-                <div className="p-4 bg-muted/40 rounded-xl border border-muted/70 text-left space-y-2">
-                  <div>
-                    <p className="text-[10px] uppercase font-bold text-muted-foreground">Código de Trazabilidad</p>
-                    <code className="text-xs font-mono font-bold block mt-0.5 bg-background border px-2 py-1 rounded text-primary select-all break-all">
-                      {qr.codigo}
-                    </code>
-                  </div>
-                  
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-xs text-muted-foreground font-medium">Estado del dispositivo:</span>
-                    <Badge variant={qr.activo ? "outline" : "secondary"} className={qr.activo ? "text-green-600 border-green-200 bg-green-50" : ""}>
-                      {qr.activo ? "Vinculado y Activo" : "Inactivo"}
-                    </Badge>
-                  </div>
+          <CardContent className="space-y-6">
+            
+            {/* Foto con capa interactiva de Edición */}
+            <div className="aspect-video rounded-lg overflow-hidden bg-muted relative group border">
+              {formData.foto_url ? (
+                <img
+                  src={formData.foto_url}
+                  alt={pet.nombre}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/5">
+                  <PawPrint className="w-24 h-24 text-primary/20" />
                 </div>
+              )}
 
-                <Button variant="outline" size="sm" className="w-full shadow-sm" onClick={() => copyQRLink(qr.codigo)}>
-                  <Copy className="w-4 h-4 mr-2" />
-                  Copiar Enlace de Ficha Pública
-                </Button>
-              </div>
-            ) : (
-              <div className="py-6 text-center">
-                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                  <QrCode className="w-8 h-8 text-muted-foreground/40" />
+              {isEditingData && (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-2 cursor-pointer text-white font-medium text-sm animate-fade-in">
+                      <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                        <Camera className="w-6 h-6 text-white" />
+                      </div>
+                      Cambiar Enlace de Foto
+                    </div>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Actualizar foto de la mascota</DialogTitle>
+                      <DialogDescription>
+                        Pegá la URL directa de la nueva imagen.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3 py-2">
+                      <Input
+                        type="url"
+                        placeholder="https://ejemplo.com/foto.jpg"
+                        value={tempFotoUrl}
+                        onChange={(e) => setTempFotoUrl(e.target.value)}
+                      />
+                    </div>
+                    <DialogFooter className="sm:justify-end gap-2">
+                      <Button type="button" variant="secondary" size="sm" onClick={() => setTempFotoUrl(formData.foto_url)}>
+                        Cancelar
+                      </Button>
+                      <DialogClose asChild>
+                        <Button 
+                          type="button" 
+                          size="sm"
+                          onClick={() => setFormData({ ...formData, foto_url: tempFotoUrl })}
+                        >
+                          Confirmar Foto
+                        </Button>
+                      </DialogClose>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
+
+            {/* Atributos: Color y Edad */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
+                <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center shadow-sm shrink-0">
+                  <Palette className="w-5 h-5 text-muted-foreground" />
                 </div>
-                <p className="text-sm text-muted-foreground font-medium">Dispositivo no verificado</p>
-                <p className="text-xs text-muted-foreground/70 max-w-[200px] mx-auto mt-1">
-                  Esta mascota no cuenta con un identificador homologado en el sistema.
-                </p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Color</p>
+                  {isEditingData ? (
+                    <Input
+                      name="color"
+                      value={formData.color}
+                      className="h-8 text-xs mt-1 bg-background"
+                      onChange={handleInputChange}
+                    />
+                  ) : (
+                    <p className="font-medium truncate">{formData.color || 'No especificado'}</p>
+                  )}
+                </div>
               </div>
-            )}
+
+              <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
+                <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center shadow-sm shrink-0">
+                  <Calendar className="w-5 h-5 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Edad Aproximada</p>
+                  {isEditingData ? (
+                    <Input
+                      name="edad_aproximada"
+                      value={formData.edad_aproximada}
+                      className="h-8 text-xs mt-1 bg-background"
+                      onChange={handleInputChange}
+                    />
+                  ) : (
+                    <p className="font-medium truncate">{formData.edad_aproximada || 'No especificada'}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Sección de Comentarios / Notas */}
+            <div className="space-y-2 pt-2">
+              <Separator className="my-4" />
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-primary" />
+                <p className="text-sm font-bold uppercase tracking-tight text-muted-foreground">Notas Adicionales / Comentarios</p>
+              </div>
+              
+              {isEditingData ? (
+                <Textarea
+                  name="notas"
+                  value={formData.notas}
+                  rows={4}
+                  placeholder="Indicaciones médicas, temperamento, teléfonos de respaldo..."
+                  className="text-sm mt-2 bg-background"
+                  onChange={handleInputChange}
+                />
+              ) : (
+                <p className="text-sm leading-relaxed text-muted-foreground bg-muted/20 p-3 rounded-lg border border-muted min-h-[40px]">
+                  {formData.notas || 'Sin notas adicionales asociadas.'}
+                </p>
+              )}
+            </div>
+
           </CardContent>
         </Card>
 
-        {/* Lista de Actividad / Escaneos */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <MapPin className="w-4 h-4 text-primary" />
-              Actividad Reciente ({scans.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {scans.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-6 italic">
-                No se han registrado escaneos aún
-              </p>
-            ) : (
-              <div className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                {scans.map((scan) => (
-                  <div
-                    key={scan.id}
-                    className="flex items-start gap-3 p-2 rounded-lg bg-muted/40 border border-transparent hover:border-muted transition-colors"
-                  >
-                    <MapPin className="w-4 h-4 text-primary mt-1 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate">
-                        {scan.direccion_aproximada || 'Ubicación no disponible'}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {formatDateTime(scan.created_at)}
-                      </p>
+        {/* Columna Derecha: Trazabilidad y Panel de Escaneos */}
+        <div className="space-y-6">
+          <Card className="overflow-hidden">
+            <CardHeader className="bg-primary/[0.03]">
+              <CardTitle className="flex items-center gap-2">
+                <QrCode className="w-5 h-5 text-primary" />
+                Identificador del Collar
+              </CardTitle>
+              <CardDescription>
+                Código único de hardware y estado de asignación digital
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              {qr?.codigo ? (
+                <div className="space-y-4">
+                  {/* Caja de Datos Técnicos en lugar del Dibujo QR */}
+                  <div className="p-4 bg-muted/40 rounded-xl border border-muted/70 text-left space-y-2">
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground">Código de Trazabilidad</p>
+                      <code className="text-xs font-mono font-bold block mt-0.5 bg-background border px-2 py-1 rounded text-primary select-all break-all">
+                        {qr.codigo}
+                      </code>
+                    </div>
+                    
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-xs text-muted-foreground font-medium">Estado del dispositivo:</span>
+                      <Badge variant={qr.activo ? "outline" : "secondary"} className={qr.activo ? "text-green-600 border-green-200 bg-green-50" : ""}>
+                        {qr.activo ? "Vinculado y Activo" : "Inactivo"}
+                      </Badge>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
 
+                  {/* Único botón disponible: Copiar Link de Escaneo */}
+                  <Button variant="outline" size="sm" className="w-full shadow-sm" onClick={() => copyQRLink(qr.codigo)}>
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copiar Enlace de Ficha Pública
+                  </Button>
+                </div>
+              ) : (
+                <div className="py-6 text-center">
+                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                    <QrCode className="w-8 h-8 text-muted-foreground/40" />
+                  </div>
+                  <p className="text-sm text-muted-foreground font-medium">Dispositivo no verificado</p>
+                  <p className="text-xs text-muted-foreground/70 max-w-[200px] mx-auto mt-1">
+                    Esta mascota no cuenta con un identificador homologado en el sistema.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Lista de Actividad / Escaneos */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <MapPin className="w-4 h-4 text-primary" />
+                Actividad Reciente ({scans.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {scans.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-6 italic">
+                  No se han registrado escaneos aún
+                </p>
+              ) : (
+                <div className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                  {scans.map((scan) => (
+                    <div
+                      key={scan.id}
+                      className="flex items-start gap-3 p-2 rounded-lg bg-muted/40 border border-transparent hover:border-muted transition-colors"
+                    >
+                      <MapPin className="w-4 h-4 text-primary mt-1 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">
+                          {scan.direccion_aproximada || 'Ubicación no disponible'}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {formatDateTime(scan.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+      </div>
     </div>
-  </div>
-)}
+  )
+}
