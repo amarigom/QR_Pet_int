@@ -82,33 +82,58 @@ class AdminService:
         return True
 
     async def get_pet_detail_admin(self, pet_id: uuid.UUID) -> Dict[str, Any]:
-        """Detalle completo de mascota para administración"""
-        # 1. Buscamos mascota con dueño cargado
+        """Detalle completo de mascota para administración adaptado a esquemas compuestos"""
+        # 1. Buscamos la mascota en el repositorio
         pet = await self.pet_repo.get_by_id_with_owner(pet_id)
         if not pet:
             raise ResourceNotFoundException("Mascota")
 
-        # 2. Buscamos el QR
+        # 2. Buscamos el QR asociado
         qr = await self.qr_repo.get_by_mascota(pet.id)
         
+        # 3. Retornamos el diccionario estructurado exactamente como piden los esquemas
         return {
-            "id": str(pet.id),
+            # Campos de PetResponse (Padre)
+            "id": pet.id,  # Dejamos el UUID nativo, Pydantic se encarga de serializarlo a str
             "nombre": pet.nombre,
             "especie": getattr(pet, 'especie', 'No definida'),
-            "usuario_id": str(pet.usuario_id),
+            "raza": getattr(pet, 'raza', None),
+            "color": getattr(pet, 'color', None),
+            "edad_aproximada": getattr(pet, 'edad_aproximada', None),
+            "foto_url": getattr(pet, 'foto_url', None),
+            "notas": getattr(pet, 'notas', None),
             "estado": getattr(pet, 'estado', 'activo'),
-            "owner": {
-                "id": str(pet.owner.id) if pet.owner else "N/A",
-                "nombre": pet.owner.nombre if pet.owner else "N/A",
-                "email": pet.owner.email if pet.owner else "N/A",
-                "rol": getattr(pet.owner, 'rol', 'usuario') if pet.owner else "usuario",
-                "created_at": pet.owner.created_at if pet.owner else None
-    },
-            "qr": {
-                "id": str(qr.id) if qr else None,
-                "codigo": qr.codigo if qr else None
-            } if qr else None,
-            "created_at": pet.created_at
+            "usuario_id": pet.usuario_id,
+            "created_at": pet.created_at,
+            
+            # Campo 'owner' mapeado a la estructura de UserResponse
+            # Campo 'owner' mapeado de forma idéntica a UserResponse
+        "owner": {
+            "id": pet.owner.id,
+            "email": pet.owner.email,
+            "nombre": pet.owner.nombre,
+            "nombre_completo": getattr(pet.owner, 'nombre_completo', pet.owner.nombre),
+            
+            "rol": getattr(pet.owner, 'rol', 'usuario'),
+            "telefono": getattr(pet.owner, 'telefono', None),
+            "avatar_url": getattr(pet.owner, 'avatar_url', None),
+            "created_at": pet.owner.created_at,
+            "activo": getattr(pet.owner, 'activo', True)  # Por si UserResponse exige 'activo'
+        } if pet.owner else None,
+            
+            # Campo 'qr_code' mapeado exactamente como lo requiere composite.py (QRResponse)
+            # Campo 'qr_code' mapeado exactamente como lo requiere composite.py (QRResponse)
+        "qr_code": {
+            "id": qr.id,
+            "codigo": qr.codigo,
+            
+            # 🌟 SOLUCIÓN: Agregamos 'activo' para satisfacer a QRResponse
+            # Evaluamos si el estado es 'activo' o si el modelo ya tiene un booleano en qr.activo
+            "activo": qr.activo if hasattr(qr, 'activo') else (getattr(qr, 'estado', 'activo') == 'activo'),
+            "estado": getattr(qr, 'estado', 'activo'),
+            
+            "created_at": qr.created_at if hasattr(qr, 'created_at') else pet.created_at
+        } if qr else None
         }
     async def get_dashboard_stats(self) -> dict:
         total_users = await self.user_repo.count()

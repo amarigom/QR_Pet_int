@@ -33,8 +33,8 @@ export default function AdminPetDetailPage() {
   if (loading) return <div className="p-10 text-center animate-pulse">Cargando ficha técnica...</div>
   if (!pet) return <div className="p-10 text-center text-destructive">Mascota no encontrada (404 API).</div>
 
-  const cleanOwnerName = pet.datos_dueño?.nombre?.replace(/\s+/g, ' ').trim() || 'No registrado'
-
+  const cleanOwnerName = pet.owner?.nombre?.replace(/\s+/g, ' ').trim() || 'No registrado'
+  
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       <Button 
@@ -92,7 +92,7 @@ export default function AdminPetDetailPage() {
                   <Mail className="w-4 h-4" />
                   <span className="text-xs font-bold uppercase">Email Registrado</span>
                 </div>
-                <p className="text-lg font-semibold truncate">{pet.datos_dueño?.email || 'N/A'}</p>
+                <p className="text-lg font-semibold truncate">{pet.owner?.email || 'N/A'}</p>
               </div>
             </div>
 

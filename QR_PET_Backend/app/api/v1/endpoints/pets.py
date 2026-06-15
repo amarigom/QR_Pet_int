@@ -50,7 +50,7 @@ async def get_my_stats(
     return await pet_service.get_user_stats(current_user.id)
 
 
-@router.get("/{pet_id}") # Quitamos el response_model fijo si las respuestas son muy distintas
+@router.get("/{pet_id}", response_model=PetDetailResponse) # Quitamos el response_model fijo si las respuestas son muy distintas
 async def get_pet(
     pet_id: uuid.UUID,
     user: User = Depends(get_current_user),
@@ -65,7 +65,7 @@ async def get_pet(
     pet_service = PetService(db)
     return await pet_service.get_pet(user, pet_id)
 
-@router.patch("/{pet_id}", response_model=PetResponse)
+@router.patch("/{pet_id}", response_model=PetDetailResponse)
 async def update_pet(
     pet_id: uuid.UUID,
     pet_data: PetUpdate,

@@ -116,8 +116,9 @@ class PetRepository(BaseRepository[Pet]):
         """
         query = (
             select(Pet)
-            .options(joinedload(Pet.owner))
+            .options(joinedload(Pet.owner),joinedload(Pet.qr_code))
             .where(Pet.id == pet_id)
+            .execution_options(populate_existing=True)
         )
         result = await self.session.execute(query)
         # .unique() es importante cuando usas joinedload para evitar filas duplicadas

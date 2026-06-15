@@ -41,7 +41,7 @@ export default function AdminPetsPage() {
     const s = search.toLowerCase()
     return pets.filter(p => 
       p.nombre?.toLowerCase().includes(s) || 
-      p.datos_dueño?.nombre?.toLowerCase().includes(s)
+      p.owner?.nombre?.toLowerCase().includes(s)
     )
   }, [search, pets])
 
@@ -58,7 +58,7 @@ export default function AdminPetsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Base de Datos de Mascotas</h1>
-          <p className="text-sm text-muted-foreground">Panel de control control control; CONTROOL de todos los registros del sistema</p>
+          <p className="text-sm text-muted-foreground">Panel de control de todos los registros del sistema</p>
         </div>
         <div className="relative w-full md:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -86,7 +86,7 @@ export default function AdminPetsPage() {
               {filteredPets.length > 0 ? (
                 filteredPets.map((pet) => {
                   // Limpieza de espacios del nombre (Andrea Marigomez)
-                  const ownerName = pet.datos_dueño?.nombre?.replace(/\s+/g, ' ').trim() || 'N/A'
+                  const ownerName = pet.owner?.nombre?.replace(/\s+/g, ' ').trim() || 'N/A'
                   
                   return (
                     <TableRow key={pet.id} className="hover:bg-muted/10 transition-colors">
@@ -112,7 +112,7 @@ export default function AdminPetsPage() {
                           </div>
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <Mail className="w-3.5 h-3.5" />
-                            {pet.datos_dueño?.email || 'Sin correo'}
+                            {pet.owner?.email || 'Sin correo'}
                           </div>
                         </div>
                       </TableCell>

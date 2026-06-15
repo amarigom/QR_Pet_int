@@ -82,35 +82,45 @@ export default function PetDetailPage() {
 
   useEffect(() => {
     async function loadPet() {
-      if (!petId) return
-      setIsLoading(true)
-      
-      try {
-        const data = await petsApi.getById(petId)
-        setPet(data)
-        
-        setFormData({
-          color: data.color || '',
-          edad_aproximada: data.edad_aproximada || '',
-          notas: data.notas || '',
-          estado: (data as any).estado || 'en_casa', 
-          foto_url: data.foto_url || ''
-        })
-        setTempFotoUrl(data.foto_url || '')
+  if (!petId || petId === 'string' || petId === 'undefined') {
+    return
+  }
+  
+  setIsLoading(true)
+  try {
+    const data = await petsApi.getById(petId)
+    setPet(data)
+    console.log("📡 1. LO QUE LLEGA DE LA API DIRECTO:", data)
+    setFormData({
+      color: data.color || '',
+      edad_aproximada: data.edad_aproximada || '',
+      notas: data.notas || '',
+      estado: data.estado || 'en_casa', 
+      foto_url: data.foto_url || ''
+    })
+    setTempFotoUrl(data.foto_url || '')
 
-        if ((data as any).qr_code) setQr((data as any).qr_code)
-        if ((data as any).scans) setScans((data as any).scans)
+    // 🌟 Mapeamos a 'qr' que es la clave que vimos en la Response real de tu red
+    if (data.qr) {
+      setQr(data.qr)
+    } else {
+      setQr(null)
+    }
+    
+    if (data.scans) setScans(data.scans)
 
-      } catch (error) {
-        console.error('Error loading pet:', error)
-        toast.error('Error al cargar la mascota')
-        router.push('/dashboard/pets')
-      } finally {
-        setIsLoading(false)
-      }
+  } catch (error) {
+    console.error('🔴 Error crítico cargando mascota:', error)
+    toast.error('Error al cargar la mascota')
+    // 🎯 Quitamos el router.push() temporalmente para poder ver el error real 
+    // en la pantalla sin que nos expulse de la página
+  } finally {
+    setIsLoading(false)
+  }
+
     }
     loadPet()
-  }, [petId, router])
+  }, [petId, router]) 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -170,14 +180,14 @@ async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
       const payload: PetFormData = {
         nombre: pet.nombre,              
         especie: pet.especie,            
-        raza: pet.raza || null,
+        raza: pet.raza ,
         color: formData.color || null,
         edad_aproximada: formData.edad_aproximada || null,
         foto_url: formData.foto_url || null,
         notas: formData.notas || null, 
         estado: (formData.estado || pet.estado || 'activo').toLowerCase() as 'activo' | 'en_casa' | 'libre' | 'perdido',
       }
-
+      console.log("📦 2. LO QUE INTENTAMOS METER EN FORMDATA:", payload)
       const updatedPet = await petsApi.update(petId, payload)
       
       setPet(updatedPet)
@@ -412,7 +422,7 @@ async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
                       onChange={handleInputChange}
                     />
                   ) : (
-                    <p className="font-medium truncate">{formData.color || 'No especificado'}</p>
+                    <p className="font-medium truncate">{pet.color || 'No especificado'}</p>
                   )}
                 </div>
               </div>
@@ -431,7 +441,7 @@ async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
                       onChange={handleInputChange}
                     />
                   ) : (
-                    <p className="font-medium truncate">{formData.edad_aproximada || 'No especificada'}</p>
+                    <p className="font-medium truncate">{pet.edad_aproximada || 'No especificada'}</p>
                   )}
                 </div>
               </div>

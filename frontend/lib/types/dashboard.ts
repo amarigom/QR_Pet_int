@@ -6,17 +6,21 @@ export interface QRInfo {
 }
 
 export interface PetData {
-  id: string;
-  nombre: string;
-  especie: string;
-  raza?: string| null;
-  estado: string;
-  foto_url?: string;
-  created_at: string;
-  qr?: QRInfo | null; 
-  qr_code?: QRInfo | null;
+  id: string
+  nombre: string
+  especie: string
+  estado: string
+  foto_url?: string
+  raza?: string
+  color?: string           // 🌟 AGREGAR
+  edad_aproximada?: string // 🌟 AGREGAR
+  notas?: string           // 🌟 AGREGAR
+  qr?: {
+    id: string
+    codigo: string
+    estado: string
+  } | null
 }
-
 export interface RecentScanData {
   id: string;
   mascota_nombre: string;

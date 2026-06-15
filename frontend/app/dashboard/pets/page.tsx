@@ -87,27 +87,27 @@ export default function PetsPage() {
                 <CardContent className="p-0 flex flex-col h-full">
                   
                   {/* Pet Image with overlay Status badge */}
-                  <div className="aspect-video bg-muted relative overflow-hidden shrink-0">
-                    {pet.foto_url ? (
-                      <img
-                        src={pet.foto_url}
-                        alt={pet.nombre}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/5">
-                        <PawPrint className="w-16 h-16 text-primary/20" />
-                      </div>
-                    )}
-                    
-                    {/* Dynamic Status Badge over the photo */}
-                    <div className="absolute top-2 right-2">
-                      <Badge variant={pet.estado === 'en_casa' ? 'default' : 'destructive'} className="shadow-sm">
-                        {pet.estado === 'en_casa' ? 'En casa' : pet.estado === 'perdido' ? 'Perdido' : pet.estado}
-                      </Badge>
-                    </div>
-                  </div>
-
+<div className="aspect-video bg-muted relative overflow-hidden shrink-0">
+  {/* 🌟 BLINDAJE DE QA: Verificamos que exista y que no sea la palabra 'string' literal */}
+  {pet.foto_url && pet.foto_url !== 'string' && pet.foto_url.startsWith('http') ? (
+    <img
+      src={pet.foto_url}
+      alt={pet.nombre}
+      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+    />
+  ) : (
+    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/5">
+      <PawPrint className="w-16 h-16 text-primary/20" />
+    </div>
+  )}
+  
+  {/* Dynamic Status Badge over the photo */}
+  <div className="absolute top-2 right-2">
+    <Badge variant={pet.estado === 'en_casa' ? 'default' : 'destructive'} className="shadow-sm">
+      {pet.estado === 'en_casa' ? 'En casa' : pet.estado === 'perdido' ? 'Perdido' : pet.estado}
+    </Badge>
+  </div>
+</div>
                   {/* Pet Info Body */}
                   <div className="p-4 flex flex-col justify-between flex-1 space-y-4">
                     <div className="space-y-1">
@@ -121,7 +121,7 @@ export default function PetsPage() {
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground capitalize truncate">
-                        {pet.especie}
+                        {pet.raza}
                         {pet.raza && ` - ${pet.raza}`}
                       </p>
                     </div>

@@ -25,7 +25,9 @@ class PetCreate(PetBase):
 
 class PetUpdate(BaseModel):
     """Schema para actualizar una mascota (Request)"""
-   
+    nombre: Optional[str] = Field(None, max_length=100) 
+    especie: Optional[str] = None                       
+    raza: Optional[str] = Field(None, max_length=100)
     color: Optional[str] = Field(None, max_length=100)
     edad_aproximada: Optional[str] = None
     foto_url: Optional[str] = None
@@ -37,15 +39,21 @@ class PetUpdate(BaseModel):
 # RESPUESTAS
 # ============================================================================
 
-class PetResponse(PetBase):
-    """Response estándar de mascota (sin relaciones)"""
+class PetResponse(BaseModel):
     id: UUID
     usuario_id: UUID
-    estado: PetStatus
+    nombre: str
+    especie: str
+    estado: str
     created_at: datetime
+    raza: Optional[str] = None
+    color: Optional[str] = None
+    edad_aproximada: Optional[str] = None
     foto_url: Optional[str] = None
-    qr_code: Optional[QRMinimal] = None
+    notas: Optional[str] = None  
+
     model_config = ConfigDict(from_attributes=True)
+
 
 class PetDetailResponse(BaseModel):
     id: UUID
@@ -59,12 +67,13 @@ class PetDetailResponse(BaseModel):
     estado: str
     usuario_id: UUID
     created_at: datetime
-    qr_code: Optional[QRMinimal] = None
-    # Aquí incluimos la relación que el repo ya cargó con selectinload
+    qr: Optional[QRMinimal] = Field(default=None, validation_alias="qr_code", serialization_alias="qr")
     owner: Optional[UserMinimal] = None 
     
-    # Importante para que Pydantic lea los objetos de SQLAlchemy
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        populate_by_name=True
+    )
 # ============================================================================
 # INICIALIZACIÓN SEGURA
 # ============================================================================

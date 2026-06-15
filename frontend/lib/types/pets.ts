@@ -1,18 +1,47 @@
+// 1. El reflejo exacto de tu tabla 'mascotas' en la base de datos
 export interface Pet {
   id: string;
-  nombre: string;
-  especie: 'perro' | 'gato' | 'otro';
-  raza: string | null;
-  color: string | null;
-  edad_aproximada: string | null;
-  foto_url: string | null;
-  notas: string | null;
-  estado: string;
   usuario_id: string;
-  owner?: PetOwner; 
-  created_at?: string;
+  nombre: string;
+  especie: string;          // ➔ ¡Ya no va a ser undefined!
+  raza?: string | null;
+  color?: string | null;
+  edad_aproximada?: string | null;
+  foto_url?: string | null;
+  notas?: string | null;
+  estado: 'en_casa' | 'perdido' | 'libre' | string; // Aseguramos los estados reales
+  created_at: string;
+  updated_at?: string;
+  
+  // Relaciones que vimos en tu query de SQLAlchemy
+  owner?: {
+    id: string;
+    nombre: string;
+    email: string;
+    rol: string;
+    created_at: string;
+  };
+  qr?: {
+    id: string;
+    codigo: string;
+    mascota_id: string;
+    activo: boolean;
+    lote?: string;
+  } | null;
+  scans?: any[]; // Cambiar por la interfaz de scans si la tenés
 }
 
+// 2. Lo que el backend espera recibir en el PUT / POST (esquema Pydantic)
+export interface PetFormData {
+  nombre: string;
+  especie: string;
+  raza?:string |null;          // ➔ Obligatorio y correcto
+  color?: string | null;
+  edad_aproximada?: string | null;
+  foto_url?: string | null;
+  notas?: string | null;
+  estado: string;
+}
 export interface PetOwner {
   id: number;
   nombre: string;
@@ -20,16 +49,7 @@ export interface PetOwner {
   telefono?: string;
 }
 
-export type PetFormData = {
-  nombre: string;
-  especie: string;
-  raza?: string | null;
-  color?: string | null;
-  edad_aproximada?: string | null;
-  foto_url?: string | null;
-  notas?: string | null;
-  estado?: 'activo' | 'en_casa' | 'libre' | 'perdido'
-};
+
 
 export interface PaginatedPets {
   items: Pet[];

@@ -91,7 +91,7 @@ class PetService:
     
         
     
-    async def update_pet(self, user_id: uuid.UUID, pet_id: uuid.UUID, pet_data: PetUpdate) -> PetResponse:
+    async def update_pet(self, user_id: uuid.UUID, pet_id: uuid.UUID, pet_data: PetUpdate) -> PetDetailResponse:
         """Actualiza datos de la mascota validando propiedad"""
         pet = await self.pet_repo.get_by_id(pet_id)
     
@@ -105,7 +105,7 @@ class PetService:
         await self.db.commit()
         await self.db.refresh(pet)
     
-        return PetResponse.model_validate(pet)
+        return PetDetailResponse.model_validate(pet)
     
     async def delete_pet(self, user_id: uuid.UUID, pet_id: uuid.UUID) -> bool:
         """Elimina una mascota validando propiedad"""
