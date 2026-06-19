@@ -1,5 +1,5 @@
 import uuid
-from typing import Dict, Any
+from typing import Dict, Any, List
 from fastapi import APIRouter, Depends, Query, HTTPException,status
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -53,7 +53,7 @@ async def update_scan(
     
     return updated_scan
 
-@router.get("", response_model=PaginatedResponse[ScanResponse])
+@router.get("", response_model=List[Dict[str, Any]])
 async def get_all_scans(
     page: int = Query(1, ge=1),
     limit: int = Query(100, ge=1, le=500),

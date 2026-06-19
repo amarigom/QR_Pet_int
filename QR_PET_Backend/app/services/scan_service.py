@@ -185,11 +185,24 @@ class ScanService:
         ]
 
     async def update_scan_location(self, scan_id: UUID, location_data: ScanCreate) -> Dict[str, Any]:
-        # ... 1. Llamada a tu repositorio ...
+        # 1. Controlamos qué le pasamos al repositorio:
+        # Si vienen nulos del frontend, extraemos lo que ya tiene el registro actual antes de pisar
+        lat_to_update = location_data.latitud
+        lng_to_update = location_data.longitud
+
+        # Si el frontend mandó None pero tu repo exige mandarle algo, o si queremos evitar pisar con None:
+        if lat_to_update is None or lng_to_update is None:
+            # Buscamos primero el registro actual para no perder lo que ya teníamos
+            current = await self.scan_repo.get_by_id(scan_id)
+            if current:
+                lat_to_update = lat_to_update if lat_to_update is not None else current.latitud
+                lng_to_update = lng_to_update if lng_to_update is not None else current.longitud
+
+        # Llamada a tu repositorio con los valores corregidos (evitando el None accidental)
         scan_record = await self.scan_repo.update_location_with_relations(
             scan_id=scan_id, 
-            latitud=location_data.latitud, 
-            longitud=location_data.longitud
+            latitud=lat_to_update, 
+            longitud=lng_to_update
         )
 
         if not scan_record:
@@ -207,13 +220,13 @@ class ScanService:
                 status_code=status.HTTP_400_BAD_REQUEST, detail="La mascota no tiene un teléfono asociado"
             )
 
-        # 3. 🚨 EL DISPARO LIMPIO: Llamamos a la función directa, NO a self.core
+        # 3. El disparo del mailer usando SIEMPRE los datos reales finales del registro
         if owner and getattr(owner, "email", None):
             try:
                 print(f"📧 [SERVICIO] Orquestando envío de correo Brevo para: {owner.email}")
-                coordenadas_str = f"{location_data.latitud}, {location_data.longitud}"
+                # 🎯 CAMBIO CLAVE: Leemos de scan_record, NO de location_data
+                coordenadas_str = f"{scan_record.latitud}, {scan_record.longitud}"
                 
-                # Usamos la función nativa importada directamente
                 await send_scan_notification_email(
                     to_email=owner.email,
                     owner_name=owner.nombre,
@@ -224,7 +237,9 @@ class ScanService:
                 print(f"❌ Error al disparar el mailer desde el servicio: {mail_err}")
 
         # ... 4. Return al Frontend ...
-        google_maps_url = f"https://www.google.com/maps?q={location_data.latitud},{location_data.longitud}"
+        # 🎯 CAMBIO CLAVE: Usamos scan_record para armar el mapa de forma segura
+        google_maps_url = f"https://www.google.com/maps?q={scan_record.latitud},{scan_record.longitud}"
+        
         return {
             "scan_id": str(scan_record.id),
             "status": "location_updated",
