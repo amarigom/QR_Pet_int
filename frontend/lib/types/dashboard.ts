@@ -20,6 +20,7 @@ export interface PetData {
     codigo: string
     estado: string
   } | null
+  qr_code?: any;
 }
 export interface RecentScanData {
   id: string;
