@@ -43,11 +43,12 @@ export const qrApi = {
    * PÚBLICO: Actualiza la ubicación del escaneo de forma silenciosa.
    */
   updateScanLocation: (scanId: string, location: { lat: number; lng: number }) => {
-    return fetchAPI(`/scans/${scanId}`, {
+    return fetchAPI(`/scans/${scanId}/location`, {
       method: 'PUT',
       body: JSON.stringify({
         latitud: location.lat,
-        longitud: location.lng
+        longitud: location.lng,
+        direccion: "Ubicación aproximada"
       }),
     });
   },
