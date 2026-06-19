@@ -20,7 +20,7 @@ from app.schemas.scan import (
     ScanCreate,
     ScanLocationUpdate,
     ScanResponse,
-    ScanUpdate,
+    
 )
 
 
@@ -101,7 +101,7 @@ class ScanService:
         }
 
     async def update_scan_data(
-        self, scan_id: UUID, data: ScanUpdate
+        self, scan_id: UUID, data: ScanResponse
     ) -> Optional[Scan]:
         """Actualiza los datos del escaneo (ubicación, mensaje)."""
         result = await self.db.execute(select(Scan).where(Scan.id == scan_id))
@@ -184,7 +184,7 @@ class ScanService:
             for s in scans
         ]
 
-    async def update_scan_location(self, scan_id: UUID, location_data: ScanLocationUpdate) -> Dict[str, Any]:
+    async def update_scan_location(self, scan_id: UUID, location_data: ScanCreate) -> Dict[str, Any]:
         # ... 1. Llamada a tu repositorio ...
         scan_record = await self.scan_repo.update_location_with_relations(
             scan_id=scan_id, 
@@ -231,32 +231,4 @@ class ScanService:
             "telefono_dueno": owner.telefono,
             "pet_name": pet.nombre,
             "google_maps_url": google_maps_url,
-        }
-    async def register_initial_scan(
-        self, qr_codigo: str, ip_transeunte: str
-    ) -> Dict[str, Any]:
-        """Paso 1: Procesa el escaneo, guarda en BD y despacha la alerta de mail
-
-        vía Brevo.
-        """
-        # CAMBIO: En lugar de pedir pet_id por parámetro (que el QR físico no sabe cuál es),
-        # usamos el qr_codigo que lee la cámara y llamamos internamente a nuestra lógica estructurada.
-        scan_info = await self.process_scan_from_qr(codigo_qr=qr_codigo)
-
-        ubicacion_estimada = "Tandil, Buenos Aires"
-
-        try:
-            await send_scan_notification_email(
-                to_email=scan_info["owner"]["email"] if "email" in scan_info["owner"] else "tu_correo_test@gmail.com",  # Ajustá esto según tu modelo User
-                owner_name=scan_info["owner"]["nombre"],
-                pet_name=scan_info["pet"]["nombre"],
-                ubicacion_ip=ubicacion_estimada,
-            )
-        except Exception as e:
-            print(f"Error enviando correo por Brevo: {e}")
-
-        return {
-            "scan_id": scan_info["scan_id"],
-            "status": "success",
-            "message": "Escaneo registrado y alerta enviada de forma asincrónica.",
         }

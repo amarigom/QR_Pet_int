@@ -9,11 +9,11 @@ from app.api.v1.dependencies import get_current_user # Ajustado a tu dependencie
 from app.models.scan import Scan
 from app.models.qr import QRCode
 from app.models.pet import Pet
-from app.schemas.scan import ScanLocation # Importamos la clase directamente
+from app.schemas.scan import ScanResponse# Importamos la clase directamente
 
 router = APIRouter()
 
-@router.get("/locations", response_model=List[ScanLocation]) # Usamos ScanLocation directo
+@router.get("/locations", response_model=List[ScanResponse]) # Usamos ScanLocation directo
 async def get_user_scans_locations(
     db: AsyncSession = Depends(get_db), # Usamos AsyncSession
     current_user: Pet = Depends(get_current_user) # Ajustado a tu dependencia

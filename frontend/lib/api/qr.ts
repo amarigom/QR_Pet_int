@@ -43,7 +43,7 @@ export const qrApi = {
    * PÚBLICO: Actualiza la ubicación del escaneo de forma silenciosa.
    */
   updateScanLocation: (scanId: string, location: { lat: number; lng: number }) => {
-    return fetchAPI(`/scans/${scanId}/location`, {
+    return fetchAPI(`/scans/${scanId}`, {
       method: 'PUT',
       body: JSON.stringify({
         latitud: location.lat,
@@ -57,7 +57,7 @@ export const qrApi = {
    * PÚBLICO: Envía el mensaje manual del transeúnte.
    */
   updateScanMessage: (scanId: string, message: string) => {
-    return fetchAPI(`/scans/${scanId}/message`, {
+    return fetchAPI(`/scans/${scanId}`, {
       method: 'PUT',
       body: JSON.stringify({
         mensaje_encontrador: message

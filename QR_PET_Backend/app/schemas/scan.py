@@ -1,106 +1,68 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 from app.schemas.base import UserMinimal
 
 # ============================================================================
-# ESQUEMAS DE CREACIÓN / REGISTRO
+# 📥 1. ESQUEMAS DE ENTRADA (PAYLOADS DESDE EL FRONTEND)
 # ============================================================================
 
 class ScanCreate(BaseModel):
-    """
-    📥 ESQUEMA DE CREACIÓN
-    Requerido para registrar un nuevo escaneo de QR desde el frontend.
-    """
-    qr_codigo: str  # El frontend manda qr_codigo
+    """Requerido para registrar el impacto inicial del QR (Escaneo básico por IP)."""
+    qr_codigo: Optional[str] = None
     latitud: Optional[float] = None
     longitud: Optional[float] = None
-    direccion: Optional[str] = None
+    direccion_aproximada: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
-# ============================================================================
-# ESQUEMAS DE MODIFICACIÓN / EDICIÓN / GPS PRECISO
-# ============================================================================
-
-class ScanUpdate(BaseModel):
-    """
-    🛠️ ESQUEMA DE ACTUALIZACIÓN
-    Mantiene la compatibilidad para operaciones PUT/PATCH generales.
-    """
-    latitud: Optional[float] = None
-    longitud: Optional[float] = None
-    direccion_aproximada: Optional[str] = Field(default="Ubicación aproximada", validation_alias="direccion", serialization_alias="direccion")
-    model_config = ConfigDict(from_attributes=True,populate_by_name=True)
-
-
 class ScanLocationUpdate(BaseModel):
-    """
-    🛰️ ESQUEMA PARA ACTUALIZACIÓN DE GPS DESDE EL FRONTEND
-    Contrato específico para cuando el transeúnte acepta compartir coordenadas.
-    """
-    latitud: float  # Requeridos para poder calcular el pin de Google Maps
+    """Contrato estricto para cuando el transeúnte acepta compartir GPS preciso."""
+    latitud: float
     longitud: float
 
     model_config = ConfigDict(from_attributes=True)
 
 
 # ============================================================================
-# RESPUESTAS BASE CORREGIDAS (Compatibles con UUIDs)
+# 📤 2. ESQUEMAS DE SALIDA (RESPUESTAS UNIFICADAS Y SINCRONIZADAS CON NEON)
 # ============================================================================
 
 class ScanResponse(BaseModel):
     """
-    Response estándar de escaneo corregida a nivel global.
-    Sana los conflictos de UUIDs y nomenclatura de fechas de la BD.
+    🎯 RESPUESTA ESTÁNDAR Y ANALÍTICA UNIFICADA
+    Se fusionó ScanResponse y ScanLocation. Mapea 1:1 con los campos reales de Neon.
     """
-    id: str  # Soporta tus UUIDs como string sin romper
+    id: str  # Soporta UUIDs como strings en Next.js
     qr_codigo: str
-    created_at: datetime  # 🎯 ¡Le sacamos el alias! Lee directo de 'created_at' de la BD
+    created_at: datetime  # Nombre real en Neon
     latitud: Optional[float] = None
     longitud: Optional[float] = None
-    direccion: Optional[str] = Field(default="Ubicación aproximada")
+    direccion_aproximada: Optional[str] = "Ubicación aproximada"  # Nombre real en Neon
+    pet_name: Optional[str] = "Mascota"  # Incluido para el mapa de calor/listados
 
     model_config = ConfigDict(from_attributes=True)
 
-
-class ScanWhatsAppResponse(BaseModel):
-    """
-    📲 RESPUESTA ESPECIALIZADA PARA EL BOTÓN DE WHATSAPP
-    Devuelve los datos procesados para armar el link dinámico en Next.js.
-    """
-    scan_id: str
-    status: str
-    telefono_dueno: str
-    pet_name: str
-    google_maps_url: str
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-# ============================================================================
-# RESPUESTAS ESPECIALIZADAS PARA PANELES Y MAPAS
-# ============================================================================
 
 class ScanWithUserResponse(ScanResponse):
-    """Escaneo con datos del usuario que lo reportó"""
+    """
+    👑 RESPUESTA EXTENDIDA (Antes ScanAdminResponse y ScanWithUserResponse)
+    Se consolidó en una sola. Sirve tanto para el panel de usuario como para el Admin.
+    """
     usuario: Optional[UserMinimal] = None
 
 
-class ScanAdminResponse(ScanResponse):
-    """Response para el panel de admin"""
-    usuario: Optional[UserMinimal] = None
+# ============================================================================
+# 📲 3. RESPUESTAS ESPECIALIZADAS DE FLUJO
+# ============================================================================
 
-
-class ScanLocation(BaseModel):
-    """Esquema analítico mapeado directo para listas detalladas o mapas de calor"""
-    id: str
-    qr_codigo: str
-    latitud: Optional[float] = None
-    longitud: Optional[float] = None
+class ScanWhatsAppResponse(BaseModel):
+    """Devuelve los datos procesados para armar el link dinámico y push notifications."""
+    scan_id: str
+    status: str
+    telefono_dueno: Optional[str] = None
     pet_name: str
-    escaneado_en: datetime
-    direccion_aproximada: str
+    google_maps_url: str
 
     model_config = ConfigDict(from_attributes=True)
