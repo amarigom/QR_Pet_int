@@ -90,5 +90,49 @@ class ScanRepository(BaseRepository[Scan]):
             .filter(Scan.longitud.isnot(None))
             .order_by(Scan.created_at.desc())
         )
-        result = await self.db.execute(query)
+        result = await self.session.execute(query)
         return result.scalars().all()
+    
+    async def get_by_mascota_with_details(self, mascota_id: uuid.UUID, limit: int = 50, offset: int = 0) -> List[Scan]:
+        """Obtiene escaneos de una mascota con carga profunda del QR para evitar Lazy Loading"""
+        query = (
+            select(Scan)
+            .join(QRCode)
+            .options(joinedload(Scan.qr)) # 🎯 Trae el QR cargado de un tiro si lo vas a renderizar en el frontend
+            .where(QRCode.mascota_id == mascota_id)
+            .order_by(Scan.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        result = await self.session.execute(query)
+        return list(result.scalars().unique().all())
+# 🎯 AGREGÁ ESTE MÉTODO AL FINAL DE TU CLASE EN app/repositories/scan_repository.py
+    async def update_location_with_relations(self, scan_id: uuid.UUID, latitud: float, longitud: float) -> Optional[Scan]:
+        """
+        Busca un escaneo específico por su ID cargando recursivamente todo el 
+        árbol relacional (QR -> Mascota -> Dueño), actualiza sus coordenadas y guarda.
+        """
+        query = (
+            select(Scan)
+            .options(
+                joinedload(Scan.qr)
+                .joinedload(QRCode.mascota)
+                .joinedload(Pet.owner)
+            )
+            .where(Scan.id == scan_id)
+        )
+        result = await self.session.execute(query)
+        scan_record = result.scalars().unique().one_or_none()
+
+        if not scan_record:
+            return None
+
+        # Actualizamos los campos con la ubicación precisa GPS
+        scan_record.latitud = latitud
+        scan_record.longitud = longitud
+
+        # Impactamos los cambios en la base de datos
+        await self.session.commit()
+        await self.session.refresh(scan_record)
+        
+        return scan_record

@@ -13,6 +13,7 @@ from app.core.mail import send_scan_notification_email
 from app.models.pet import Pet
 from app.models.qr import QRCode
 from app.models.scan import Scan
+
 from app.repositories.qr_repository import QRRepository
 from app.repositories.scan_repository import ScanRepository
 from app.schemas.scan import (
@@ -183,48 +184,47 @@ class ScanService:
             for s in scans
         ]
 
-    async def update_scan_location(
-        self, scan_id: UUID, location_data: ScanLocationUpdate
-    ) -> Dict[str, Any]:
-        """Actualiza un escaneo existente con las coordenadas GPS precisas del
-
-        transeúnte y retorna los datos necesarios para armar el WhatsApp en el
-        Frontend.
-        """
-        # CAMBIO: Agregamos joinedload para traer el QR, la Mascota y el Dueño de un solo tiro de forma asíncrona
-        stmt = (
-            select(Scan)
-            .options(joinedload(Scan.qr).joinedload(QRCode.mascota).joinedload(Pet.owner))
-            .where(Scan.id == scan_id)
+    async def update_scan_location(self, scan_id: UUID, location_data: ScanLocationUpdate) -> Dict[str, Any]:
+        # ... 1. Llamada a tu repositorio ...
+        scan_record = await self.scan_repo.update_location_with_relations(
+            scan_id=scan_id, 
+            latitud=location_data.latitud, 
+            longitud=location_data.longitud
         )
-        result = await self.db.execute(stmt)
-        scan_record = result.scalar_one_or_none()
 
         if not scan_record:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Registro de escaneo no encontrado",
+                status_code=status.HTTP_404_NOT_FOUND, detail="Registro de escaneo no encontrado"
             )
 
-        scan_record.latitud = location_data.latitud
-        scan_record.longitud = location_data.longitud
-
-        await self.db.commit()
-        await self.db.refresh(scan_record)
-
-        # CAMBIO: Navegación correcta a través del árbol de relaciones (Scan -> QR -> Mascota -> Owner)
+        # ... 2. Navegación de relaciones ...
         qr = scan_record.qr
         pet = qr.mascota if qr else None
         owner = pet.owner if pet else None
-
+        
         if not owner or not getattr(owner, "telefono", None):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="La mascota escaneada no tiene un teléfono de dueño asociado",
+                status_code=status.HTTP_400_BAD_REQUEST, detail="La mascota no tiene un teléfono asociado"
             )
 
-        google_maps_url = f"https://www.google.com/maps?q={location_data.latitud},{location_data.longitud}"
+        # 3. 🚨 EL DISPARO LIMPIO: Llamamos a la función directa, NO a self.core
+        if owner and getattr(owner, "email", None):
+            try:
+                print(f"📧 [SERVICIO] Orquestando envío de correo Brevo para: {owner.email}")
+                coordenadas_str = f"{location_data.latitud}, {location_data.longitud}"
+                
+                # Usamos la función nativa importada directamente
+                await send_scan_notification_email(
+                    to_email=owner.email,
+                    owner_name=owner.nombre,
+                    pet_name=pet.nombre if pet else "Mascota",
+                    ubicacion_ip=coordenadas_str
+                )
+            except Exception as mail_err:
+                print(f"❌ Error al disparar el mailer desde el servicio: {mail_err}")
 
+        # ... 4. Return al Frontend ...
+        google_maps_url = f"https://www.google.com/maps?q={location_data.latitud},{location_data.longitud}"
         return {
             "scan_id": str(scan_record.id),
             "status": "location_updated",
@@ -232,7 +232,6 @@ class ScanService:
             "pet_name": pet.nombre,
             "google_maps_url": google_maps_url,
         }
-
     async def register_initial_scan(
         self, qr_codigo: str, ip_transeunte: str
     ) -> Dict[str, Any]:

@@ -100,7 +100,7 @@ async def process_scan_by_code(
 @router.put("/{scan_id}/location")  # 🎯 Nueva ruta única
 async def update_scan_location_express(
     scan_id: UUID,
-    scan_data: ScanUpdate,
+    scan_data: ScanLocationUpdate,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -108,7 +108,7 @@ async def update_scan_location_express(
     de forma segura sin tocar el endpoint viejo del mapa.
     """
     service = ScanService(db)
-    db_scan = await service.update_scan_data(scan_id, scan_data)
+    db_scan = await service.update_scan_location(scan_id, scan_data)
     
     if not db_scan:
         raise HTTPException(
@@ -119,5 +119,34 @@ async def update_scan_location_express(
     return {
         "status": "success",
         "message": "Ubicación registrada con éxito",
+        "id": str(scan_id)
+    }
+    
+    # =====================================================================
+# ENDPOINT NUEVO: Exclusivo para el mensaje de reporte del transeúnte
+# Convive con el PUT original sin tocar tus esquemas Pydantic
+# =====================================================================
+@router.put("/{scan_id}/message")  # Nueva ruta única para el mensaje
+async def update_scan_message_express(
+    scan_id: UUID,
+    scan_data: ScanUpdate,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Ruta express para que el transeúnte guarde el mensaje extra
+    sin pasar por validadores asincrónicos.
+    """
+    service = ScanService(db)
+    db_scan = await service.update_scan_location(scan_id, scan_data)
+    
+    if not db_scan:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Scan no encontrado"
+        )
+        
+    return {
+        "status": "success",
+        "message": "Mensaje registrado con éxito",
         "id": str(scan_id)
     }

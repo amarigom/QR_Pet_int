@@ -57,7 +57,7 @@ export const qrApi = {
    * PÚBLICO: Envía el mensaje manual del transeúnte.
    */
   updateScanMessage: (scanId: string, message: string) => {
-    return fetchAPI(`/scans/${scanId}`, {
+    return fetchAPI(`/scans/${scanId}/message`, {
       method: 'PUT',
       body: JSON.stringify({
         mensaje_encontrador: message

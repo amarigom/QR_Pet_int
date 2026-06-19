@@ -44,5 +44,12 @@ class Settings:
     STATIC_QR_DIR: Path = BASE_DIR / "static" / "qrs"
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
             
-
+    SMTP_SERVER: str = "smtp-relay.brevo.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str
+    SMTP_PASSWORD: str
+    
+class Config:
+        env_file = ".env"
+        extra = "ignore"
 settings = Settings()
