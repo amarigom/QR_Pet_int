@@ -5,7 +5,7 @@ export interface QRCode {
   codigo: string;
   mascota_id: string | null;
   activo: boolean;
-  created_at: string;
+  created_at?: string;
 }
 
 export interface Scan {
