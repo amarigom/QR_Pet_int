@@ -64,5 +64,18 @@ export const authApi = {
       localStorage.removeItem('auth_user');
       return null;
     }
+  },
+
+  updateProfile: async (data: { nombre: string; telefono: string }): Promise<User> => {
+    const updatedUser = await fetchAPI<User>('/auth/me', {
+      method: 'PUT',
+      body: data as any, 
+    });
+
+    if (updatedUser) {
+      localStorage.setItem('auth_user', JSON.stringify(updatedUser));
+    }
+
+    return updatedUser;
   }
-};
+}

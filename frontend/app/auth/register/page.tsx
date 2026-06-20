@@ -40,8 +40,15 @@ function RegisterForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    // 🎯 1. VALIDACIÓN: Ningún campo obligatorio puede estar vacío (quitando espacios en blanco)
-    if (!formData.nombre.trim() || !formData.email.trim() || !formData.password.trim() || !formData.confirmPassword.trim()) {
+    
+    // 🎯 1. VALIDACIÓN: Ningún campo obligatorio puede estar vacío (Incluyendo teléfono ahora)
+    if (
+      !formData.nombre.trim() || 
+      !formData.email.trim() || 
+      !formData.password.trim() || 
+      !formData.confirmPassword.trim() ||
+      !formData.telefono.trim()
+    ) {
       toast.error("Por favor, completa todos los campos obligatorios.")
       return
     }
@@ -53,6 +60,22 @@ function RegisterForm() {
       return
     }
 
+    // 🎯 2b. VALIDACIÓN Y LIMPIEZA DEL TELÉFONO: Formato internacional para WhatsApp
+    // Dejamos solo números y el símbolo '+' si ya lo tiene
+    let cleanPhone = formData.telefono.trim().replace(/[^\d+]/g, '')
+    
+    // Si no empieza con '+', se lo inyectamos automáticamente (asumiendo formato numérico puro)
+    if (cleanPhone && !cleanPhone.startsWith('+')) {
+      cleanPhone = `+${cleanPhone}`
+    }
+
+    // Regex internacional estándar de WhatsApp: un '+' seguido de entre 10 y 15 dígitos
+    const phoneRegex = /^\+[1-9]\d{9,14}$/
+    if (!phoneRegex.test(cleanPhone)) {
+      toast.error("Por favor, ingresa un teléfono válido con código de país (ej: +5492494112233).")
+      return
+    }
+
     // 🎯 3. VALIDACIÓN: Largo de la contraseña (Mínimo 6 caracteres)
     if (formData.password.length < 6) {
       toast.error("La contraseña debe tener al menos 6 caracteres.")
@@ -60,7 +83,6 @@ function RegisterForm() {
     }
 
     // 🎯 4. VALIDACIÓN: Caracteres especiales en la contraseña
-    // Busca al menos un carácter que no sea letra ni número
     const specialCharRegex = /[^A-Za-z0-9]/
     if (!specialCharRegex.test(formData.password)) {
       toast.error("La contraseña debe contener al menos un carácter especial (ej: @, #, $, %, *, !, ?).")
@@ -72,24 +94,22 @@ function RegisterForm() {
       toast.error("Las contraseñas no coinciden. Por favor, verifícalas.")
       return
     }
+    
     setIsLoading(true)
 
     try {
-      // 1. Llamada al backend para crear el usuario
+      // 1. Llamada al backend pasando el teléfono ya limpio y formateado
       await authApi.register({
         nombre: formData.nombre,
         email: formData.email,
         password: formData.password,
-        telefono: formData.telefono.trim() || undefined,
+        telefono: cleanPhone, // 👈 Enviamos la cadena sanitizada
       })
       
       toast.success("¡Cuenta creada con éxito! Redirigiendo...")
       
-      // 🎯 LA CORRECCIÓN ACÁ: 
-      // Usamos el 'rawRedirect' original (sin recortar) para no romper los parámetros del QR (?code=...)
       setTimeout(() => {
         if (rawRedirect) {
-          // Te manda al login arrastrando TODA la ruta de la mascota/QR para que impacte después de loguearte
           router.push(`/auth/login?redirect=${encodeURIComponent(rawRedirect)}`)
         } else {
           router.push('/auth/login')

@@ -31,11 +31,13 @@ export async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): 
 
   const metodo = options.method || 'GET';
   const cacheConfig = options.cache || (metodo === 'GET' ? 'no-store' : undefined);
+
     // 5. Hacemos el fetch limpio pasando las opciones unificadas
   const res = await fetch(`${API_BASE}${endpoint}`, { 
-    ...options, 
-    headers,
-    body: bodyProcesado 
+    method: metodo,
+    cache: cacheConfig,
+    body: bodyProcesado,
+    headers: headers // 
   });
 
   // AUDITORÍA DE RESPUESTA

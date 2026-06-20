@@ -3,7 +3,7 @@ Dependencias y funciones compartidas para endpoints
 """
 from typing import Optional
 import uuid
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,6 +31,7 @@ async def get_current_user(
 ) -> User:
     """Obtiene el usuario actual validando el token JWT"""
     
+    # 1. Decodificamos afuera (como estaba al principio)
     payload = decode_access_token(token)
     user_id = payload.get("sub")
     
@@ -39,13 +40,16 @@ async def get_current_user(
 
     user_repo = UserRepository(db)
     
+    # 2. Convertimos el UUID de forma segura
     try:
-        # Convertimos a UUID si es necesario
         user_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
-        user = await user_repo.get_by_id(user_uuid)
     except ValueError:
         raise AuthenticationException("ID de usuario en formato inválido")
+        
+    # 3. Buscamos en la base de datos
+    user = await user_repo.get_by_id(user_uuid)
     
+    # 4. Si no existe, lanzamos la excepción nativa de tu arquitectura
     if not user:
         raise AuthenticationException("Usuario no encontrado")
     

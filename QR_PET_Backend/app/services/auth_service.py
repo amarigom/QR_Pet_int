@@ -1,13 +1,14 @@
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
+
 from app.core.auth import hash_password, verify_password, create_access_token
 from app.core.exceptions import (
     AuthenticationException, ConflictException, ResourceNotFoundException
 )
 from app.core.constants import MESSAGE_EMAIL_EXISTS, MESSAGE_INVALID_CREDENTIALS
 from app.repositories.user_repository import UserRepository
-from app.schemas.user import UserResponse, TokenResponse, UserLogin, UserCreate
+from app.schemas.user import UserResponse, TokenResponse, UserLogin, UserCreate, UserUpdate
 
 class AuthService:
     """Service para lógica de autenticación y gestión de identidad"""
@@ -67,3 +68,25 @@ class AuthService:
             raise ResourceNotFoundException("Usuario")
         
         return UserResponse.model_validate(user)
+    from uuid import UUID
+    async def update_user_profile(self, user_id: UUID, user_data: UserUpdate) -> UserResponse:
+            """Modifica selectivamente el perfil del usuario y guarda los cambios."""
+            # Extraemos solo los campos que el usuario mandó en la petición
+            fields_sent = user_data.model_dump(exclude_unset=True)
+
+            # Modificamos el registro en memoria desde el repositorio
+            user = await self.user_repo.update_user(
+                user_id=user_id,
+                telefono=fields_sent.get("telefono"),
+                nombre=fields_sent.get("nombre"),
+                avatar_url=fields_sent.get("avatar_url")
+            )
+
+            if not user:
+                raise ResourceNotFoundException("Usuario")
+
+            # El servicio controla la transacción e impacta en la DB
+            await self.db.commit()
+            await self.db.refresh(user)
+
+            return UserResponse.model_validate(user)

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.composite import AuthRegisterResponse
 
 # 1. Imports de Esquemas (Ahora SEGUROS y directos)
-from app.schemas.user import UserCreate, UserLogin, TokenResponse, UserResponse
+from app.schemas.user import UserCreate, UserLogin, TokenResponse, UserResponse, UserUpdate
 
 # 2. Core y Seguridad
 from app.core.database import get_db
@@ -56,11 +56,32 @@ async def login(
     return await auth_service.login(login_data)
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user_info(
-    current_user: User = Depends(get_current_user)
+async def get_me(current_user: User = Depends(get_current_user)):
+    """
+    Retorna el perfil del usuario actual autenticado de forma limpia.
+    """
+    return UserResponse.model_validate(current_user)
+
+@router.put("/me", response_model=UserResponse)
+async def update_me(
+    user_data: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db) # 👈 Inyectamos la sesión primero
 ):
     """
-    Retorna el perfil del usuario autenticado.
+    Actualiza el perfil del usuario autenticado de forma segura.
     """
-    # Al ser UserResponse un esquema atómico, model_validate funciona perfecto
-    return UserResponse.model_validate(current_user)
+    try:
+        # 🎯 Instanciamos el servicio pasándole la DB manualmente para evitar el error de FastAPI
+        auth_service = AuthService(db) 
+        
+        updated_user = await auth_service.update_user_profile(
+            user_id=current_user.id, 
+            user_data=user_data
+        )
+        return updated_user
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
