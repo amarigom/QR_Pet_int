@@ -114,6 +114,12 @@ class ScanService:
         for key, value in update_data.items():
             setattr(db_scan, key, value)
 
+        # Asegura la asignación explícita de los campos del formulario
+        if getattr(data, "mensaje_encontrador", None):
+            db_scan.mensaje_encontrador = data.mensaje_encontrador
+        if getattr(data, "telefono_encontrador", None):
+            db_scan.telefono_encontrador = data.telefono_encontrador
+
         await self.db.commit()
         await self.db.refresh(db_scan)
 
@@ -184,66 +190,62 @@ class ScanService:
             for s in scans
         ]
 
-    async def update_scan_location(self, scan_id: UUID, location_data: ScanCreate) -> Dict[str, Any]:
-        # 1. Controlamos qué le pasamos al repositorio:
-        # Si vienen nulos del frontend, extraemos lo que ya tiene el registro actual antes de pisar
-        lat_to_update = location_data.latitud
-        lng_to_update = location_data.longitud
+    
 
-        # Si el frontend mandó None pero tu repo exige mandarle algo, o si queremos evitar pisar con None:
-        if lat_to_update is None or lng_to_update is None:
-            # Buscamos primero el registro actual para no perder lo que ya teníamos
-            current = await self.scan_repo.get_by_id(scan_id)
-            if current:
-                lat_to_update = lat_to_update if lat_to_update is not None else current.latitud
-                lng_to_update = lng_to_update if lng_to_update is not None else current.longitud
-
-        # Llamada a tu repositorio con los valores corregidos (evitando el None accidental)
+    async def update_scan_location(self, scan_id: uuid.UUID, location_data: Any) -> Dict[str, Any]:
+        """Procesa las actualizaciones selectivas de ubicación y datos del formulario."""
+        fields_sent = location_data.model_dump(exclude_unset=True) if hasattr(location_data, "model_dump") else dict(location_data)
+        
+        # 1. El repositorio modifica el objeto en memoria
         scan_record = await self.scan_repo.update_location_with_relations(
-            scan_id=scan_id, 
-            latitud=lat_to_update, 
-            longitud=lng_to_update
+            scan_id=scan_id,
+            latitud=fields_sent.get("latitud"),
+            longitud=fields_sent.get("longitud"),
+            mensaje_encontrador=fields_sent.get("mensaje_encontrador"),
+            telefono_encontrador=fields_sent.get("telefono_encontrador")
         )
 
         if not scan_record:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Registro de escaneo no encontrado"
-            )
+            raise HTTPException(status_code=404, detail="Registro no encontrado")
 
-        # ... 2. Navegación de relaciones ...
-        qr = scan_record.qr
-        pet = qr.mascota if qr else None
-        owner = pet.owner if pet else None
         
-        if not owner or not getattr(owner, "telefono", None):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="La mascota no tiene un teléfono asociado"
-            )
+        await self.db.commit()
+        await self.db.refresh(scan_record)
 
-        # 3. El disparo del mailer usando SIEMPRE los datos reales finales del registro
-        if owner and getattr(owner, "email", None):
-            try:
-                print(f"📧 [SERVICIO] Orquestando envío de correo Brevo para: {owner.email}")
-                # 🎯 CAMBIO CLAVE: Leemos de scan_record, NO de location_data
-                coordenadas_str = f"{scan_record.latitud}, {scan_record.longitud}"
-                
-                await send_scan_notification_email(
-                    to_email=owner.email,
-                    owner_name=owner.nombre,
-                    pet_name=pet.nombre if pet else "Mascota",
-                    ubicacion_ip=coordenadas_str
-                )
-            except Exception as mail_err:
-                print(f"❌ Error al disparar el mailer desde el servicio: {mail_err}")
+        owner = scan_record.qr.mascota.owner if scan_record.qr and scan_record.qr.mascota else None
+        pet = scan_record.qr.mascota if scan_record.qr else None
 
-        # ... 4. Return al Frontend ...
-        # 🎯 CAMBIO CLAVE: Usamos scan_record para armar el mapa de forma segura
-        google_maps_url = f"https://www.google.com/maps?q={scan_record.latitud},{scan_record.longitud}"
-        
+        # 3. Evaluación para el disparo de la notificación por correo
+        tiene_mensaje = fields_sent.get("mensaje_encontrador") or scan_record.mensaje_encontrador
+        tiene_telefono = fields_sent.get("telefono_encontrador") or scan_record.telefono_encontrador
+
+        if tiene_mensaje or tiene_telefono:
+            if owner and getattr(owner, "email", None):
+                try:
+                    lat_db = scan_record.latitud
+                    lng_db = scan_record.longitud
+                    coordenadas_str = f"{lat_db}, {lng_db}" if lat_db else "No proporcionada"
+
+                    await send_scan_notification_email(
+                        to_email="andreamarigomez@gmail.com",
+                        owner_name=owner.nombre,
+                        pet_name=pet.nombre if pet else "Mascota",
+                        ubicacion_ip=coordenadas_str, 
+                        mensaje=scan_record.mensaje_encontrador or "No proporcionado",        
+                        telefono=scan_record.telefono_encontrador or "No proporcionado"     
+                    )
+                    print("✅ [CORREO] Notificación enviada exitosamente con datos guardados.")
+                except Exception as mail_err:
+                    print(f"❌ [CORREO] Error en el envío: {mail_err}")
+        else:
+            print("ℹ️ [TIRO UBICACIÓN] Coordenadas almacenadas. Esperando datos del formulario.")
+
+        google_maps_url = f"https://www.google.com/maps?q={scan_record.latitud},{scan_record.longitud}" if scan_record.latitud else None
+
         return {
             "scan_id": str(scan_record.id),
-            "status": "location_updated",
-            "telefono_dueno": owner.telefono,
-            "pet_name": pet.nombre,
+            "status": "updated",
+            "telefono_dueno": owner.telefono if owner else None,
+            "pet_name": pet.nombre if pet else "Mascota",
             "google_maps_url": google_maps_url,
         }

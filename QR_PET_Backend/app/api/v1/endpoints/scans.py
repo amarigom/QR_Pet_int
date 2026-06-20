@@ -42,7 +42,7 @@ async def update_scan(
     """
     service = ScanService(db)
     
-    # 🎯 Llamamos a tu método original pasándole el scan_data adaptado
+    
     updated_scan = await service.update_scan_location(scan_id, scan_data)
     
     if not updated_scan:

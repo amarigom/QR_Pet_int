@@ -106,33 +106,59 @@ class ScanRepository(BaseRepository[Scan]):
         )
         result = await self.session.execute(query)
         return list(result.scalars().unique().all())
-# 🎯 AGREGÁ ESTE MÉTODO AL FINAL DE TU CLASE EN app/repositories/scan_repository.py
-    async def update_location_with_relations(self, scan_id: uuid.UUID, latitud: float, longitud: float) -> Optional[Scan]:
-        """
-        Busca un escaneo específico por su ID cargando recursivamente todo el 
-        árbol relacional (QR -> Mascota -> Dueño), actualiza sus coordenadas y guarda.
-        """
+
+
+    
+
+# ... dentro de tu clase ScanRepository ...
+
+    async def update_location_with_relations(
+        self, 
+        scan_id: uuid.UUID, 
+        latitud: Optional[float] = None, 
+        longitud: Optional[float] = None,
+        mensaje_encontrador: Optional[str] = None,
+        telefono_encontrador: Optional[str] = None
+    ):
+        # 1. Buscamos el registro actual con la carga profunda de relaciones
         query = (
-            select(Scan)
+            select(self.model)
             .options(
-                joinedload(Scan.qr)
+                joinedload(self.model.qr)
                 .joinedload(QRCode.mascota)
                 .joinedload(Pet.owner)
             )
-            .where(Scan.id == scan_id)
+            .where(self.model.id == scan_id)
         )
         result = await self.session.execute(query)
-        scan_record = result.scalars().unique().one_or_none()
-
+        scan_record = result.scalar_one_or_none()
+        
         if not scan_record:
             return None
 
-        # Actualizamos los campos con la ubicación precisa GPS
-        scan_record.latitud = latitud
-        scan_record.longitud = longitud
+        # 2. Actualización selectiva: Solo pisamos si el valor no es None
+        if latitud is not None:
+            scan_record.latitud = latitud
+        if longitud is not None:
+            scan_record.longitud = longitud
+            
+        if mensaje_encontrador is not None:
+            scan_record.mensaje_encontrador = mensaje_encontrador
+        if telefono_encontrador is not None:
+            scan_record.telefono_encontrador = telefono_encontrador
 
-        # Impactamos los cambios en la base de datos
-        await self.session.commit()
-        await self.session.refresh(scan_record)
+        # 3. Guardamos los cambios de forma asíncrona
+        await self.session.flush()
         
-        return scan_record
+        # 4. Refresh completo para asegurar relaciones vivas
+        query_final = (
+            select(self.model)
+            .options(
+                joinedload(self.model.qr)
+                .joinedload(QRCode.mascota)
+                .joinedload(Pet.owner)
+            )
+            .where(self.model.id == scan_id)
+        )
+        result_final = await self.session.execute(query_final)
+        return result_final.scalar_one_or_none()

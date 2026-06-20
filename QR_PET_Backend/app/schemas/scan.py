@@ -13,7 +13,8 @@ class ScanCreate(BaseModel):
     latitud: Optional[float] = None
     longitud: Optional[float] = None
     direccion_aproximada: Optional[str] = None
-
+    mensaje_encontrador: Optional[str] = None
+    telefono_encontrador: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 
