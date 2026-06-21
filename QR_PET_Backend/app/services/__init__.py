@@ -8,6 +8,7 @@ from .treatment_service import TreatmentService
 from .veterinary_pet_service import VeterinaryPetService
 from .reminder_service import ReminderService
 from .ai_assistant_service import AIAssistantService
+from .email_service import EmailService
 
 __all__ = [
     "VeterinaryClinicService",
@@ -18,4 +19,5 @@ __all__ = [
     "VeterinaryPetService",
     "ReminderService",
     "AIAssistantService",
+    "EmailService",
 ]

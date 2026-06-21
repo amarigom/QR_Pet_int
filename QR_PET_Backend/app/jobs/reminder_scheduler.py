@@ -10,7 +10,9 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
 from app.services.reminder_service import ReminderService
+from app.services.email_service import EmailService
 from app.core.config import DATABASE_URL
+from app.utils.logger import logger
 
 
 class ReminderScheduler:
@@ -93,20 +95,23 @@ class ReminderScheduler:
         """
         try:
             await self.initialize()
+            
+            # Inicializar EmailService
+            email_service = EmailService()
 
             async with self.AsyncSessionLocal() as session:
-                reminder_service = ReminderService(session)
-                result = await reminder_service.send_all_pending()
+                reminder_service = ReminderService(session, email_service=email_service)
+                result = await reminder_service.send_pending_reminders()
 
-                print(f"[Reminder Scheduler] Job completed at {datetime.utcnow()}")
-                print(f"  - Total pending: {result['total']}")
-                print(f"  - Sent: {result['sent']}")
-                print(f"  - Failed: {result['failed']}")
+                logger.info(f"[Reminder Scheduler] Job completed at {datetime.utcnow()}")
+                logger.info(f"  - Total: {result.get('total', 0)}")
+                logger.info(f"  - Sent: {result.get('sent', 0)}")
+                logger.info(f"  - Failed: {result.get('failed', 0)}")
 
             await self.close()
 
         except Exception as e:
-            print(f"[Reminder Scheduler] ERROR: {str(e)}")
+            logger.error(f"[Reminder Scheduler] ERROR: {str(e)}")
             await self.close()
 
 

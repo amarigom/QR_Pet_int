@@ -17,6 +17,7 @@ from app.schemas.veterinary_reminder import (
     VeterinaryReminderCreate,
     VeterinaryReminderResponse,
 )
+from app.utils.logger import logger
 
 
 class ReminderService:
@@ -319,3 +320,86 @@ class ReminderService:
             "sent_today": sent_today,
             "timestamp": datetime.utcnow()
         }
+
+    async def send_pending_reminders(self, max_retry_count: int = 3) -> Dict[str, Any]:
+        """
+        Envía todos los recordatorios pendientes
+        Usado por el scheduler
+        """
+        if not self.email_service:
+            logger.warning("EmailService no configurado. Recordatorios no serán enviados.")
+            return {
+                "sent": 0,
+                "failed": 0,
+                "error": "EmailService not configured"
+            }
+        
+        try:
+            pending_reminders = await self.reminder_repo.get_pending()
+            sent_count = 0
+            failed_count = 0
+            
+            for reminder in pending_reminders:
+                # Verificar que no se ha superado el máximo de reintentos
+                if reminder.retry_count >= max_retry_count:
+                    logger.warning(f"Reminder {reminder.id} exceeded max retry count")
+                    await self.reminder_repo.update_status(
+                        reminder.id,
+                        "failed",
+                        f"Max retry attempts ({max_retry_count}) exceeded"
+                    )
+                    failed_count += 1
+                    continue
+                
+                # Enviar según el tipo de recordatorio
+                email_sent = False
+                
+                if reminder.reminder_type == "vacunación_proxima":
+                    email_sent = await self.email_service.send_reminder_vaccine(
+                        to=reminder.owner_email,
+                        pet_name=reminder.pet.nombre if reminder.pet else "Tu mascota",
+                        vaccine_name=reminder.vaccine_info or "vacunación",
+                        due_date=reminder.fecha_programada.strftime("%d/%m/%Y")
+                    )
+                
+                elif reminder.reminder_type == "cita_proxima":
+                    email_sent = await self.email_service.send_appointment_reminder(
+                        to=reminder.owner_email,
+                        pet_name=reminder.pet.nombre if reminder.pet else "Tu mascota",
+                        appointment_date=reminder.fecha_programada.strftime("%d/%m/%Y"),
+                        appointment_time=reminder.fecha_programada.strftime("%H:%M"),
+                        clinic_name=reminder.clinic_name or "Tu clínica"
+                    )
+                
+                # Actualizar estado
+                if email_sent:
+                    await self.reminder_repo.update_status(
+                        reminder.id,
+                        "sent",
+                        None
+                    )
+                    sent_count += 1
+                    logger.info(f"Reminder {reminder.id} sent successfully")
+                else:
+                    # Incrementar retry count
+                    new_retry_count = reminder.retry_count + 1
+                    await self.reminder_repo.increment_retry(reminder.id, new_retry_count)
+                    failed_count += 1
+                    logger.warning(f"Failed to send reminder {reminder.id}. Retry {new_retry_count}")
+            
+            logger.info(f"Reminder batch: {sent_count} sent, {failed_count} failed")
+            
+            return {
+                "sent": sent_count,
+                "failed": failed_count,
+                "total": len(pending_reminders),
+                "timestamp": datetime.utcnow()
+            }
+        
+        except Exception as e:
+            logger.error(f"Error in send_pending_reminders: {str(e)}")
+            return {
+                "sent": 0,
+                "failed": 0,
+                "error": str(e)
+            }
