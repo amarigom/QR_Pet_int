@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
 from sqlalchemy import select, func
 from sqlalchemy.orm import joinedload, selectinload
@@ -11,17 +11,12 @@ from app.models.qr import QRCode
 from app.models.pet import Pet
 
 class ScanRepository(BaseRepository[Scan]):
-    
-    
     """Repository para la tabla escaneos con Sesión Inyectada"""
     
     def __init__(self, session: AsyncSession):
         # Inyectamos la sesión y el modelo al BaseRepository
         super().__init__(model=Scan, session=session)
     
-    # Eliminamos el método create personalizado. 
-    # El BaseRepository ya tiene uno genérico que hace add() y flush().
-
     async def get_by_qr(self, qr_id: uuid.UUID, limit: int = 50, offset: int = 0) -> List[Scan]:
         """Obtiene los escaneos vinculados a un QR específico"""
         query = (
@@ -41,19 +36,47 @@ class ScanRepository(BaseRepository[Scan]):
         return result.scalar() or 0
     
     async def get_all_with_details(self, limit: int = 100, offset: int = 0) -> List[Scan]:
-        """Obtiene escaneos con carga profunda (QR -> Mascota -> Dueño)"""
-        query = (
+        """Obtiene únicamente el ÚLTIMO escaneo de cada mascota con carga profunda (QR -> Mascota -> Dueño)"""
+        from sqlalchemy import row_number
+
+        # 1. Creamos una subconsulta que numera los escaneos de cada QR por fecha (el más nuevo recibe el número 1)
+        subquery = (
+            select(
+                Scan.id,
+                row_number()
+                .over(partition_by=Scan.qr_id, order_by=Scan.created_at.desc())
+                .label("rn"),
+            )
+            .subquery()
+        )
+
+        # 2. Obtenemos de forma asíncrona solo los IDs que tienen el número 1 (el último impacto de cada chapita)
+        ids_query = (
+            select(subquery.c.id)
+            .where(subquery.c.rn == 1)
+            .limit(limit)
+            .offset(offset)
+        )
+        
+        result_ids = await self.session.execute(ids_query)
+        scan_ids = result_ids.scalars().all()
+
+        if not scan_ids:
+            return []
+
+        # 3. Traemos los objetos completos con todas sus relaciones cargadas en un solo tiro (Eager Loading)
+        final_query = (
             select(Scan)
             .options(
                 joinedload(Scan.qr)
                 .joinedload(QRCode.mascota)
                 .joinedload(Pet.owner)
             )
+            .where(Scan.id.in_(scan_ids))
             .order_by(Scan.created_at.desc())
-            .limit(limit)
-            .offset(offset)
         )
-        result = await self.session.execute(query)
+
+        result = await self.session.execute(final_query)
         return list(result.scalars().unique().all())
     
     async def get_by_mascota(self, mascota_id: uuid.UUID, limit: int = 50, offset: int = 0) -> List[Scan]:
@@ -80,7 +103,6 @@ class ScanRepository(BaseRepository[Scan]):
         result = await self.session.execute(query)
         return result.scalar() or 0
     
-    
     async def get_all_scans_with_coords(self) -> List[Scan]:
         """Consulta bruta para el mapa de calor (Admin)"""
         query = (
@@ -93,24 +115,30 @@ class ScanRepository(BaseRepository[Scan]):
         result = await self.session.execute(query)
         return result.scalars().all()
     
-    async def get_by_mascota_with_details(self, mascota_id: uuid.UUID, limit: int = 50, offset: int = 0) -> List[Scan]:
-        """Obtiene escaneos de una mascota con carga profunda del QR para evitar Lazy Loading"""
+    async def get_all_with_details(self, limit: int = 100, offset: int = 0) -> List[Scan]:
+        """Obtiene únicamente el ÚLTIMO escaneo de cada mascota usando DISTINCT ON de PostgreSQL"""
+        # 🎯 DISTINCT ON asegura una única fila por qr_id. 
+        # Al ordenar por qr_id y luego por created_at.desc(), Postgres se queda con el más nuevo.
         query = (
             select(Scan)
-            .join(QRCode)
-            .options(joinedload(Scan.qr)) # 🎯 Trae el QR cargado de un tiro si lo vas a renderizar en el frontend
-            .where(QRCode.mascota_id == mascota_id)
-            .order_by(Scan.created_at.desc())
+            .distinct(Scan.qr_id)
+            .options(
+                joinedload(Scan.qr)
+                .joinedload(QRCode.mascota)
+                .joinedload(Pet.owner)
+            )
+            .order_by(Scan.qr_id, Scan.created_at.desc())
             .limit(limit)
             .offset(offset)
         )
+        
         result = await self.session.execute(query)
-        return list(result.scalars().unique().all())
-
-
-    
-
-# ... dentro de tu clase ScanRepository ...
+        scans = list(result.scalars().unique().all())
+        
+        # Volvemos a ordenar la lista final por fecha descendente para que en el Dashboard
+        # veas arriba de todo las mascotas que se escanearon más recientemente.
+        scans.sort(key=lambda x: x.created_at, reverse=True)
+        return scans
 
     async def update_location_with_relations(
         self, 
@@ -119,7 +147,8 @@ class ScanRepository(BaseRepository[Scan]):
         longitud: Optional[float] = None,
         mensaje_encontrador: Optional[str] = None,
         telefono_encontrador: Optional[str] = None
-    ):
+    ) -> Optional[Scan]:
+        """Procesa las actualizaciones selectivas de ubicación y datos del formulario."""
         # 1. Buscamos el registro actual con la carga profunda de relaciones
         query = (
             select(self.model)
@@ -147,7 +176,7 @@ class ScanRepository(BaseRepository[Scan]):
         if telefono_encontrador is not None:
             scan_record.telefono_encontrador = telefono_encontrador
 
-        # 3. Guardamos los cambios de forma asíncrona
+        # 3. Guardamos los cambios de forma asíncrona en memoria (Flush)
         await self.session.flush()
         
         # 4. Refresh completo para asegurar relaciones vivas

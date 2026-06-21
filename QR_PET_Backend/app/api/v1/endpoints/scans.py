@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException,status
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.schemas.scan import ScanCreate, ScanResponse
+from app.schemas.scan import ScanCreate, ScanResponse, ScanLocation
 from app.schemas.common import SuccessResponse, PaginatedResponse
 from app.repositories.scan_repository import ScanRepository
 # Si en algún momento necesitas el detalle completo (Scan + QR + Mascota)
@@ -53,7 +53,7 @@ async def update_scan(
     
     return updated_scan
 
-@router.get("", response_model=List[Dict[str, Any]])
+@router.get("", response_model=PaginatedResponse[ScanLocation])
 async def get_all_scans(
     page: int = Query(1, ge=1),
     limit: int = Query(100, ge=1, le=500),

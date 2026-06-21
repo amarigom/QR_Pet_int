@@ -20,8 +20,9 @@ from app.schemas.scan import (
     ScanCreate,
     ScanLocationUpdate,
     ScanResponse,
-    
 )
+
+from app.services.geocoding import obtener_direccion_reversa 
 
 
 class ScanService:
@@ -43,6 +44,13 @@ class ScanService:
         scan = await self.scan_repo.create(
             qr_id=qr.id, **scan_data.model_dump(exclude={"codigo"})
         )
+        
+        # 🎯 NUEVO: Si el impacto ya trae coordenadas, calculamos la ubicación antes de commitear
+        if scan.latitud and scan.longitud:
+            scan.direccion_aproximada = await obtener_direccion_reversa(scan.latitud, scan.longitud)
+        else:
+            scan.direccion_aproximada = "Ubicación aproximada"
+
         await self.db.commit()
         await self.db.refresh(scan)
 
@@ -77,6 +85,9 @@ class ScanService:
 
         # Crear el registro inicial del escaneo (solo con el ID del QR)
         scan = await self.scan_repo.create(qr_id=qr.id)
+
+        # 🎯 NUEVO: Inicializamos con un mensaje de espera para el GPS preciso en el frontend
+        scan.direccion_aproximada = "Esperando coordenadas GPS..."
 
         await self.db.commit()
         await self.db.refresh(scan)
@@ -146,7 +157,7 @@ class ScanService:
     async def get_all_scans(
         self, page: int = 1, limit: int = 100
     ) -> Dict[str, Any]:
-        """Listado administrativo global"""
+        """Listado administrativo global. Vuele leyendo directo de Neon sin APIs externas."""
         offset = (page - 1) * limit
         scans = await self.scan_repo.get_all_with_details(limit, offset)
         total = await self.scan_repo.count()
@@ -190,8 +201,6 @@ class ScanService:
             for s in scans
         ]
 
-    
-
     async def update_scan_location(self, scan_id: uuid.UUID, location_data: Any) -> Dict[str, Any]:
         """Procesa las actualizaciones selectivas de ubicación y datos del formulario."""
         fields_sent = location_data.model_dump(exclude_unset=True) if hasattr(location_data, "model_dump") else dict(location_data)
@@ -208,7 +217,13 @@ class ScanService:
         if not scan_record:
             raise HTTPException(status_code=404, detail="Registro no encontrado")
 
-        
+        # 2. 🎯 NUEVO: Si llegaron coordenadas precisas por GPS, actualizamos la dirección física en Neon
+        if fields_sent.get("latitud") and fields_sent.get("longitud"):
+            direccion_real = await obtener_direccion_reversa(
+                fields_sent.get("latitud"), fields_sent.get("longitud")
+            )
+            scan_record.direccion_aproximada = direccion_real
+
         await self.db.commit()
         await self.db.refresh(scan_record)
 

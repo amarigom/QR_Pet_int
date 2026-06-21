@@ -67,3 +67,14 @@ class ScanWhatsAppResponse(BaseModel):
     google_maps_url: str
 
     model_config = ConfigDict(from_attributes=True)
+    
+class ScanLocation(BaseModel):
+    id: str
+    qr_codigo: str 
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
+    pet_name: str 
+    escaneado_en: datetime 
+    direccion_aproximada: str 
+
+    model_config = ConfigDict(from_attributes=True)
