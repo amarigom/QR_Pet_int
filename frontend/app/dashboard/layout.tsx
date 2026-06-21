@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { QrCode, Home, PawPrint, MapPin, Settings, LogOut, Menu, X } from 'lucide-react'
+import { QrCode, Home, PawPrint, MapPin, Settings, LogOut, Menu, X, Stethoscope, Calendar, FileText, Bell } from 'lucide-react'
 import { authApi } from '@/lib/api';
 import type { User } from '@/lib/types'
 
@@ -20,6 +20,14 @@ const navItems = [
   { href: '/dashboard', icon: Home, label: 'Inicio' },
   { href: '/dashboard/pets', icon: PawPrint, label: 'Mis Mascotas' },
   { href: '/dashboard/map', icon: MapPin, label: 'Mapa de Escaneos' },
+]
+
+const veterinaryNavItems = [
+  { href: '/dashboard/veterinary/clinic', icon: Stethoscope, label: 'Mi Clínica' },
+  { href: '/dashboard/veterinary/pets', icon: PawPrint, label: 'Mascotas' },
+  { href: '/dashboard/veterinary/appointments', icon: Calendar, label: 'Citas' },
+  { href: '/dashboard/veterinary/medical-records', icon: FileText, label: 'Historiales' },
+  { href: '/dashboard/veterinary/reminders', icon: Bell, label: 'Recordatorios' },
 ]
 
 export default function DashboardLayout({
@@ -94,8 +102,8 @@ export default function DashboardLayout({
 
             {/* Desktop Nav */}
             <nav className="hidden md:flex items-center gap-1">
-              {navItems.map((item) => {
-                const isActive = pathname === item.href
+              {(user?.rol === 'veterinario' ? veterinaryNavItems : navItems).map((item) => {
+                const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                 return (
                   <Link key={item.href} href={item.href}>
                     <Button
@@ -162,17 +170,20 @@ export default function DashboardLayout({
         {/* Mobile Nav Overlay */}
         {mobileMenuOpen && (
           <nav className="md:hidden border-t bg-card px-4 py-4 space-y-2 animate-in slide-in-from-top-2 duration-200">
-            {navItems.map((item) => (
-              <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}>
-                <Button
-                  variant={pathname === item.href ? 'secondary' : 'ghost'}
-                  className="w-full justify-start text-base"
-                >
-                  <item.icon className="w-5 h-5 mr-3" />
-                  {item.label}
-                </Button>
-              </Link>
-            ))}
+            {(user?.rol === 'veterinario' ? veterinaryNavItems : navItems).map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+              return (
+                <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}>
+                  <Button
+                    variant={isActive ? 'secondary' : 'ghost'}
+                    className="w-full justify-start text-base"
+                  >
+                    <item.icon className="w-5 h-5 mr-3" />
+                    {item.label}
+                  </Button>
+                </Link>
+              )
+            })}
           </nav>
         )}
       </header>
