@@ -5,6 +5,8 @@ from .medical_record_service import MedicalRecordService
 from .appointment_service import AppointmentService
 from .vaccination_service import VaccinationService
 from .treatment_service import TreatmentService
+from .veterinary_pet_service import VeterinaryPetService
+from .reminder_service import ReminderService
 
 __all__ = [
     "VeterinaryClinicService",
@@ -12,4 +14,6 @@ __all__ = [
     "AppointmentService",
     "VaccinationService",
     "TreatmentService",
+    "VeterinaryPetService",
+    "ReminderService",
 ]
