@@ -5,12 +5,15 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
 from app.core.constants import PetStatus, AnimalSpecies
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, List
 import uuid
 
 if TYPE_CHECKING:
     from app.models.user import User
     from app.models.qr import QRCode
+    from app.models.medical_record import MedicalRecord
+    from app.models.appointment import Appointment
+    from app.models.veterinary_reminder import VeterinaryReminder
 
 class Pet(Base):
     __tablename__ = "mascotas"
@@ -71,6 +74,25 @@ class Pet(Base):
     
     owner: Mapped["User"] = relationship("User", back_populates="pets")
     qr_code: Mapped[Optional["QRCode"]] = relationship("QRCode", back_populates="mascota", uselist=False)
+    
+    # Nuevas relaciones para sistema veterinario
+    medical_records: Mapped[List["MedicalRecord"]] = relationship(
+        "MedicalRecord",
+        back_populates="pet",
+        cascade="all, delete-orphan"
+    )
+    
+    appointments: Mapped[List["Appointment"]] = relationship(
+        "Appointment",
+        back_populates="pet",
+        cascade="all, delete-orphan"
+    )
+    
+    veterinary_reminders: Mapped[List["VeterinaryReminder"]] = relationship(
+        "VeterinaryReminder",
+        back_populates="pet",
+        cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<Pet(nombre={self.nombre}, especie={self.especie}, estado={self.estado})>"

@@ -6,11 +6,15 @@ import re
 
 
 class UserRole(str, Enum):
-    """Roles de usuario - Jerarquía: SUPERADMIN > ADMIN_GENERAL > ADMIN > USER"""
-    SUPERADMIN = "superadmin"      # Acceso total al sistema
+    """
+    Roles de usuario - Jerarquía:
+    SUPERADMIN > ADMIN_GENERAL > ADMIN > VETERINARIO > USER
+    """
+    SUPERADMIN = "superadmin"        # Acceso total al sistema
     ADMIN_GENERAL = "admin_general"  # Administrador de toda la app (sin permisos de superadmin)
-    ADMIN = "admin"                # Administrador estándar
-    USER = "usuario"               # Usuario regular
+    ADMIN = "admin"                  # Administrador estándar (genera QR, gestiona clínicas)
+    VETERINARIO = "veterinario"      # Veterinario (gestiona mascotas de su clínica)
+    USER = "usuario"                 # Usuario regular (dueño de mascotas)
 
 
 class PetStatus(str, Enum):
