@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Nunito } from 'next/font/google'
+import './globals.css'
 import { Analytics } from '@vercel/analytics/next'
 
 // --- NUEVAS IMPORTACIONES MODULARES ---
@@ -7,7 +8,7 @@ import { AuthProvider } from './context/auth/AuthProvider'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
 //import 'leaflet/dist/leaflet.css'
-import './globals.css'
+
 
 
 

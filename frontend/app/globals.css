@@ -134,11 +134,16 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+@utility border-custom {
+  @apply border-border outline-ring/50;
+}
+
+/* En Tailwind v4, los selectores globales se estilizan directo, sin @layer base */
+* {
+  @apply border-border outline-ring/50;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
 }

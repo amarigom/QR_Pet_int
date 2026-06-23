@@ -12,3 +12,5 @@ class UserDashboardResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        
+
