@@ -1,4 +1,5 @@
-'use client'
+
+"use client";
 
 import { useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
@@ -6,10 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { MapPin, Clock, PawPrint } from 'lucide-react'
-import { adminApi, petsApi } from '@/lib/api'
+import { dashboardApi } from '@/lib/api/dashboard'
+import { adminApi, petsApi, scansApi } from '@/lib/api'
 import { useAuth } from '@/app/context/auth/AuthContext'
 import { formatDateTime } from '@/lib/utils'
+
 import type { DashboardStats, Pet, RecentScan } from '@/lib/types'
+import type { UserDashboardData } from '@/lib/types/dashboard'
 
 // Ubicación por defecto (Tandil)
 const TANDIL_DEFAULT = { lat: -37.32, lng: -59.13 };
@@ -21,15 +25,18 @@ const ScanMap = dynamic(() => import('@/components/scan-map'), {
 })
 
 export default function MapPage() {
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading, enModoUsuario } = useAuth()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [pets, setPets] = useState<Pet[]>([])
   const [scans, setScans] = useState<RecentScan[]>([]) 
   const [isLoading, setIsLoading] = useState(true)
 
-  // 🛡️ CANDADO MASTER DE QA: Evita ejecuciones paralelas simultáneas en milisegundos
+  // QA: Evita ejecuciones paralelas simultáneas en milisegundos
   const estaCargandoRef = useRef(false);
   const datosCargadosRef = useRef(false);
+
+  // 🌟 CONTROL DE CAMBIO DE ROL: Guarda el último estado del interruptor de vista
+  const ultimoModoRef = useRef(enModoUsuario);
 
   // Extraemos variables primitivas seguras para romper las referencias falsas en memoria del objeto user
   const userId = user?.id || user?.email || '';
@@ -41,6 +48,13 @@ export default function MapPage() {
       return;
     }
 
+    // 🌟 CORRECCIÓN CRÍTICA: Si el usuario cambió de vista (Admin <-> Usuario),
+    // abrimos el candado inmediatamente para permitir que el fetch pida los nuevos datos
+    if (ultimoModoRef.current !== enModoUsuario) {
+      datosCargadosRef.current = false;
+      ultimoModoRef.current = enModoUsuario;
+    }
+
     // 2. Si ya hay una petición en vuelo o si ya se completó con éxito,
     // interceptamos el doble disparo simultáneo inmediatamente.
     if (estaCargandoRef.current || datosCargadosRef.current) {
@@ -49,32 +63,32 @@ export default function MapPage() {
 
     async function loadData() {
       try {
-        // Activamos los candados físicos antes del proceso asíncrono
         estaCargandoRef.current = true;
         setIsLoading(true);
         
-        const isAdmin = userRol === 'admin';
-        let petsRes: any;
-        let scansRes: any;
+        const isAdminGlobal = userRol === 'admin' && enModoUsuario === false;
 
-        if (isAdmin) {
+        let rawPets: any[] = [];
+        let rawScans: any[] = [];
+
+        if (isAdminGlobal) {
           console.log("MAPA: Cargando datos globales como Administrador...");
-          [petsRes, scansRes] = await Promise.all([
+          const [petsRes, scansRes] = await Promise.all([
             adminApi.getPets(),
             adminApi.getAllScans(1, 200)
           ]);
+          
+          // CORRECCIÓN DE TIPADO SEGURO:
+          rawPets = (petsRes as any)?.items || (Array.isArray(petsRes) ? petsRes : []);
+          rawScans = (scansRes as any)?.items || (Array.isArray(scansRes) ? scansRes : []);
         } else {
           console.log("MAPA: Cargando datos del usuario común...");
-          [petsRes, scansRes] = await Promise.all([
-            petsApi.getAll(), 
-            Promise.resolve({ items: [] }) 
-          ]);
-        }
+          const dashboardRes: UserDashboardData = await dashboardApi.getUserData();
 
-        const rawPets = petsRes?.items || (Array.isArray(petsRes) ? petsRes : []);
-        const rawScans = scansRes?.items || (Array.isArray(scansRes) ? scansRes : []);
+          rawPets = dashboardRes.pets || [];
+          rawScans = (dashboardRes as any).recent_scans || [];
+        } 
 
-        // Mapeo seguro transformando los datos del backend
         const formattedScans: RecentScan[] = rawScans.map((scan: any) => ({
           ...scan,
           id: String(scan.id ?? Math.random()),
@@ -109,8 +123,8 @@ export default function MapPage() {
 
     loadData();
 
-  // Sincronizado estrictamente por tipos primitivos puros
-  }, [userId, userRol, authLoading]);
+  // Agregamos enModoUsuario para que el useEffect se vuelva a disparar al cambiar de vista
+  }, [userId, userRol, authLoading, enModoUsuario]); 
 
   if (authLoading) {
     return (
@@ -130,9 +144,13 @@ export default function MapPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Mapa de Escaneos</h1>
+        <h1 className="text-2xl font-bold">
+          {userRol === 'admin' && !enModoUsuario ? "Mapa Global de Escaneos" : "Mapa de mis Mascotas"}
+        </h1>
         <p className="text-muted-foreground">
-          Visualiza donde han sido escaneados los códigos QR de tus mascotas
+          {userRol === 'admin' && !enModoUsuario 
+            ? "Visualiza la ubicación de todos los códigos QR escaneados en el sistema" 
+            : "Visualiza donde han sido escaneados los códigos QR de tus mascotas"}
         </p>
       </div>
 
@@ -156,8 +174,6 @@ export default function MapPage() {
         <CardContent>
           <div className="h-[450px] rounded-lg overflow-hidden border bg-muted/20 relative">
             
-            {/* 🎯 CONTROL ESTRICTO: El mapa nace únicamente cuando la API resolvió los datos 
-                y tenemos elementos listos para pintar, eliminando el warning de arrays vacíos. */}
             {!isLoading && scansWithLocation.length > 0 ? (
               <ScanMap 
                 scans={scansWithLocation} 

@@ -40,3 +40,4 @@ async def get_admin_dashboard(
         
     service = DashboardService(db)
     return await service.get_admin_dashboard_summary()
+

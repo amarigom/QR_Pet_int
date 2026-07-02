@@ -1,5 +1,6 @@
 
 import { Pet } from './pets'; 
+import { ScanWithLocation } from './scan';
 
 export interface QRInfo {
   id: string;
@@ -41,10 +42,10 @@ export interface DashboardSummary {
   active_qrs: number;
 }
 
-// 🎯 ÚNICA DECLARACIÓN UNIFICADA: Sin duplicaciones
+
 export interface UserDashboardData {
   role: 'user';
   summary: DashboardSummary;
   pets: PetData[];
-  recent_activity: RecentScanData[]; // Mapeado exacto para tus escaneos
+  recent_activity: ScanWithLocation[]; // Mapeado exacto para tus escaneos
 }

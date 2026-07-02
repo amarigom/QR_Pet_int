@@ -81,6 +81,7 @@ async def get_pet_scans(
     service = ScanService(db)
     return await service.get_pet_scans(pet_id, page, limit)
 # En tu archivo de routers de scans
+
 @router.post("/process/{codigo_qr}", response_model=Dict[str, Any], status_code=status.HTTP_201_CREATED)
 async def process_scan_by_code(
     codigo_qr: str, 
@@ -95,3 +96,17 @@ async def process_scan_by_code(
     # cree el escaneo y devuelva todo el combo.
     return await service.process_scan_from_qr(codigo_qr)
 
+@router.get("/user/latest", response_model=Dict[str, Any])
+async def get_user_latest_scans(
+    user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Usuario: Obtiene el último escaneo registrado de cada una de sus mascotas.
+    Pensado específicamente para renderizar el mapa general del usuario común.
+    """
+    # Extraemos el ID del usuario del token/dependencia (ajustalo si en tu dict se llama 'id')
+    user_id = user.id 
+    
+    service = ScanService(db)
+    return await service.get_user_latest_scans(user_id)

@@ -29,5 +29,9 @@ export const scansApi = {
    */
   getStats: async () => {
     return fetchAPI<{ total: number; last_24h: number }>('/qr/stats');
-  }
+  },
+
+  getUserScans: async (): Promise<PaginatedScans> => {
+      return await fetchAPI<PaginatedScans>('/scans/user/latest');
+    }
 };

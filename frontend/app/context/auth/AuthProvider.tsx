@@ -7,12 +7,27 @@ import { authReducer } from './AuthReducer'; // Corregido: un solo punto
 import { authService } from '@/lib/services';
 import { AuthState } from './types';
 
+
+// función segura para inicializar el Modo Usuario
+const getInitialModoUsuario = (): boolean => {
+  if (typeof window !== 'undefined') {
+    const guardado = localStorage.getItem('enModoUsuario');
+    // Si hay un valor guardado lo usamos, si no, que arranque por defecto en true (modo usuario) o false
+    return guardado ? JSON.parse(guardado) : true; 
+  }
+  return true;
+};
+
+// función al initialState
 const initialState: AuthState = {
   user: null,
   token: null,
   isAuthenticated: false,
   loading: true,
+  enModoUsuario: getInitialModoUsuario(), // 👈 ¡Ahora arranca con el valor real del navegador!
 };
+
+
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
@@ -93,9 +108,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Calculamos isAdmin basándonos en el objeto completo
   const isAdmin = state.user?.rol === 'admin';
+  const toggleModoVista = () => {
+  dispatch({ type: 'TOGGLE_MODO_VISTA' });
+};
 
   return (
-    <AuthContext.Provider value={{ ...state, isAdmin, login, logout }}>
+    <AuthContext.Provider value={{ ...state, login, logout,isAdmin: state.user?.rol === 'admin',
+    toggleModoVista }}>
       {children}
     </AuthContext.Provider>
   );

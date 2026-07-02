@@ -3,17 +3,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.models.pet import Pet
 from app.models.qr import QRCode
+from app.schemas.scan import ScanResponse
 import uuid
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta,timezone
 from uuid import UUID  # Si usás UUIDs, cambialo en el tipado; si no, dejá int
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from app.models.pet import Pet
 from app.models.qr import QRCode
 from app.models.scan import Scan
-
+from typing import Dict, Any
 
 class DashboardRepository:
     """Clase base para repositorios con control de sesión externo"""
@@ -21,24 +23,43 @@ class DashboardRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_user_dashboard_data(self, usuario_id: uuid.UUID) -> dict:
-        """Accede directamente a la base de datos para compilar las métricas y listados."""
-        
-        # 1. Traemos la lista de mascotas (que por el lazy="joined" ya vienen con su qr_code adentro)
-        pets_query = select(Pet).where(Pet.usuario_id == usuario_id)
-        result = await self.session.execute(pets_query)
-        pets_list = result.scalars().all()
+    async def get_user_dashboard_data(self, usuario_id: uuid.UUID) -> Dict[str, Any]:
+        """
+        Recopila métricas generales y genera la lista detallada de escaneos de los 
+        últimos 30 días vinculados a las mascotas del usuario.
+        """
+        # 1. Ventana temporal naive para matchear con TIMESTAMP WITHOUT TIME ZONE
+        hace_30_dias = datetime.utcnow() - timedelta(days=30)
 
-        # 2. Calculamos las métricas usando la lista que ya tenemos en memoria
-        total_pets = len(pets_list)
-        
-        # 🎯 Sumatoria en memoria: Contamos cuántas mascotas tienen un qr_code y está activo=True
-        active_qrs = sum(
-            1 for p in pets_list 
-            if p.qr_code is not None and p.qr_code.activo is True
+        # 2. Obtener lista base de mascotas con sus QRs (Para métricas del panel)
+        pets_query = (
+            select(Pet)
+            .where(Pet.usuario_id == usuario_id)
+            .options(joinedload(Pet.qr_code))
         )
+        pets_result = await self.session.execute(pets_query)
+        pets_list = pets_result.scalars().unique().all()
 
-        # 3. Mantenemos el conteo de los escaneos (estos sí van separados)
+        total_pets = len(pets_list)
+        active_qrs = sum(1 for p in pets_list if p.qr_code is not None and p.qr_code.activo)
+
+        # 3. 🚀 CONSULTA MAESTRA DETALLADA: Trae los escaneos de los últimos 30 días
+        # de este usuario, cargando eficientemente el QR y la Mascota asociada en una sola ida a la DB.
+        scans_query = (
+            select(Scan)
+            .join(QRCode, QRCode.id == Scan.qr_id)
+            .join(Pet, Pet.id == QRCode.mascota_id)
+            .where(Pet.usuario_id == usuario_id)
+            .where(Scan.created_at >= hace_30_dias)
+            .options(
+                joinedload(Scan.qr).joinedload(QRCode.mascota)  # Anidamos la carga para el mapeo
+            )
+            .order_by(Scan.created_at.desc())  # Primero los más recientes
+        )
+        scans_result = await self.session.execute(scans_query)
+        recent_scans_list = scans_result.scalars().unique().all()
+
+        # 4. Métricas globales de escaneos para los contadores superiores
         total_scans_query = (
             select(func.count(Scan.id))
             .join(QRCode, QRCode.id == Scan.qr_id)
@@ -46,17 +67,15 @@ class DashboardRepository:
             .where(Pet.usuario_id == usuario_id)
         )
         total_scans = (await self.session.execute(total_scans_query)).scalar() or 0
-
-        hace_30_dias = datetime.utcnow() - timedelta(days=30)
-        scans_30_days_query = total_scans_query.where(Scan.created_at >= hace_30_dias)
-        scans_last_30_days = (await self.session.execute(scans_30_days_query)).scalar() or 0
+        scans_last_30_days = len(recent_scans_list)
 
         return {
             "total_pets": total_pets,
             "active_qrs": active_qrs,
             "total_scans": total_scans,
             "scans_last_30_days": scans_last_30_days,
-            "pets": pets_list
+            "pets": pets_list,
+            "recent_scans": recent_scans_list  # 🌟 Lista de objetos Scan 100% detallados y linkeados
         }
 
     async def get_admin_dashboard_data(self) -> dict:

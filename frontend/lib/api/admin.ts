@@ -88,7 +88,7 @@ export const adminApi = {
     console.log(`Scans obtenidos del backend: ${rawItems.length}`);
 
     return rawItems.map((s: any): ScanWithLocation => {
-      // 🎯 Conservamos el null real para saber si el usuario compartió o no el GPS
+      // Conservamos el null real para saber si el usuario compartió o no el GPS
       const lat = s.latitud !== null && s.latitud !== undefined ? Number(s.latitud) : null;
       const lng = s.longitud !== null && s.longitud !== undefined ? Number(s.longitud) : null;
 
@@ -97,20 +97,24 @@ export const adminApi = {
         latitud: lat,
         longitud: lng,
         
-        // 🎯 Sincronizado: el backend ya manda 'pet_name' y 'qr_codigo' directos
+        // Sincronizado: el backend ya manda 'pet_name' y 'qr_codigo' directos
         pet_name: s.pet_name || "Mascota sin asignar",
         qr_codigo: s.qr_codigo || "N/A",
         
-        // 🎯 Sincronizado con los nombres de tu backend antiguo y nuevo para que nunca falle
+        // Sincronizado con los nombres de tu backend antiguo y nuevo para que nunca falle
         escaneado_en: s.escaneado_en || s.fecha || s.created_at || new Date().toISOString(),
         
-        // 🎯 Si el backend manda un texto real lo usa, sino se evalúa el componente inverso
+        // Si el backend manda un texto real lo usa, sino se evalúa el componente inverso
         direccion_aproximada: s.direccion_aproximada || ""
       };
     });
   },
 
-  // 🚀 Descarga segura del lote de impresión en formato PDF binario (Blob)
+
+
+
+  
+  // Descarga segura del lote de impresión en formato PDF binario (Blob)
   async downloadLotePdf(lote: string): Promise<Blob> {
     const token = localStorage.getItem('token');
     const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';

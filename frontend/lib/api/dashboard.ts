@@ -7,5 +7,5 @@ export const dashboardApi = {
     const response = await fetchAPI<UserDashboardData>('/dashboard/user');
     return response;
     
-  }
+  },
 };

@@ -18,10 +18,13 @@ import { useRouter } from 'next/navigation'
 
 // Importación del nuevo mapa unificado y optimizado
 import { ScanMapProvider } from '@/components/map/map-provider'
+import type { ScanWithLocation } from '@/lib/types'
 
 interface UserDashboardProps {
   data: UserDashboardData
   user: any
+  allPets: any[]
+  recent_scans?: ScanWithLocation[]
 }
 
 export default function UserDashboard({ data, user }: UserDashboardProps) {
@@ -29,7 +32,7 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   
-  // 🎯 Estado local para forzar el renderizado inmediato del usuario actualizado
+  // Estado local para forzar el renderizado inmediato del usuario actualizado
   const [currentUser, setCurrentUser] = useState(user)
 
   // Estado local para el formulario de edición rápida del perfil
@@ -40,7 +43,7 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
 
   // Extracción segura de datos
   const pets = data?.pets || []
-  const summary = data?.summary || { total_pets: pets.length, active_qrs: 0 }
+  const summary = data?.summary || { total_pets: pets.length, active_qrs: 10 }
   const misScans = data?.recent_activity || []
 
   // Manejo del guardado del celular

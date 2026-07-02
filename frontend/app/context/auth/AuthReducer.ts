@@ -28,6 +28,12 @@ export const authReducer = (state: AuthState, action: AuthAction): AuthState => 
       };
     case 'SET_LOADING':
       return { ...state, loading: action.payload };
+
+    case 'TOGGLE_MODO_VISTA':
+    return {
+    ...state,
+    enModoUsuario: !state.enModoUsuario, // Modifica el booleano en memoria
+  };
     default:
       return state;
   }

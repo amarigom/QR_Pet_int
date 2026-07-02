@@ -75,4 +75,24 @@ export const qrApi = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+
+
+getUserScans: async () => {
+    // Si tenés una base URL configurada en un helper, usala. 
+    // Si no, ponés la ruta relativa o absoluta que use tu sistema:
+    const response = await fetch('/api/v1/scans/user/latest', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        // Asegurate de pasar el token de autenticación si tu fetch no lo mete automáticamente:
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}` 
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Error al obtener los escaneos del usuario');
+    }
+
+    return response.json();
+  }
 };

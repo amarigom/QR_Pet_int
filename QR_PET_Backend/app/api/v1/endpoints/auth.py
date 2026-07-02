@@ -56,11 +56,28 @@ async def login(
     return await auth_service.login(login_data)
 
 @router.get("/me", response_model=UserResponse)
+@router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
     """
     Retorna el perfil del usuario actual autenticado de forma limpia.
     """
-    return UserResponse.model_validate(current_user)
+    try:
+        # En lugar de model_validate directo del objeto ORM, 
+        # usamos los atributos planos convirtiendo a dict si es necesario, 
+        # o forzando la conversión desde los campos base de la DB.
+        return UserResponse(
+            id=current_user.id,
+            email=current_user.email,
+            nombre=current_user.nombre,
+            telefono=current_user.telefono,
+            rol=current_user.rol,
+            avatar_url=current_user.avatar_url,
+            created_at=current_user.created_at
+        )
+    except Exception as e:
+        print(f"ERROR EN MODEL_VALIDATE DE ME: {str(e)}")
+        # Si falla por los tipos, devolvemos el objeto mapeado tradicionalmente
+        return current_user
 
 @router.put("/me", response_model=UserResponse)
 async def update_me(

@@ -1,7 +1,7 @@
 import uuid
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
-from sqlalchemy import select, func
+from sqlalchemy import select, func,desc
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,6 +9,7 @@ from app.repositories.base import BaseRepository
 from app.models.scan import Scan
 from app.models.qr import QRCode
 from app.models.pet import Pet
+import logging
 
 class ScanRepository(BaseRepository[Scan]):
     """Repository para la tabla escaneos con Sesión Inyectada"""
@@ -117,7 +118,7 @@ class ScanRepository(BaseRepository[Scan]):
     
     async def get_all_with_details(self, limit: int = 100, offset: int = 0) -> List[Scan]:
         """Obtiene únicamente el ÚLTIMO escaneo de cada mascota usando DISTINCT ON de PostgreSQL"""
-        # 🎯 DISTINCT ON asegura una única fila por qr_id. 
+        # DISTINCT ON asegura una única fila por qr_id. 
         # Al ordenar por qr_id y luego por created_at.desc(), Postgres se queda con el más nuevo.
         query = (
             select(Scan)
@@ -191,3 +192,41 @@ class ScanRepository(BaseRepository[Scan]):
         )
         result_final = await self.session.execute(query_final)
         return result_final.scalar_one_or_none()
+    
+    
+
+    async def get_latest_scans_by_user(self, user_id: uuid.UUID, limit: int = 100, offset: int = 0) -> List[Scan]:
+        """
+        Obtiene únicamente el ÚLTIMO escaneo de cada mascota del usuario común
+        forzando las condiciones de JOIN explícitas.
+        """
+        # 🚨 LOG DE CONTROL: Para ver qué ID está llegando realmente al repositorio
+        print(f"🔍 REPOSITORIO: Buscando últimos escaneos para el usuario_id: {user_id} (Tipo: {type(user_id)})")
+
+        query = (
+            select(Scan)
+            .distinct(Scan.qr_id)
+            # 1. Joins explícitos asegurando las Claves Foráneas reales
+            .join(QRCode, Scan.qr_id == QRCode.id)
+            .join(Pet, QRCode.mascota_id == Pet.id)
+            # 2. Filtro estricto por el usuario_id de la mascota
+            .where(Pet.usuario_id == user_id)
+            # 3. Eager loading para evitar consultas N+1
+            .options(
+                joinedload(Scan.qr),
+                joinedload(Scan.qr).joinedload(QRCode.mascota)
+            )
+            # 4. Orden requerido por DISTINCT ON (Primero la columna del distinct, luego el orden de negocio)
+            .order_by(Scan.qr_id, desc(Scan.created_at))
+            .limit(limit)
+            .offset(offset)
+        )
+        
+        result = await self.session.execute(query)
+        scans = list(result.scalars().unique().all())
+        
+        # Ordenamos globalmente por lo más nuevo para el mapa
+        scans.sort(key=lambda x: x.created_at, reverse=True)
+        
+        print(f" REPOSITORIO: Se encontraron {len(scans)} escaneos para el usuario {user_id}")
+        return scans

@@ -217,7 +217,7 @@ class ScanService:
         if not scan_record:
             raise HTTPException(status_code=404, detail="Registro no encontrado")
 
-        # 2. 🎯 NUEVO: Si llegaron coordenadas precisas por GPS, actualizamos la dirección física en Neon
+        # 2. NUEVO: Si llegaron coordenadas precisas por GPS, actualizamos la dirección física en Neon
         if fields_sent.get("latitud") and fields_sent.get("longitud"):
             direccion_real = await obtener_direccion_reversa(
                 fields_sent.get("latitud"), fields_sent.get("longitud")
@@ -264,3 +264,12 @@ class ScanService:
             "pet_name": pet.nombre if pet else "Mascota",
             "google_maps_url": google_maps_url,
         }
+        
+        
+    
+    async def get_user_latest_scans(self, user_id, limit: int = 100, offset: int = 0):
+        return await self.scan_repository.get_latest_scans_by_user(
+            user_id=user_id, 
+            limit=limit, 
+            offset=offset
+        )

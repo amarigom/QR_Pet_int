@@ -39,6 +39,13 @@ class PetUpdate(BaseModel):
 # RESPUESTAS
 # ============================================================================
 
+class UltimoEscaneoSchema(BaseModel):
+    id: UUID
+    created_at: datetime
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
+
+    model_config = ConfigDict(from_attributes=True)
 class PetResponse(BaseModel):
     id: UUID
     usuario_id: UUID
@@ -51,7 +58,7 @@ class PetResponse(BaseModel):
     edad_aproximada: Optional[str] = None
     foto_url: Optional[str] = None
     notas: Optional[str] = None  
-
+    ultimo_escaneo: Optional[UltimoEscaneoSchema] = None
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -74,6 +81,8 @@ class PetDetailResponse(BaseModel):
         from_attributes=True,
         populate_by_name=True
     )
+    
+
 # ============================================================================
 # INICIALIZACIÓN SEGURA
 # ============================================================================

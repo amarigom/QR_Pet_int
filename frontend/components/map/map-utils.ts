@@ -27,17 +27,17 @@ export interface NormalizedScan {
   direccion?: string
 }
 
-// Adaptador: Transforma cualquier formato que venga de la API al formato del mapa
+// Adaptador corregido
 export function normalizeScans(rawScans: any[]): NormalizedScan[] {
   return rawScans
-    .filter((s) => (s.latitud || s.lat) && (s.longitud || s.lng))
+    .filter((s) => (s.latitud != null || s.lat != null) && (s.longitud != null || s.lng != null))
     .map((s, index) => ({
-      id: s.id || `scan-${index}`,
-      latitud: Number(s.latitud || s.lat),
-      longitud: Number(s.longitud || s.longitud),
-      mascotaNombre: s.mascota_nombre || s.pet_name || 'Mascota',
+      id: String(s.id || `scan-${index}`),
+      latitud: Number(s.latitud ?? s.lat),
+      longitud: Number(s.longitud ?? s.lng), 
+      mascotaNombre: s.mascota_nombre || s.pet_name || s.mascota_nombre || 'Mascota',
       ownerNombre: s.owner_name || s.dueno_nombre || undefined,
-      fecha: s.fecha || s.escaneado_en || new Date().toISOString(),
+      fecha: s.fecha || s.created_at || s.escaneado_en || new Date().toISOString(), // 🎯 Agregado s.created_at por tu modelo de backend
       direccion: s.direccion_aproximada || s.direccion || undefined,
     }))
 }
