@@ -32,15 +32,15 @@ export default function HomePage() {
           <div className="max-w-3xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/20 text-secondary-foreground mb-6">
               <Heart className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium">Protege a quien mas quieres</span>
+              <span className="text-sm font-medium">Protege a quien más quieres</span>
             </div>
             <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 text-balance">
               Identifica a tu mascota con un simple{' '}
               <span className="text-primary">codigo QR</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-8 text-pretty">
-              PetQR es la forma mas rapida y segura de reunir a las mascotas perdidas con sus familias.
-              Escanea el codigo, contacta al dueno, salva una vida.
+              PetQR es la forma mas rápida y segura de reunir a las mascotas perdidas con sus familias.
+              Escanea el codigo, contacta al dueño, salva una vida.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/auth/register">
@@ -66,7 +66,7 @@ export default function HomePage() {
               Como Funciona PetQR
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              En solo 3 simples pasos, tu mascota estara protegida con identificacion QR
+              En solo 3 simples pasos, tu mascota estará protegida con identificacion QR
             </p>
           </div>
 
@@ -76,11 +76,11 @@ export default function HomePage() {
                 <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
                   <Smartphone className="w-8 h-8 text-primary" />
                 </div>
-                <CardTitle className="text-xl">1. Registra tu Mascota</CardTitle>
+                <CardTitle className="text-xl">1. Escanea el codigo QR único para tu mascota</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Crea una cuenta gratuita y anade la informacion de tu mascota: nombre, foto, datos de contacto.
+                  Registra tus datos e información para que te contacten.
                 </CardDescription>
               </CardContent>
             </Card>
@@ -90,11 +90,11 @@ export default function HomePage() {
                 <div className="w-16 h-16 rounded-2xl bg-secondary/20 flex items-center justify-center mx-auto mb-4">
                   <QrCode className="w-8 h-8 text-secondary-foreground" />
                 </div>
-                <CardTitle className="text-xl">2. Genera el Codigo QR</CardTitle>
+                <CardTitle className="text-xl">2. Añade a tu  mascota: nombre, foto, datos de contacto.</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Obtendras un codigo QR unico para tu mascota. Imprimelo y colocalo en su collar o placa.
+                  Podrás acceder  a la previsualización de los datos públicos de tu mascota y reeditarlos cuantas veces quieras. 
                 </CardDescription>
               </CardContent>
             </Card>
@@ -104,11 +104,11 @@ export default function HomePage() {
                 <div className="w-16 h-16 rounded-2xl bg-accent/30 flex items-center justify-center mx-auto mb-4">
                   <Bell className="w-8 h-8 text-accent-foreground" />
                 </div>
-                <CardTitle className="text-xl">3. Recibe Alertas</CardTitle>
+                <CardTitle className="text-xl">3. Recibe Alertas: Si alguien escanea el QR, recibiras una notificacion con la ubicacion donde fue encontrada</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Si alguien escanea el QR, recibiras una notificacion con la ubicacion donde fue encontrada.
+                  Accede a la app y verás los ultimos escaneos  de tus mascotas.
                 </CardDescription>
               </CardContent>
             </Card>

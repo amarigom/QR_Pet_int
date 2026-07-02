@@ -1,4 +1,3 @@
-// 📂 Ubicación: app/dashboard/layout.tsx
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
@@ -30,14 +29,12 @@ import { authApi } from '@/lib/api'
 import type { User } from '@/lib/types'
 import QrScannerModal from '@/components/QrScannerModal'
 
-// 🟢 Menú para cuando se navega como Usuario Común
 const userNavItems = [
   { href: '/dashboard', icon: Home, label: 'Inicio' },
   { href: '/dashboard/pets', icon: PawPrint, label: 'Mis Mascotas' },
   { href: '/dashboard/map', icon: MapPin, label: 'Mapa de Escaneos' },
 ]
 
-// 🏛️ Menú para cuando se navega en el Panel de Administración (Subrutas unificadas)
 const adminNavItems = [
   { href: '/dashboard/admin', icon: LayoutDashboard, label: 'Dashboard Admin' },
   { href: '/dashboard/admin/qr', icon: QrCode, label: 'Códigos QR' },
@@ -57,10 +54,7 @@ export default function DashboardLayout({
   const [isLoading, setIsLoading] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  // 🎯 DETECTAMOS SI EL USUARIO ESTÁ DENTRO DE LA ZONA DE ADMINISTRACIÓN
   const isAdminZone = pathname.startsWith('/dashboard/admin')
-  
-  // Seleccionamos dinámicamente qué botones mostrar en la barra
   const activeNavItems = isAdminZone ? adminNavItems : userNavItems
 
   const loadUser = useCallback(async () => {
@@ -106,10 +100,13 @@ export default function DashboardLayout({
   if (!user) return null
 
   return (
-    <div className="min-h-screen bg-background relative">
+    /* 🌟 CORRECCIÓN 1: Forzamos el ancho máximo de la pantalla y bloqueamos scrolls horizontales rebeldes */
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-background relative">
+      
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b w-full">
+        {/* 🌟 CORRECCIÓN 2: Reemplazamos 'container' por un ancho fluido responsivo controlado */}
+        <div className="w-full max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center shadow-sm">
@@ -120,7 +117,6 @@ export default function DashboardLayout({
 
             {/* Desktop Nav */}
             <nav className="hidden md:flex items-center gap-1">
-              {/* 🎯 BOTÓN VOLVER (PC): Aparece solo en la zona de admin para regresar al panel de usuario */}
               {isAdminZone && (
                 <Link href="/dashboard">
                   <Button variant="ghost" size="sm" className="text-primary font-semibold hover:bg-primary/10 mr-2">
@@ -195,10 +191,9 @@ export default function DashboardLayout({
           </div>
         </div>
 
-        {/* Mobile Nav Overlay (Menú hamburguesa en Celulares) */}
+        {/* Mobile Nav Overlay */}
         {mobileMenuOpen && (
           <nav className="md:hidden border-t bg-card px-4 py-4 space-y-2 animate-in slide-in-from-top-2 duration-200">
-            {/* 🎯 BOTÓN VOLVER (CELULAR): Se inyecta arriba de todo si estás gestionando la plataforma */}
             {user.rol === 'admin' && isAdminZone && (
               <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
                 <Button
@@ -227,7 +222,8 @@ export default function DashboardLayout({
       </header>
 
       {/* Main content */}
-      <main className="container mx-auto px-4 py-8 animate-in fade-in duration-500">
+      {/* CORRECCIÓN 3: Blindamos el contenedor para obligar a los hijos (tablas/mapas) a encajarse sin empujar los bordes */}
+      <main className="w-full max-w-7xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden animate-in fade-in duration-500">
         {children}
       </main>
 

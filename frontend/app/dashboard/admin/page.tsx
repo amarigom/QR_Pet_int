@@ -93,7 +93,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-center sm:text-left">
         <div>
           <h1 className="text-2xl font-bold">Dashboard Admin</h1>
           <p className="text-muted-foreground">

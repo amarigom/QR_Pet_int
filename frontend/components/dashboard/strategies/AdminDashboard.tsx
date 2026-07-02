@@ -36,7 +36,8 @@ export default function AdminDashboard({ user, data }: AdminDashboardProps) {
   console.log("🔍 QA AUDIT - RECENT SCANS:", recentScans)
   
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      
       {/* Encabezado del Dashboard */}
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2 tracking-tight">
@@ -51,7 +52,7 @@ export default function AdminDashboard({ user, data }: AdminDashboardProps) {
       </div>
 
       {/* SECCIÓN DE CONTADORES (Estadísticas Globales) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="border-primary/30 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-sm font-medium text-muted-foreground">Mascotas en la Plataforma</CardTitle>

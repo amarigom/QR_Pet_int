@@ -76,7 +76,7 @@ export default function AdminScansPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <header>
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-center sm:text-left">
         <h1 className="text-2xl font-bold tracking-tight">Monitoreo de Escaneos</h1>
         <p className="text-muted-foreground text-sm">Historial global de actividad de códigos QR</p>
       </header>
@@ -84,7 +84,7 @@ export default function AdminScansPage() {
       <div className="grid gap-6">
         {/* MAPA DE DISTRIBUCIÓN */}
         <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Globe className="w-5 h-5 text-primary" /> Distribución Geográfica
             </CardTitle>
@@ -92,8 +92,8 @@ export default function AdminScansPage() {
               {scansWithMapData.length} coordenadas detectadas
             </Badge>
           </CardHeader>
-          <CardContent>
-            <div className="h-[500px] border rounded-md overflow-hidden bg-muted/20 relative">
+          <CardContent className="p-3 sm:p-6 w-full max-w-full overflow-hidden">
+            <div className="h-[320px] sm:h-[400px] md:h-[500px] w-full border rounded-xl overflow-hidden bg-muted/20 relative z-0">
               {scansWithMapData.length > 0 ? (
                 <AdminScanMap scans={scansWithMapData} />
               ) : (
