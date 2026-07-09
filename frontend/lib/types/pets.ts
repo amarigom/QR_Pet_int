@@ -8,7 +8,7 @@ export interface Pet {
   color?: string | null;
   edad_aproximada?: string | null;
   foto_url?: string | null;
-  notas?: string | null;
+  notes?: string | null;
   estado: 'en_casa' | 'perdido' | 'libre' | string; // Aseguramos los estados reales
   created_at: string;
   updated_at?: string;

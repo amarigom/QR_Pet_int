@@ -100,6 +100,9 @@ export default function ScanPage() {
           const response = await qrApi.scan(code) 
           setData(response)
           setScanId(response.scan_id)
+          // 🌟 EL DIAGNÓSTICO PROFESIONAL:
+          console.log("=== RESPUESTA REAL DEL BACKEND ===", response)
+
           
           if (response.scan_id) sendLocation(response.scan_id)
           setIsLoading(false)
@@ -333,7 +336,7 @@ export default function ScanPage() {
     : null
 
   const tieneFotoValida = data?.pet.foto_url && data.pet.foto_url !== 'string' && data.pet.foto_url.trim() !== ''
-
+  const esPerdido = data?.pet.estado === 'perdido'
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/5 to-accent/5 pb-10 font-sans">
       <div className={`${data?.pet.estado === 'PERDIDO' ? 'bg-destructive' : 'bg-primary'} text-white py-6 px-4 text-center shadow-xs`}>
@@ -341,7 +344,7 @@ export default function ScanPage() {
           <Heart className="fill-current" /> {data?.pet.nombre}
         </h1>
         <p className="opacity-90 tracking-wide text-xs uppercase font-bold mt-1">
-          {data?.pet.estado === 'PERDIDO' ? '¡ESTOY PERDIDO! AYÚDAME' : 'Mascota Protegida'}
+          {esPerdido ? '¡ESTOY PERDIDO! AYÚDAME' : 'Mascota Protegida'}
         </p>
       </div>
 
@@ -375,11 +378,11 @@ export default function ScanPage() {
           </div>
           
           <CardContent className="pt-4">
-            {data?.pet.notas && (
+            {data?.pet.notes && data.pet.notes.trim() !== '' && (
               <div className="bg-amber-50/80 p-3 rounded-xl border border-amber-100 flex gap-2.5">
                 <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <p className="text-sm text-amber-900 leading-relaxed">
-                  <strong className="font-bold">Importante:</strong> {data.pet.notas}
+                  <strong className="font-bold">Importante:</strong> {data.pet.notes}
                 </p>
               </div>
             )}
