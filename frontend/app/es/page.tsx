@@ -92,7 +92,7 @@ export default function HomePage() {
                   </CardHeader>
                   <CardContent>
                     <CardDescription className="text-base">
-                      Podrás acceder a la previsualización de los datos públicos de tu mascota y reeditarlos cuantas veces quieras. 
+                      Accede a la previsualización de  los datos que se muestran al escanear QR  y reeditalos cuantas veces quieras. 
                     </CardDescription>
                   </CardContent>
                 </Card>
@@ -115,7 +115,7 @@ export default function HomePage() {
                   </CardHeader>
                   <CardContent>
                     <CardDescription className="text-base">
-                      Accede a la app y verás los últimos escaneos de tus mascotas.
+                      Accede a la app y sigue los últimos escaneos de tus mascotas.
                     </CardDescription>
                   </CardContent>
                 </Card>

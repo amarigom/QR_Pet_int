@@ -9,10 +9,10 @@ import { ArrowRight } from 'lucide-react'
 // 🌟 Listado de tus imágenes en la carpeta public
 const IMAGENES_HERO = [
   '/hero-1.jpg',
-  '/hero-2.jpg',
+  '/gato4.jpg',
   '/qr-1.jpg',
   '/qr2-.jpg',
-  '/qr-3.jpg'
+  '/familia1.jpg'
 ]
 
 export default function HeroSection() {
