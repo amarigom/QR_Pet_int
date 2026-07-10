@@ -124,7 +124,24 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+{/* 🌟 BANNER VISUAL (Conexión de colores exacta) */}
+        <section className="relative h-[550px] w-full overflow-hidden flex items-center justify-center bg-background">
+          
+          {/* Foto nítida con colores naturales */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-fixed opacity-90"
+            style={{ backgroundImage: `url('https://images.unsplash.com/photo-1544568100-847a948585b9?q=80&w=1974&auto=format&fit=crop')` }}
+          />
 
+          {/* 🔽 DEGRADADO SUPERIOR: Nace del gris de la sección de arriba y se estira */}
+          <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-[#f4f4f5] via-[#f4f4f5]/40 to-transparent dark:from-muted dark:via-muted/90" />
+          
+          {/* 🔼 DEGRADADO INFERIOR: Nace del fondo de la sección de abajo y se estira */}
+          <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-background via-background/60 to-transparent" />
+
+          {/* Tarjeta de vidrio compacta */}
+          
+        </section>
         {/* Nueva Sección Integrada: ¿Por qué elegir PetQR? */}
         {/* Nueva Sección Integrada: ¿Por qué elegir PetQR? */}
 <section className="py-20 bg-background scroll-mt-24 relative overflow-hidden">
@@ -209,6 +226,7 @@ export default function HomePage() {
         </motion.div>
 
       </div>
+
 
       {/* Contenedor del QR gigante - Animado de forma individual */}
       {/* Contenedor del Carrusel de Iconos/Vistas con Motion Puro */}
