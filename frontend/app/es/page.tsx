@@ -49,7 +49,7 @@ export default function HomePage() {
               <p className="mt-4 text-lg text-muted-foreground">Proteger a tu compañero es más fácil de lo que crees.</p>
             </motion.div>
 
-            {/* 🌟 Grilla adaptable: 1 columna en celular/tablet (grid-cols-1) y 3 en desktop (lg:grid-cols-3) */}
+            {/* Grilla adaptable */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
               
               {/* Tarjeta 1 */}
@@ -92,7 +92,7 @@ export default function HomePage() {
                   </CardHeader>
                   <CardContent>
                     <CardDescription className="text-base">
-                      Accede a la previsualización de  los datos que se muestran al escanear QR  y reeditalos cuantas veces quieras. 
+                      Accede a la previsualización de los datos que se muestran al escanear QR y reeditalos cuantas veces quieras. 
                     </CardDescription>
                   </CardContent>
                 </Card>
@@ -124,7 +124,168 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-        {/* 3. Sección CTA con animación de transparencia */}
+
+        {/* Nueva Sección Integrada: ¿Por qué elegir PetQR? */}
+        {/* Nueva Sección Integrada: ¿Por qué elegir PetQR? */}
+<section className="py-20 bg-background scroll-mt-24 relative overflow-hidden">
+  
+  {/* El destello azul ambiental al fondo */}
+  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.15),_transparent_45%)] pointer-events-none -z-10" />
+
+  <div className="container mx-auto px-4">
+    
+    {/* Título idéntico en estructura al de la sección anterior */}
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.6 }}
+      className="text-center max-w-2xl mx-auto mb-16"
+    >
+      <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">¿Por qué elegir PetQR?</h2>
+    </motion.div>
+
+    {/* Grilla limpia y estática (exactamente como la de Pasos pero de 2 columnas) */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-7xl mx-auto lg:items-center">
+      
+      {/* Contenedor de los beneficios - Ahora es un div normal sin motion */}
+      <div className="flex flex-col gap-8">
+        
+        {/* Beneficio 1 */}
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7 }}
+          className="flex gap-4"
+        >
+          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <Shield className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-lg mb-1">Seguridad Garantizada</h3>
+            <p className="text-muted-foreground">
+              Tu informacion personal esta protegida. Solo se muestra lo necesario para contactarte.
+            </p>
+          </div>
+        </motion.div>
+
+        {/* Beneficio 2 */}
+        <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, delay: 0.1 }}
+            className="flex gap-4"
+          >
+            <div className="w-12 h-12 rounded-xl bg-secondary/20 flex items-center justify-center shrink-0">
+              <MapPin className="w-6 h-6 text-secondary-foreground" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg mb-1">Geolocalizacion</h3>
+              <p className="text-muted-foreground">
+                Visualiza en un mapa donde fue escaneado el codigo QR de tu mascota.
+              </p>
+            </div>
+        </motion.div>
+
+        {/* Beneficio 3 */}
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: 0.2 }}
+          className="flex gap-4"
+        >
+          <div className="w-12 h-12 rounded-xl bg-accent/30 flex items-center justify-center shrink-0">
+            <Heart className="w-6 h-6 text-accent-foreground" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-lg mb-1">Completamente Gratis</h3>
+            <p className="text-muted-foreground">
+              PetQR es 100% gratuito. Sin costos ocultos, sin suscripciones.
+            </p>
+          </div>
+        </motion.div>
+
+      </div>
+
+      {/* Contenedor del QR gigante - Animado de forma individual */}
+      {/* Contenedor del Carrusel de Iconos/Vistas con Motion Puro */}
+{/* Contenedor del Carrusel con Efecto 3D de Fondo Escondido */}
+<motion.div 
+  initial={{ opacity: 0, y: 40 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  viewport={{ once: true, amount: 0.2 }}
+  transition={{ duration: 0.8, delay: 0.3 }}
+  className="relative flex items-center justify-center w-full"
+>
+  {/* El marco con gradiente + sombra interna para dar profundidad de "hueco" */}
+  <div className="w-full max-w-[380px] aspect-square bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 rounded-3xl flex items-center justify-center p-8 overflow-hidden relative shadow-inner">
+    
+    {/* 🌟 MÁSCARA DE DESVANECIMIENTO LATERAL: Hace que las tarjetas parezcan desaparecer por detrás de los bordes */}
+    <div 
+      className="absolute inset-0 w-full h-full flex items-center"
+      style={{
+        maskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%)',
+        WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%)'
+      }}
+    >
+      {/* Contenedor infinito en movimiento */}
+      <motion.div 
+        className="flex gap-12 absolute left-0 px-4 items-center"
+        animate={{ x: [0, -740] }} 
+        transition={{ 
+          ease: "linear", 
+          duration: 14, // Un poquitito más lento para apreciar el efecto de profundidad
+          repeat: Infinity 
+        }}
+      >
+        {/* Vista 1: QR */}
+        <div className="w-48 h-48 bg-card rounded-2xl shadow-xl hover:shadow-2xl flex flex-col items-center justify-center p-6 shrink-0 text-center border border-muted/50 transition-all">
+          <QrCode className="w-20 h-20 text-foreground mb-3" />
+          <span className="text-xs font-semibold text-muted-foreground">Tu Código QR</span>
+        </div>
+
+        {/* Vista 2: Mapa */}
+        <div className="w-48 h-48 bg-card rounded-2xl shadow-xl hover:shadow-2xl flex flex-col items-center justify-center p-6 shrink-0 text-center border border-muted/50 transition-all">
+          <MapPin className="w-20 h-20 text-secondary-foreground mb-3" />
+          <span className="text-xs font-semibold text-muted-foreground">Geolocalización</span>
+        </div>
+
+        {/* Vista 3: Alertas */}
+        <div className="w-48 h-48 bg-card rounded-2xl shadow-xl hover:shadow-2xl flex flex-col items-center justify-center p-6 shrink-0 text-center border border-muted/50 transition-all">
+          <Bell className="w-20 h-20 text-accent-foreground mb-3" />
+          <span className="text-xs font-semibold text-muted-foreground">Alertas de Escaneo</span>
+        </div>
+
+        {/* Vista 4: Mascota */}
+        <div className="w-48 h-48 bg-card rounded-2xl shadow-xl hover:shadow-2xl flex flex-col items-center justify-center p-6 shrink-0 text-center border border-muted/50 transition-all">
+          <PawPrint className="w-20 h-20 text-primary mb-3" />
+          <span className="text-xs font-semibold text-muted-foreground">Perfil de Mascota</span>
+        </div>
+
+        {/* REPETICIÓN PARA LOOP INFINITO SIN CORTES */}
+        <div className="w-48 h-48 bg-card rounded-2xl shadow-xl flex flex-col items-center justify-center p-6 shrink-0 text-center border border-muted/50">
+          <QrCode className="w-20 h-20 text-foreground mb-3" />
+          <span className="text-xs font-semibold text-muted-foreground">Tu Código QR</span>
+        </div>
+        <div className="w-48 h-48 bg-card rounded-2xl shadow-xl flex flex-col items-center justify-center p-6 shrink-0 text-center border border-muted/50">
+          <MapPin className="w-20 h-20 text-secondary-foreground mb-3" />
+          <span className="text-xs font-semibold text-muted-foreground">Geolocalización</span>
+        </div>
+
+      </motion.div>
+    </div>
+    
+  </div>
+</motion.div>
+
+    </div>
+  </div>
+</section>
+
+        {/* 3. Sección CTA */}
         <section className="py-20 bg-primary overflow-hidden">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
@@ -147,7 +308,8 @@ export default function HomePage() {
           </motion.div>
         </section>
       </main>      
-    {/* Footer */}
+      
+      {/* Footer */}
       <footer className="py-8 bg-card border-t">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
