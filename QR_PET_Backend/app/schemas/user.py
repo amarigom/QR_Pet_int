@@ -59,7 +59,9 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
-
+class DailyScan(BaseModel):
+    date: str
+    count: int
 
 # ============================================================================
 # ESTADÍSTICAS
@@ -72,7 +74,9 @@ class DashboardStats(BaseModel):
     qrs_count: int
     scans_count: int
     recent_scans: List[ScanMinimal] = []
-
+    scans_by_day: List[DailyScan] = []  # 👈 Nuevo campo con valor por defecto
+    daily_average: float = 0.0          # 👈 Nuevo campo para el promedio diario
+    timestamp: datetime
     model_config = ConfigDict(from_attributes=True)
 
 

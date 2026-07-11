@@ -29,6 +29,12 @@ class ScanRepository(BaseRepository[Scan]):
         )
         result = await self.session.execute(query)
         return list(result.scalars().all())
+
+    
+    async def get_scans_since(self, since_date: datetime):
+            query = select(Scan).where(Scan.created_at >= since_date)
+            result = await self.session.execute(query)
+            return result.scalars().all()
     
     async def count_by_qr(self, qr_id: uuid.UUID) -> int:
         """Cuenta cuántos escaneos tiene un QR"""

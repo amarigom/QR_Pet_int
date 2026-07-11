@@ -14,11 +14,11 @@ export interface RecentScan {
   qr_codigo: string;
 }
 export interface DashboardStats {
-  pets_count?: number;
-  qrs_count?: number;
-  scans_count?: number;
-  recent_scans: RecentScan[];
-  total_scans: number;
+  pets_count: number;
+  qrs_count: number;
+  scans_count: number;
+  recent_scans?: RecentScan[];
+  //total_scans: number;
 }
 
 export interface AdminStats {

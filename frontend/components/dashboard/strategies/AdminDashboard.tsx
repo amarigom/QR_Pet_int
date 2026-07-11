@@ -1,227 +1,252 @@
 
 'use client'
 
-import React from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { PawPrint, QrCode, MapPin, Eye, Clock, Map } from 'lucide-react'
-import { formatDateTime } from '@/lib/utils'
-import DireccionInversa from '@/components/direccion-inversa'
-
-// Importamos tus interfaces reales alineadas con el backend
-import type { ScanWithLocation } from '@/lib/types'
-
-// Importación del mapa unificado y optimizado
-import { ScanMapProvider } from '@/components/map/map-provider'
+import { Button } from '@/components/ui/button'
+import { Users, PawPrint, QrCode, Eye, TrendingUp, Clock, Plus, Activity } from 'lucide-react'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts'
 
 interface AdminDashboardProps {
   user: any
   data: {
-    summary: {
-      pets_count: number
-      qrs_count: number
-      total_scans: number
-    }
-    allPets: any[]
-    recent_scans?: ScanWithLocation[]
+    users_count: number
+    pets_count: number
+    qrs_count: number
+    scans_count: number
+    scans_by_day?: Array<{ date: string; count: number }>
   }
 }
 
 export default function AdminDashboard({ user, data }: AdminDashboardProps) {
-  // RED DE SEGURIDAD MÁXIMA PARA QA:
-  const stats = data?.summary || { pets_count: 0, qrs_count: 0, total_scans: 0 }
-  const allPets = data?.allPets || []
-  const recentScans: ScanWithLocation[] = data?.recent_scans || []
-  console.log("🔍 QA AUDIT - RECENT SCANS:", recentScans)
-  
+  const totalUsuarios = data?.users_count ?? 0
+  const totalMascotas = data?.pets_count ?? 0
+  const totalQrs = data?.qrs_count ?? 0
+  const totalEscaneos = data?.scans_count ?? 0 
+  const scansByDay = data?.scans_by_day ?? []
+
+  // 🧮 Cálculo dinámico del promedio diario basado en los últimos 30 días
+  const promedioDiario = (() => {
+    if (!scansByDay || scansByDay.length === 0) return 0
+    const sumaEscaneos = scansByDay.reduce((acc, curr) => acc + (curr.count ?? 0), 0)
+    const promedio = sumaEscaneos / scansByDay.length
+    // Redondeamos a 1 decimal para que quede prolijo (ej: 4.2 escaneos/día)
+    return Number(promedio.toFixed(1))
+  })()
+
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      
-      {/* Encabezado del Dashboard */}
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2 tracking-tight">
-          Dashboard 
-          <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full uppercase tracking-wider font-semibold">
-            Admin
-          </span>
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Consola de Control • Bienvenido, {user?.nombre || user?.email}
-        </p>
+    <div className="space-y-6">
+      {/* Encabezado */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-center sm:text-left">
+        <div>
+          <h1 className="text-2xl font-bold">Dashboard Admin</h1>
+          <p className="text-muted-foreground">
+            Resumen general del sistema PetQR
+          </p>
+        </div>
+        <Link href="/dashboard/admin/qr">
+          <Button>
+            <Plus className="w-4 h-4 mr-2" />
+            Generar QRs
+          </Button>
+        </Link>
       </div>
 
-      {/* SECCIÓN DE CONTADORES (Estadísticas Globales) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="border-primary/30 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Mascotas en la Plataforma</CardTitle>
-            <PawPrint className="w-5 h-5 text-primary" />
+      {/* Stats Cards Principales */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Usuarios
+            </CardTitle>
+            <Users className="w-5 h-5 text-primary" />
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-primary tracking-tight">{stats.pets_count}</p>
+            <p className="text-3xl font-bold">{totalUsuarios}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              <TrendingUp className="w-3 h-3 inline mr-1" />
+              Usuarios registrados
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total QRs Emitidos</CardTitle>
-            <QrCode className="w-5 h-5 text-blue-500" />
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Mascotas
+            </CardTitle>
+            <PawPrint className="w-5 h-5 text-secondary-foreground" />
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold tracking-tight">{stats.qrs_count}</p>
+            <p className="text-3xl font-bold">{totalMascotas}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Mascotas registradas
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Métricas de Escaneo Global</CardTitle>
-            <Eye className="w-5 h-5 text-orange-500" />
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Codigos QR Activos
+            </CardTitle>
+            <QrCode className="w-5 h-5 text-accent-foreground" />
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold tracking-tight">{stats.total_scans}</p>
+            <p className="text-3xl font-bold">{totalQrs}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              QR activos
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Escaneos
+            </CardTitle>
+            <Eye className="w-5 h-5 text-chart-1" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{totalEscaneos}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Escaneos realizados
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* MAPA GLOBAL DE AUDITORÍA (Se muestra si hay escaneos con GPS) */}
-      {recentScans.length > 0 && (() => {
-        // 🛡️ Filtramos y preparamos los datos tipados de forma segura para el mapa
-        const scansParaMapa = recentScans
-          .map((scan: ScanWithLocation) => {
-            const lat = scan.latitud != null ? Number(scan.latitud) : null;
-            const lng = scan.longitud != null ? Number(scan.longitud) : null;
+      {/* Sección del Gráfico + Tarjeta de Promedio Diario */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Gráfico (Toma 2 columnas) */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              Escaneos por Dia
+            </CardTitle>
+            <CardDescription>Ultimos 30 dias</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {scansByDay.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                No hay datos de escaneos
+              </p>
+            ) : (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={scansByDay}>
+                    <XAxis
+                      dataKey="date"
+                      tickFormatter={(value) => {
+                        const date = new Date(value)
+                        return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+                      }}
+                      fontSize={12}
+                    />
+                    <YAxis fontSize={12} />
+                    <Tooltip
+                      labelFormatter={(value) => {
+                        return new Date(value).toLocaleDateString('es-ES', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })
+                      }}
+                      formatter={(value) => [value, 'Escaneos']}
+                    />
+                    <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-            return {
-              ...scan,
-              id: String(scan.id ?? Math.random()),
-              latitud: lat,
-              longitud: lng,
-              mascota_nombre: scan.pet_name || "Mascota",
-              direccion_aproximada: scan.direccion_aproximada || "Ubicación aproximada",
-              created_at: scan.escaneado_en || null, 
-              qr_codigo: scan.qr_codigo || "N/A" // 🎯 Sincronizado con el campo QR real
-            };
-          })
-          .filter((s) => s.latitud !== null && s.longitud !== null);
+        {/* 📈 TARJETA DE PROMEDIO DIARIO (Toma 1 columna) */}
+        <Card className="col-span-1 flex flex-col justify-between">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="w-5 h-5 text-chart-1" />
+              Rendimiento Diario
+            </CardTitle>
+            <CardDescription>Métrica de los últimos 30 días</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col justify-center items-center pb-8">
+            <div className="text-center space-y-2">
+              <p className="text-6xl font-black tracking-tight text-primary">
+                {promedioDiario}
+              </p>
+              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                Escaneos / Día
+              </p>
+            </div>
+            <div className="mt-6 w-full rounded-md bg-muted/50 p-3 text-xs text-muted-foreground text-center">
+              Métrica calculada dinámicamente sobre el volumen de actividad reciente del sistema.
+            </div>
+          </CardContent>
+        </Card>
 
-        if (scansParaMapa.length === 0) return null;
+      </div>
 
-        return (
-          <Card className="border-muted/60 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Map className="w-5 h-5 text-primary" /> Mapa de Monitoreo Global
-              </CardTitle>
-              <CardDescription>
-                Geolocalización en tiempo real de todos los escaneos registrados en la plataforma.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="relative w-full h-[400px] rounded-xl border bg-card overflow-hidden z-0">
-                <ScanMapProvider scans={scansParaMapa} isAdmin={true} />
+      {/* Quick Links */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Link href="/dashboard/admin/qr">
+          <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <QrCode className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Gestionar QRs</h3>
+                  <p className="text-sm text-muted-foreground">Generar y administrar codigos</p>
+                </div>
               </div>
             </CardContent>
           </Card>
-        );
-      })()}
+        </Link>
 
-      {/* GESTIÓN DE TODAS LAS MASCOTAS */}
-      <Card className="shadow-sm border-muted/60">
-        <CardHeader>
-          <CardTitle>Gestión Global de Mascotas</CardTitle>
-          <CardDescription>Vista maestra para auditoría de registros de usuarios</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {allPets.length === 0 ? (
-            <p className="text-center py-6 text-muted-foreground text-sm">
-              No hay mascotas registradas en el sistema global.
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {allPets.map((pet) => {
-                const tieneFotoValida = pet.foto_url && pet.foto_url !== 'string' && pet.foto_url.trim() !== ''
-
-                return (
-                  <Link key={pet.id} href={`/admin/pets/${pet.id}`} passHref>
-                    <Card className="hover:border-primary/50 transition-all hover:shadow-sm cursor-pointer h-full border-muted/60 group bg-card">
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-4">
-                          <Avatar className="w-16 h-16 rounded-lg border bg-muted/40 shrink-0">
-                            {tieneFotoValida ? (
-                              <AvatarImage src={pet.foto_url} alt={pet.nombre} className="object-cover" />
-                            ) : null}
-                            <AvatarFallback className="rounded-lg bg-primary/5">
-                              <PawPrint className="w-7 h-7 text-primary/40 group-hover:scale-105 transition-transform" />
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-bold text-base truncate group-hover:text-primary transition-colors">
-                              {pet.nombre}
-                            </h3>
-                            <p className="text-xs text-muted-foreground truncate mt-0.5">
-                              Dueño: <span className="font-medium text-foreground/80">{pet.owner_name || pet.usuario_id || 'No asignado'}</span>
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                )
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* ALERTAS EN TIEMPO REAL (Lista detallada con desempate por QR y fechas históricas) */}
-      {recentScans.length > 0 && (
-        <Card className="shadow-sm border-muted/60">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <MapPin className="w-5 h-5 text-destructive" />
-              Alertas y Actividad Reciente
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3">
-              {recentScans.map((scan) => (
-                <div key={scan.id} className="flex items-center gap-4 p-3 rounded-xl bg-muted/30 border hover:bg-muted/50 transition-colors">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-semibold text-sm">
-                        Mascota: <span className="text-primary">{scan.pet_name || 'Desconocido'}</span>
-                      </p>
-                      {/* 🎯 SECCIÓN COMPENSATORIA: Rótulo con el código QR para auditoría visual directa */}
-                      <span className="text-[11px] font-mono bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded font-bold tracking-wider">
-                        QR: {scan.qr_codigo || 'N/A'}
-                      </span>
-                    </div>
-                    
-                    <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                      {/* 🎯 Filtrado exhaustivo de textos por defecto antes de recurrir a la geolocalización inversa */}
-                      {scan.direccion_aproximada && 
-                       scan.direccion_aproximada !== "Ubicación aproximada" && 
-                       scan.direccion_aproximada !== "Sin direccion aproximada" &&
-                       scan.direccion_aproximada !== "Sin dirección registrada" ? (
-                        <span className="truncate">{scan.direccion_aproximada}</span>
-                      ) : (
-                        <DireccionInversa lat={scan.latitud} lng={scan.longitud} />
-                      )}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <span className="text-[10px] text-muted-foreground flex items-center gap-1 justify-end font-medium">
-                      {/* 🎯 Sincronizado nativamente con scan.escaneado_en del backend real */}
-                      <Clock className="w-3 h-3" /> {scan.escaneado_en ? formatDateTime(scan.escaneado_en) : 'Sin fecha'}
-                    </span>
-                  </div>
+        <Link href="/dashboard/admin/users">
+          <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-lg bg-secondary/10 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-secondary-foreground" />
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}        
+                <div>
+                  <h3 className="font-semibold">Usuarios</h3>
+                  <p className="text-sm text-muted-foreground">Administrar usuarios</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/dashboard/admin/pets">
+          <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <PawPrint className="w-6 h-6 text-accent-foreground" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Mascotas</h3>
+                  <p className="text-sm text-muted-foreground">Ver todas las mascotas</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
     </div>
   )
 }

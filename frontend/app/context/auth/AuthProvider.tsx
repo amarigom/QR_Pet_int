@@ -54,8 +54,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
       } catch (error) {
         console.error("Token inválido o expirado");
-        localStorage.removeItem('token');
-        localStorage.removeItem('auth_user');
+        //localStorage.removeItem('token');
+        //localStorage.removeItem('auth_user');
         dispatch({ type: 'AUTH_LOADED', payload: { user: null, token: null } });
       }
     };
