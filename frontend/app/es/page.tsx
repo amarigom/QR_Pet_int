@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { QrCode, Shield, MapPin, Bell, Heart, Smartphone, PawPrint } from 'lucide-react'
 import * as motion from 'framer-motion/client'
+import ContactSection from '@/components/contactSection'
 
 export default function HomePage() {
   return (
@@ -24,6 +25,10 @@ export default function HomePage() {
             </Link>
             <Link href="/auth/register">
               <Button>Registrarse</Button>
+            </Link>
+            {/* BOTÓN DE CONTACTO */}
+            <Link href="#contact">
+              <Button variant="ghost">Contactanos</Button>
             </Link>
           </nav>
         </div>
@@ -125,7 +130,7 @@ export default function HomePage() {
           </div>
         </section>
 {/* 🌟 BANNER VISUAL (Conexión de colores exacta) */}
-        <section className="relative h-[550px] w-full overflow-hidden flex items-center justify-center bg-background">
+        <section className="relative h-[650px] w-full overflow-hidden flex items-center justify-center bg-background">
           
           {/* Foto nítida con colores naturales */}
           <div 
@@ -137,7 +142,7 @@ export default function HomePage() {
           <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-[#f4f4f5] via-[#f4f4f5]/40 to-transparent dark:from-muted dark:via-muted/90" />
           
           {/* 🔼 DEGRADADO INFERIOR: Nace del fondo de la sección de abajo y se estira */}
-          <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-background via-background/60 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-background via-background/50 to-transparent" />
 
           {/* Tarjeta de vidrio compacta */}
           
@@ -326,7 +331,10 @@ export default function HomePage() {
           </motion.div>
         </section>
       </main>      
-      
+      {/* NUEVA SECCIÓN DE CONTACTO CON DESTELLOS AZULES */}
+      <section>
+          <ContactSection />
+      </section>
       {/* Footer */}
       <footer className="py-8 bg-card border-t">
         <div className="container mx-auto px-4">

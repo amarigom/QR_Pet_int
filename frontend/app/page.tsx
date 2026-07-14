@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { QrCode, Shield, MapPin, Bell, Heart, Smartphone } from 'lucide-react'
+import ContactSection from '@/components/contactSection'
 
 export default function HomePage() {
   return (
@@ -21,6 +22,10 @@ export default function HomePage() {
             </Link>
             <Link href="/auth/register">
               <Button>Registrarse</Button>
+            </Link>
+            {/* ⚡ NUEVO BOTÓN DE CONTACTO */}
+            <Link href="#contact">
+              <Button variant="ghost">Contacto</Button>
             </Link>
           </nav>
         </div>
@@ -190,7 +195,10 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
-
+      {/* NUEVA SECCIÓN DE CONTACTO CON DESTELLOS AZULES */}
+        <section>
+          <ContactSection />
+        </section>
       {/* Footer */}
       <footer className="py-8 bg-card border-t">
         <div className="container mx-auto px-4">
