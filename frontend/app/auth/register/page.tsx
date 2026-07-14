@@ -10,16 +10,16 @@ import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
 import { QrCode, Mail, Lock, User, Phone } from 'lucide-react'
 import { toast } from 'sonner'
-import { authApi } from '@/lib/api' //  Importamos tu cliente de API real
+import { authApi } from '@/lib/api' 
+import { useContext } from 'react'
+import { AuthContext } from '@/app/context/auth/AuthContext'
 
 function RegisterForm() {
   const router = useRouter()
-  
-  //  Captura segura del parámetro QR barriendo parámetros internos de Next.js
+  const { login } = useContext(AuthContext)
   const searchParams = useSearchParams()
   const rawRedirect = searchParams.get('redirect')
   const redirectUrl = rawRedirect ? rawRedirect.split('&')[0].split('?')[0] : null
-
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     nombre: '',
@@ -98,23 +98,26 @@ function RegisterForm() {
     setIsLoading(true)
 
     try {
-      // 1. Llamada al backend pasando el teléfono ya limpio y formateado
+      // 1. Registramos al usuario en la base de datos
       await authApi.register({
         nombre: formData.nombre,
         email: formData.email,
         password: formData.password,
-        telefono: cleanPhone, // 👈 Enviamos la cadena sanitizada
+        telefono: cleanPhone,
       })
       
-      toast.success("¡Cuenta creada con éxito! Redirigiendo...")
+      toast.success("¡Cuenta creada con éxito!")
+
+      // 2.Iniciamos sesión usando la función global de AuthProvider
+      // Esto actualiza el estado 'user' de React inmediatamente
+      await login(formData.email, formData.password)
+
       
-      setTimeout(() => {
-        if (rawRedirect) {
-          router.push(`/auth/login?redirect=${encodeURIComponent(rawRedirect)}`)
-        } else {
-          router.push('/auth/login')
-        }
-      }, 1500)
+      if (redirectUrl) {
+        setTimeout(() => {
+          router.push(redirectUrl)
+        }, 1000)
+      }
 
     } catch (error) {
       console.error("Error en registro:", error)
