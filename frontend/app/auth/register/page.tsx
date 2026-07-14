@@ -212,6 +212,24 @@ function RegisterForm() {
             </div>
           </div>
 
+          {/* 👇 CAMPO AGREGADO: Confirmar Contraseña */}
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="••••••••"
+                className="pl-10"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+
           {/* Botón de Envío con Spinner */}
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? (
