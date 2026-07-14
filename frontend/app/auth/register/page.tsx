@@ -12,11 +12,12 @@ import { QrCode, Mail, Lock, User, Phone } from 'lucide-react'
 import { toast } from 'sonner'
 import { authApi } from '@/lib/api' 
 import { useContext } from 'react'
-import { AuthContext } from '@/app/context/auth/AuthContext'
+import { useAuth} from '@/app/context/auth/AuthContext'
+
 
 function RegisterForm() {
   const router = useRouter()
-  const { login } = useContext(AuthContext)
+  const { login } = useAuth() // 👈 Usamos el contexto de autenticación para iniciar sesión después del registro
   const searchParams = useSearchParams()
   const rawRedirect = searchParams.get('redirect')
   const redirectUrl = rawRedirect ? rawRedirect.split('&')[0].split('?')[0] : null
