@@ -41,7 +41,7 @@ export default function ContactSection() {
   return (
     <section className="relative py-24 bg-background overflow-hidden border-t border-border" id="contact">
       
-      {/* 🌌 Efectos de Destello con Animación de Pulso Sutil */}
+      {/* Efectos de Destello con Animación de Pulso Sutil */}
       <motion.div 
         animate={{
           scale: [1, 1.05, 1],
@@ -134,7 +134,7 @@ export default function ContactSection() {
             </a>
           </motion.div>
 
-          {/* Tarjeta Instagram */}
+          {/* Tarjeta Instagram para la aplicacion */}
           <motion.div 
             variants={itemVariants}
             onMouseEnter={() => setHoveredCard("instagram")}
