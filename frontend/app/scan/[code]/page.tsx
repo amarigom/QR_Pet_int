@@ -66,7 +66,7 @@ export default function ScanPage() {
         }
       },
       () => setLocationStatus('denied'),
-      { enableHighAccuracy: true, timeout: 8000 }
+      { enableHighAccuracy: true, timeout: 15000,maximumAge: 0 }
     )
   }, [])
 
