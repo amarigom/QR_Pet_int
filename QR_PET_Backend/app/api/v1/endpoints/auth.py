@@ -71,6 +71,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
             nombre=current_user.nombre,
             telefono=current_user.telefono,
             rol=current_user.rol,
+            direccion=current_user.direccion,
             avatar_url=current_user.avatar_url,
             created_at=current_user.created_at
         )

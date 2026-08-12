@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { PawPrint, QrCode, PlusCircle, Map, Phone, User, Loader2 } from 'lucide-react'
+import { PawPrint, QrCode, PlusCircle, Map, Phone, User, Loader2 ,MapPin} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -38,7 +38,8 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
   // Estado local para el formulario de edición rápida del perfil
   const [profileData, setProfileData] = useState({
     nombre: user?.nombre || '',
-    telefono: user?.telefono || ''
+    telefono: user?.telefono || '',
+    direccion: user?.direccion || ''
   })
 
   // Extracción segura de datos
@@ -70,7 +71,8 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
     try {
       const updatedUser = await authApi.updateProfile({
         nombre: profileData.nombre.trim(),
-        telefono: cleanPhone
+        telefono: cleanPhone,
+        direccion: profileData.direccion.trim() || null
       })
       
       // Actualizamos el estado local para reflejar el cambio al milisegundo
@@ -166,6 +168,13 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
                   <span className="text-amber-600 font-semibold">Falta WhatsApp</span>
                 )}
               </p>
+                {/* 👈 NUEVO: Mostrar Domicilio si existe */}
+                {currentUser?.direccion && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 truncate">
+                <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
+                  <span className="truncate">{currentUser.direccion}</span>
+              </p>
+                )}
             </div>
           </CardContent>
           <div className="px-4 pb-4 pt-0">
@@ -213,6 +222,23 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
                     </div>
                     <p className="text-[11px] text-muted-foreground leading-tight">
                       Incluí código de país (ej: +54) seguido de tu celular con código de área.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="direccion">Domicilio / Dirección <span className="text-xs text-muted-foreground font-normal">(Opcional)</span></Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="direccion"
+                        type="text"
+                        placeholder="Ej: Av. España 450, Tandil"
+                        value={profileData.direccion}
+                        onChange={(e) => setProfileData(prev => ({ ...prev, direccion: e.target.value }))}
+                        className="pl-10"
+                      />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-tight">
+                      Dirección de contacto en caso de emergencia.
                     </p>
                   </div>
                   <div className="flex justify-end gap-2 pt-2">

@@ -45,6 +45,8 @@ class User(Base):
     
     avatar_url: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     
+    direccion = mapped_column(String(255), nullable=True)
+    
     # Fecha de creación gestionada por la base de datos
     created_at: Mapped[datetime] = mapped_column(
         DateTime, 

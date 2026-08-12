@@ -220,7 +220,7 @@ export default function ScanPage() {
             <Link href="/" className="flex items-center justify-center gap-2 mb-4">
               <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center overflow-hidden">
                 <img 
-                  src="/PETQR_icono_solo_512.jpg" 
+                  src="/PETQR_icono-512.jpg" 
                   alt="PetQR Isotipo" 
                   className="object-cover w-full h-full"
                 />

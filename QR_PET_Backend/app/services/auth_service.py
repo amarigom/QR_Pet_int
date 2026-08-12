@@ -79,7 +79,8 @@ class AuthService:
                 user_id=user_id,
                 telefono=fields_sent.get("telefono"),
                 nombre=fields_sent.get("nombre"),
-                avatar_url=fields_sent.get("avatar_url")
+                avatar_url=fields_sent.get("avatar_url"),
+                direccion=fields_sent.get("direccion")
             )
 
             if not user:

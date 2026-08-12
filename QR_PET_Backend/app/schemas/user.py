@@ -30,6 +30,8 @@ class UserUpdate(BaseModel):
     nombre: Optional[str] = Field(None, min_length=1, max_length=100)
     telefono: Optional[str] = None
     avatar_url: Optional[str] = None
+    direccion: Optional[str] = None
+    
 
 
 # ============================================================================
@@ -40,6 +42,7 @@ class UserResponse(UserMinimal, UserBase):
     """Response estándar de usuario (sin relaciones)"""
     rol: UserRole
     created_at: datetime
+    
     
     model_config = ConfigDict(from_attributes=True)
 

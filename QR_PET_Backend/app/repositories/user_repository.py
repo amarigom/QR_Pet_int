@@ -48,7 +48,7 @@ class UserRepository(BaseRepository[User]):
         return result.scalar() or 0
     
     from uuid import UUID
-    async def update_user(self, user_id: UUID, telefono: Optional[str] = None, nombre: Optional[str] = None, avatar_url: Optional[str] = None) -> Optional[User]:
+    async def update_user(self, user_id: UUID, telefono: Optional[str] = None, nombre: Optional[str] = None, avatar_url: Optional[str] = None, direccion: Optional[str] = None) -> Optional[User]:
             """Busca al usuario y actualiza selectivamente sus campos en memoria."""
             query = select(User).where(User.id == user_id)
             result = await self.session.execute(query)
@@ -63,5 +63,7 @@ class UserRepository(BaseRepository[User]):
                 user_record.nombre = nombre
             if avatar_url is not None:
                 user_record.avatar_url = avatar_url
+            if direccion is not None:
+                user_record.direccion = direccion
 
             return user_record

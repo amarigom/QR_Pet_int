@@ -66,7 +66,7 @@ export const authApi = {
     }
   },
 
-  updateProfile: async (data: { nombre: string; telefono: string }): Promise<User> => {
+  updateProfile: async (data: { nombre: string; telefono: string; direccion?: string | null }): Promise<User> => {
     const updatedUser = await fetchAPI<User>('/auth/me', {
       method: 'PUT',
       body: data as any, 

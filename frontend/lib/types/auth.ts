@@ -5,6 +5,7 @@ export interface User {
   telefono: string | null;
   // Cambié 'user' por 'usuario' para que coincida con tu base de datos de Python
   rol: 'admin' | 'usuario'; 
+  direccion?: string | null;
   avatar_url: string | null;
   created_at: string;
 }

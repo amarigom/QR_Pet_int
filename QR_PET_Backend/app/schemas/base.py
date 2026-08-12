@@ -66,6 +66,7 @@ class UserBase(BaseModel):
     nombre: str = Field(..., min_length=1, max_length=100)
     telefono: Optional[str] = None
     avatar_url: Optional[str] = None
+    direccion: Optional[str] = None
 
 
 class PetBase(BaseModel):
