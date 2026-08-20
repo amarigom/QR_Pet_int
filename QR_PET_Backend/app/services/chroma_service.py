@@ -12,7 +12,11 @@ class VectorStoreService:
         
         self.ai_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
         CHROMA_PATH = os.path.join(os.path.abspath("."), "chroma_db")
-        self.chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
+        
+        if os.getenv("VERCEL"):
+            self.chroma_client = chromadb.Client()
+        else:
+            self.chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
 
         
         self.collection = self.chroma_client.get_or_create_collection(
