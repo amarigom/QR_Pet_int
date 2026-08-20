@@ -116,4 +116,6 @@ def test_embedding(texto: str = "Un perro labrador de color dorado", metadata: d
             "message": str(e)
         }
         
-    
+@app.get("/api/health")
+def health_check():
+    return {"status": "ok", "branch": "feature/rag-chatbot"}    
