@@ -9,7 +9,7 @@ Esquemas de Mascota (Pet)
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
 from datetime import datetime
-from uuid import UUID
+from uuid import UUID                                                                                                                                                                                
 from app.core.constants import PetStatus, AnimalSpecies
 from app.schemas.base import PetBase, PetMinimal,UserMinimal,QRMinimal
 

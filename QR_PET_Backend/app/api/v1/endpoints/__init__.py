@@ -1,1 +1,2 @@
-# Endpoints module
+# E# app/api/v1/endpoints/__init__.py
+
