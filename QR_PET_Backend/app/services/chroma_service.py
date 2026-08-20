@@ -8,24 +8,52 @@ from typing import List, Dict,Optional
 
 class VectorStoreService:
 
-    def __init__(self, collection_name: str = "pets_vectors_v2",knowledge_collection_name: str = "knowledge_base_v1"):
+    def __init__(self, collection_name: str = "pets_vectors_v2", knowledge_collection_name: str = "knowledge_base_v1"):
+        self.collection_name = collection_name
+        self.knowledge_collection_name = knowledge_collection_name
+        self.ai_client = None
+        self.chroma_client = None
+        self.collection = None
+        self.knowledge_collection = None
         
-        self.ai_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-        CHROMA_PATH = os.path.join(os.path.abspath("."), "chroma_db")
-        
-        if os.getenv("VERCEL"):
-            self.chroma_client = chromadb.Client()
-        else:
-            self.chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
+        # Inicialización perezosa (lazy)
+        self._init_clients()
+    
+    def _init_clients(self):
+        # 1. Gemini Client
+        api_key = os.getenv("GEMINI_API_KEY")
+        if api_key:
+            try:
+                from google import genai
+                self.ai_client = genai.Client(api_key=api_key)
+            except Exception as e:
+                logging.error(f"Error iniciando Gemini Client: {e}")
 
-        
-        self.collection = self.chroma_client.get_or_create_collection(
-            name=collection_name
-        )
-        self.knowledge_collection = self.chroma_client.get_or_create_collection(
-                name=knowledge_collection_name,
+        # 2. ChromaDB Client con aislamiento de errores
+        try:
+            import chromadb
+            
+            if os.getenv("VERCEL"):
+                # En Vercel forzamos almacenamiento efímero sin guardar en disco
+                self.chroma_client = chromadb.Client()
+            else:
+                CHROMA_PATH = os.path.join(os.path.abspath("."), "chroma_db")
+                self.chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
+
+            self.collection = self.chroma_client.get_or_create_collection(
+                name=self.collection_name
+            )
+            self.knowledge_collection = self.chroma_client.get_or_create_collection(
+                name=self.knowledge_collection_name,
                 metadata={"hnsw:space": "cosine"},
             )
+        except Exception as e:
+            # Si ChromaDB falla en el entorno Serverless de Vercel,
+            # no interrumpe la carga global de la API FastAPI.
+            logging.error(f"ChromaDB no pudo inicializarse en este entorno: {e}")
+            self.chroma_client = None
+            self.collection = None
+            self.knowledge_collection = None
 # ==========================================
     # MÉTODOS PRIVADOS / AUXILIARES
     # ==========================================
