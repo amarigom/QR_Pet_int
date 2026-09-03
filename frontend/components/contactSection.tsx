@@ -2,11 +2,11 @@
 
 import { useState } from "react"
 import { motion, Variants } from "framer-motion"
-import { Instagram, MessageCircle } from "lucide-react"
+import { Instagram, MessageCircle ,Mail} from "lucide-react"
 
 export default function ContactSection() {
   // Estado para saber qué tarjeta tiene el mouse arriba ('whatsapp', 'instagram' o null)
-  const [hoveredCard, setHoveredCard] = useState<"whatsapp" | "instagram" | null>(null)
+  const [hoveredCard, setHoveredCard] = useState<"whatsapp" | "instagram" |"email"| null>(null)
 
   // Variantes para animar la entrada secuencial (stagger) de las tarjetas
   const containerVariants: Variants = {
@@ -94,7 +94,41 @@ export default function ContactSection() {
           viewport={{ once: true, margin: "-100px" }}
           className="grid grid-cols-1 md:grid-cols-2 gap-8"
         >
-          
+          {/* Tarjeta Email */}
+<motion.div 
+  variants={itemVariants}
+  onMouseEnter={() => setHoveredCard("email")}
+  onMouseLeave={() => setHoveredCard(null)}
+  animate={{
+    y: hoveredCard === "email" ? -6 : 0,
+    scale: hoveredCard === "email" ? 1.01 : 1,
+    opacity: hoveredCard === null ? 1 : hoveredCard === "email" ? 1 : 0.4,
+    boxShadow: hoveredCard === "email" 
+      ? "0 10px 30px -10px rgba(78, 205, 196, 0.25)" 
+      : "0 1px 3px 0 rgba(0, 0, 0, 0.05)"
+  }}
+  whileTap={{ scale: 0.985 }}
+  transition={springTransition}
+  className="group relative rounded-2xl border border-border bg-card p-10 text-center hover:border-primary/50 transition-colors duration-500 backdrop-blur-md cursor-pointer"
+>
+  <div className="absolute inset-0 bg-gradient-to-b from-primary/0 to-primary/[0.01] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl" />
+  
+  <div className="w-16 h-16 bg-secondary/20 border border-secondary/30 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform duration-300">
+    <Mail className="w-8 h-8 text-secondary-foreground" />
+  </div>
+  
+  <h3 className="tracking-wide uppercase text-lg font-bold text-foreground mb-2">
+    Correo Electrónico
+  </h3>
+  <p className="text-muted-foreground mb-6 font-medium">petqrmascotas@gmail.com</p>
+  
+  <a 
+    href="mailto:petqrmascotas@gmail.com" 
+    className="inline-block px-8 py-3 bg-primary text-primary-foreground text-xs font-semibold uppercase tracking-wider hover:bg-primary/95 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md active:scale-95"
+  >
+    Enviar correo
+  </a>
+</motion.div>
           {/* Tarjeta WhatsApp */}
           <motion.div 
             variants={itemVariants}

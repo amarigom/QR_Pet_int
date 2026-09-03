@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from app.services.chroma_service import VectorStoreService
+from app.services.pgvector_service import VectorStoreService
 from app.schemas.chat import ChatQueryInput, ChatQueryResponse
 from app.api.v1.dependencies import get_vector_store_service
 
@@ -14,7 +14,8 @@ async def preguntar_al_chatbot(
         # Convertimos la lista de Pydantic a lista de dicts
         historial_dict = [m.model_dump() for m in data.historial] if data.historial else []
 
-        resultado = v_service.responder_con_rag(
+        # 👈 Agregamos await para resolver la corrutina asíncrona de Neon
+        resultado = await v_service.responder_con_rag(
             pregunta=data.pregunta,
             historial=historial_dict,
             categoria=data.categoria,

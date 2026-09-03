@@ -1,45 +1,37 @@
 """
 Dependencias y funciones compartidas para endpoints
 """
-from pathlib import Path
-from typing import Optional
 import uuid
-import chromadb
-from fastapi import Depends, HTTPException, status
+from typing import Optional
+
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# 1. Imports de Core y Base de Datos
+# 1. Core y Base de Datos
 from app.core.database import get_db
 from app.core.auth import decode_access_token
 from app.core.exceptions import AuthenticationException, PermissionDeniedException
 from app.core.constants import UserRole
+from app.core.ai_client import embedding_client
 
-# 2. Imports de persistencia (Repositorios y Modelos)
-from app.repositories.user_repository import UserRepository
+# 2. Persistencia (Repositorios y Modelos)
 from app.models.user import User
+from app.repositories.user_repository import UserRepository
 from app.repositories.qr_repository import QRRepository 
 from app.repositories.pet_repository import PetRepository
 from app.repositories.pet_vector_repository import PetVectorRepository
+from app.repositories.knowledge_repository import KnowledgeRepository
 
-# 3. Imports de Servicios
+# 3. Servicios
 from app.services.admin_service import AdminService
 from app.services.qr_service import QRService 
 from app.services.pet_service import PetService
-from app.services.chroma_service import VectorStoreService
+from app.services.pgvector_service import VectorStoreService
 
 
-# Esquema de seguridad OAuth2 (auto_error=False para soportar endpoints opcionales)
+# Esquema de seguridad OAuth2
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
-
-
-# =====================================================================
-# CONFIGURACIÓN DE RUTAS ABSOLUTAS
-# =====================================================================
-
-# Sube 4 niveles desde app/api/v1/dependencies.py para llegar a QR_PET_Backend
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
-CHROMA_PATH = BASE_DIR / "chroma_db"
 
 
 # =====================================================================
@@ -86,11 +78,7 @@ async def get_optional_user(
     token: Optional[str] = Depends(oauth2_scheme), 
     db: AsyncSession = Depends(get_db)
 ) -> Optional[User]:
-    """
-    Obtiene el usuario si hay token válido. 
-    Si el token no está presente o falla la decodificación, retorna None 
-    sin corromper la transacción de la DB.
-    """
+    """Obtiene el usuario si hay token válido, o None si falla/no existe."""
     if not token:
         return None
 
@@ -104,7 +92,6 @@ async def get_optional_user(
         user_repo = UserRepository(db)
         return await user_repo.get_by_id(user_uuid)
     except Exception:
-        # Silencia errores de token expirado o corrupto para consultas públicas
         return None
 
 
@@ -118,7 +105,7 @@ async def get_admin_service(db: AsyncSession = Depends(get_db)) -> AdminService:
 # =====================================================================
 
 async def get_qr_repository(db: AsyncSession = Depends(get_db)) -> QRRepository:
-    """Proveedor del repositorio de códigos QR, inyectando la sesión de BD."""
+    """Proveedor del repositorio de códigos QR."""
     return QRRepository(db)
 
 
@@ -128,52 +115,39 @@ async def get_qr_service(db: AsyncSession = Depends(get_db)) -> QRService:
 
 
 # =====================================================================
-# DEPENDENCIAS PARA MÓDULO MASCOTAS Y BÚSQUEDA VECTORIAL
+# DEPENDENCIAS PARA MÓDULO MASCOTAS Y BÚSQUEDA VECTORIAL (PGVECTOR)
 # =====================================================================
-
-# Variables globales para el patrón Singleton
-_vector_repo_instance: Optional[PetVectorRepository] = None
-_vector_store_instance: Optional[VectorStoreService] = None
-
-
-def get_vector_store_service() -> VectorStoreService:
-    """
-    Instancia perezosa (singleton) de VectorStoreService para evitar
-    re-conectar a ChromaDB en cada petición.
-    """
-    global _vector_store_instance
-    if _vector_store_instance is None:
-        _vector_store_instance = VectorStoreService()
-    return _vector_store_instance
-
-
-def get_pet_vector_repository() -> PetVectorRepository:
-    """
-    Proveedor del repositorio vectorial.
-    Utiliza instanciación perezosa (lazy) para evitar reabrir la BD en cada request.
-    Garantiza el uso de la ruta absoluta CHROMA_PATH (QR_PET_Backend/chroma_db).
-    """
-    global _vector_repo_instance
-    if _vector_repo_instance is None:
-        # 1. Crear/conectar el cliente de ChromaDB con ruta absoluta fija
-        chroma_client = chromadb.PersistentClient(path=str(CHROMA_PATH))
-        
-        # 2. Obtener o crear la colección de vectores
-        collection = chroma_client.get_or_create_collection(name="pets_vectors_v2")
-        
-        # 3. Inyectar la colección en el repositorio
-        _vector_repo_instance = PetVectorRepository(collection)
-        
-    return _vector_repo_instance
-
-
-async def get_pet_service(
-    db: AsyncSession = Depends(get_db),
-    vector_repo: PetVectorRepository = Depends(get_pet_vector_repository)
-) -> PetService:
-    """Proveedor del servicio de mascotas con inyección de SQL y ChromaDB."""
-    return PetService(db=db, vector_repo=vector_repo)
 
 async def get_pet_repository(db: AsyncSession = Depends(get_db)) -> PetRepository:
     """Provee una instancia de PetRepository inyectando la sesión de DB."""
     return PetRepository(db)
+
+
+async def get_pet_vector_repository(db: AsyncSession = Depends(get_db)) -> PetVectorRepository:
+    """Proveedor del repositorio vectorial respaldado por PostgreSQL (pgvector)."""
+    return PetVectorRepository(db)
+
+
+
+async def get_vector_store_service(
+    db: AsyncSession = Depends(get_db)
+) -> VectorStoreService:
+    """Proveedor del servicio vectorial de mascotas con pgvector y embeddings."""
+    repository = PetVectorRepository(db)
+    knowledge_repo = KnowledgeRepository(db)
+    return VectorStoreService(  
+        repository=repository,
+        knowledge_repo=knowledge_repo,
+        ai_client=embedding_client  
+    )
+
+
+
+async def get_pet_service(
+    db: AsyncSession = Depends(get_db),
+    vector_service: VectorStoreService = Depends(get_vector_store_service) #  Inyectamos el servicio
+) -> PetService:
+    pet_repo = PetRepository(db)
+    
+    # Pasamos vector_service en lugar de vector_repo
+    return PetService(pet_repo=pet_repo, vector_service=vector_service)

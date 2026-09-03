@@ -154,9 +154,7 @@ class PetRepository(BaseRepository[Pet]):
         return result.scalar_one()
 
     async def get_paginated(self, offset: int, limit: int) -> list[Pet]:
-        """
-        Devuelve un lote paginado de mascotas.
-        """
+        """Devuelve un lote paginado de mascotas."""
         stmt = select(Pet).offset(offset).limit(limit)
         result = await self.session.execute(stmt)
-        return list(result.scalars().all())
+        return result.scalars().all()

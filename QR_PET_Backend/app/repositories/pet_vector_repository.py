@@ -1,37 +1,64 @@
-from app.services.chroma_service import VectorStoreService
+# app/repositories/pet_vector_repository.py
 
 import logging
+from typing import Optional
+from sqlalchemy import select, text
+from app.models.pet_vector import PetVector
+
+logger = logging.getLogger(__name__)
+
 
 class PetVectorRepository:
-    def __init__(self, collection):
-        """collection es la instancia de chromadb.Collection o None (si falló en Vercel)"""
-        self.collection = collection
+    def __init__(self, db):
+        self.db = db
 
-    def index_pet(self, pet_id: str, description: str, metadata: dict):
-        """Persiste o actualiza el embedding de la mascota en ChromaDB."""
-        if not self.collection:
-            logging.warning("ChromaDB no disponible. Omitiendo indexación de mascota.")
-            return False
+    async def search_similar(
+        self, 
+        query_vector: list[float], 
+        limit: int = 3,
+        filters: Optional[dict] = None
+    ) -> dict:
+        """
+        Realiza la búsqueda por similitud de coseno en Postgres con pgvector + SQLAlchemy.
+        """
+        try:
+            cosine_distance = PetVector.embedding.cosine_distance(query_vector).label("distance")
 
-        self.collection.upsert(
-            ids=[pet_id],
-            documents=[description],
-            metadatas=[metadata]
-        )
-        return True
+            stmt = select(
+                PetVector.id,
+                PetVector.document,
+                PetVector.metadata_,  # 👈 Atributo en el modelo de SQLAlchemy
+                cosine_distance,
+            )
 
-    def search_similar(self, query: str, limit: int = 3, where_filter: dict = None):
-        """Realiza la búsqueda vectorial en ChromaDB."""
-        if not self.collection:
-            logging.warning("ChromaDB no disponible en este entorno Serverless.")
-            # Retorna una estructura vacía equivalente al formato de ChromaDB
-            return {"ids": [[]], "distances": [[]], "metadatas": [[]], "documents": [[]]}
+            if filters:
+                for key, value in filters.items():
+                    if value is not None:
+                        stmt = stmt.where(
+                            text(f"metadata->>'{key}' ILIKE :val_{key}")
+                        ).params({f"val_{key}": f"%{value}%"})
 
-        kwargs = {
-            "query_texts": [query],
-            "n_results": limit
-        }
-        if where_filter:
-            kwargs["where"] = where_filter
+            stmt = stmt.order_by(cosine_distance).limit(limit)
             
-        return self.collection.query(**kwargs)
+            # 👈 Agregado await porque self.db es un AsyncSession
+            result = await self.db.execute(stmt)
+            rows = result.all()
+
+            if not rows:
+                return {"ids": [[]], "distances": [[]], "metadatas": [[]], "documents": [[]]}
+
+            ids = [str(r[0]) for r in rows]
+            documents = [r[1] for r in rows]
+            metadatas = [r[2] if isinstance(r[2], dict) else {} for r in rows]
+            distances = [float(r[3]) for r in rows]
+
+            return {
+                "ids": [ids],
+                "documents": [documents],
+                "metadatas": [metadatas],
+                "distances": [distances],
+            }
+
+        except Exception as e:
+            logger.error(f"Error al buscar vectores en Postgres vía SQLAlchemy: {e}")
+            return {"ids": [[]], "distances": [[]], "metadatas": [[]], "documents": [[]]}
