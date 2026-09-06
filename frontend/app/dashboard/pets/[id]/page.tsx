@@ -101,8 +101,8 @@ export default function PetDetailPage() {
     setTempFotoUrl(data.foto_url || '')
 
     // 🌟 Mapeamos a 'qr' que es la clave que vimos en la Response real de tu red
-    if (data.qr) {
-      setQr(data.qr)
+    if (data.qr_code) {
+      setQr(data.qr_code)
     } else {
       setQr(null)
     }
@@ -194,7 +194,7 @@ async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
       setFormData({
         color: updatedPet.color || '',
         edad_aproximada: updatedPet.edad_aproximada || '',
-        notas: updatedPet.notes || '',
+        notas: updatedPet.notas || '',
         estado: updatedPet.estado || 'en_casa',
         foto_url: updatedPet.foto_url || ''
       })
@@ -214,7 +214,7 @@ async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
       setFormData({
         color: pet.color || '',
         edad_aproximada: pet.edad_aproximada || '',
-        notas: pet.notes || '',
+        notas: pet.notas || '',
         estado: pet.estado || 'en_casa',
         foto_url: pet.foto_url || ''
       })

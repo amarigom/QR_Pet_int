@@ -3,7 +3,7 @@
 export interface QrCode {
   id: string;
   codigo: string;
-  mascota_id?: string | null;
+  mascota_id: string ;
   activo: boolean;
   lote?: string | null;
   created_at?: string;
