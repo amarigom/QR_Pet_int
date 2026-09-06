@@ -108,7 +108,7 @@ export default function AdminPetsPage() {
                         <div className="flex flex-col text-sm">
                           <div className="flex items-center gap-1.5 font-medium">
                             <User className="w-3.5 h-3.5 text-muted-foreground" />
-                            {ownerName}
+                            {pet.owner_name}
                           </div>
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <Mail className="w-3.5 h-3.5" />

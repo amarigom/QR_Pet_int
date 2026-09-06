@@ -1,4 +1,13 @@
 // 1. El reflejo exacto de tu tabla 'mascotas' en la base de datos
+
+export interface QrCode {
+  id: string;
+  codigo: string;
+  mascota_id?: string | null;
+  activo: boolean;
+  lote?: string | null;
+  created_at?: string;
+}
 export interface Pet {
   id: string;
   usuario_id: string;
@@ -21,13 +30,7 @@ export interface Pet {
     rol: string;
     created_at: string;
   };
-  qr?: {
-    id: string;
-    codigo: string;
-    mascota_id: string;
-    activo: boolean;
-    lote?: string;
-  } | null;
+  qr_code?: QrCode | null;
   scans?: any[]; // Cambiar por la interfaz de scans si la tenés
 }
 

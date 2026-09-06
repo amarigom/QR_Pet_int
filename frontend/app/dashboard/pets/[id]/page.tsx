@@ -94,7 +94,7 @@ export default function PetDetailPage() {
     setFormData({
       color: data.color || '',
       edad_aproximada: data.edad_aproximada || '',
-      notas: data.notes || '',
+      notas: data.notas || '',
       estado: data.estado || 'en_casa', 
       foto_url: data.foto_url || ''
     })
@@ -487,27 +487,30 @@ async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
-              {qr?.codigo ? (
+              {pet.qr_code?.codigo ? (
                 <div className="space-y-4">
                   {/* Caja de Datos Técnicos en lugar del Dibujo QR */}
                   <div className="p-4 bg-muted/40 rounded-xl border border-muted/70 text-left space-y-2">
                     <div>
                       <p className="text-[10px] uppercase font-bold text-muted-foreground">Código de Trazabilidad</p>
                       <code className="text-xs font-mono font-bold block mt-0.5 bg-background border px-2 py-1 rounded text-primary select-all break-all">
-                        {qr.codigo}
+                        {pet.qr_code?.codigo}
                       </code>
                     </div>
                     
                     <div className="flex items-center justify-between pt-1">
                       <span className="text-xs text-muted-foreground font-medium">Estado del dispositivo:</span>
-                      <Badge variant={qr.activo ? "outline" : "secondary"} className={qr.activo ? "text-green-600 border-green-200 bg-green-50" : ""}>
-                        {qr.activo ? "Vinculado y Activo" : "Inactivo"}
+                      <Badge 
+                        variant={pet.qr_code?.activo ? "outline" : "secondary"} 
+                        className={pet.qr_code?.activo ? "text-green-600 border-green-200 bg-green-50" : ""}
+                      >
+                        {pet.qr_code?.activo ? "Vinculado y Activo" : "Inactivo"}
                       </Badge>
                     </div>
                   </div>
 
                   {/* Único botón disponible: Copiar Link de Escaneo */}
-                  <Button variant="outline" size="sm" className="w-full shadow-sm" onClick={() => copyQRLink(qr.codigo)}>
+                  <Button variant="outline" size="sm" className="w-full shadow-sm" onClick={() => copyQRLink(pet.qr_code?.codigo??'')}>
                     <Copy className="w-4 h-4 mr-2" />
                     Copiar Enlace de Ficha Pública
                   </Button>
