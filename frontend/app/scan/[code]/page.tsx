@@ -378,11 +378,11 @@ export default function ScanPage() {
           </div>
           
           <CardContent className="pt-4">
-            {data?.pet.notes && data.pet.notes.trim() !== '' && (
+            {data?.pet.notas && data.pet.notas.trim() !== '' && (
               <div className="bg-amber-50/80 p-3 rounded-xl border border-amber-100 flex gap-2.5">
                 <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <p className="text-sm text-amber-900 leading-relaxed">
-                  <strong className="font-bold">Importante:</strong> {data.pet.notes}
+                  <strong className="font-bold">Importante:</strong> {data.pet.notas}
                 </p>
               </div>
             )}
