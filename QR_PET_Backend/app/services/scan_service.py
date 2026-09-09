@@ -102,7 +102,7 @@ class ScanService:
                 "especie": pet_data.especie,
                 "raza": pet_data.raza or "",
                 "foto_url": pet_data.foto_url or "",
-                "notes": pet_data.notas or "",
+                "notas": pet_data.notas or "",
                 "estado": pet_data.estado,
             },
             "owner": {
