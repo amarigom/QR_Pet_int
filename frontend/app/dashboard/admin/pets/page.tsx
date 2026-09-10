@@ -86,7 +86,7 @@ export default function AdminPetsPage() {
               {filteredPets.length > 0 ? (
                 filteredPets.map((pet) => {
                   // Limpieza de espacios del nombre (Andrea Marigomez)
-                  const ownerName = pet.owner?.nombre?.replace(/\s+/g, ' ').trim() || 'N/A'
+                  const ownerName = pet.owner_name.replace(/\s+/g, ' ').trim() || 'N/A'
                   
                   return (
                     <TableRow key={pet.id} className="hover:bg-muted/10 transition-colors">
@@ -112,7 +112,7 @@ export default function AdminPetsPage() {
                           </div>
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <Mail className="w-3.5 h-3.5" />
-                            {pet.owner?.email || 'Sin correo'}
+                            {pet.owner_email || 'Sin correo'}
                           </div>
                         </div>
                       </TableCell>

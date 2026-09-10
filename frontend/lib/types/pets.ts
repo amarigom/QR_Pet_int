@@ -14,14 +14,14 @@ export interface Pet {
   updated_at?: string;
   
   // Relaciones que vimos en tu query de SQLAlchemy
-  owner?: {
+  owner: {
     id: string;
     nombre: string;
     email: string;
     rol: string;
     created_at: string;
   };
-  qr?: {
+  qr: {
     id: string;
     codigo: string;
     mascota_id: string;

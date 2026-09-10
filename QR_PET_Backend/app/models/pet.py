@@ -59,3 +59,10 @@ class Pet(Base):
 
     def __repr__(self) -> str:
         return f"<Pet(nombre={self.nombre}, especie={self.especie}, estado={self.estado})>"
+    @property
+    def owner_name(self) -> Optional[str]:
+        return self.owner.nombre if self.owner else None
+
+    @property
+    def owner_email(self) -> Optional[str]:
+        return self.owner.email if self.owner else None

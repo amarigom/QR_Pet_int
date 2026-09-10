@@ -48,17 +48,19 @@ class UltimoEscaneoSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 class PetResponse(BaseModel):
     id: UUID
-    usuario_id: UUID
+    #usuario_id: UUID
     nombre: str
     especie: str
     estado: str
     created_at: datetime
-    raza: Optional[str] = None
-    color: Optional[str] = None
-    edad_aproximada: Optional[str] = None
-    foto_url: Optional[str] = None
-    notas: Optional[str] = None  
-    ultimo_escaneo: Optional[UltimoEscaneoSchema] = None
+    #raza: Optional[str] = None
+    #color: Optional[str] = None
+    #edad_aproximada: Optional[str] = None
+    #foto_url: Optional[str] = None
+    #notas: Optional[str] = None  
+    #ultimo_escaneo: Optional[UltimoEscaneoSchema] = None
+    owner_name: Optional[UserMinimal] = None
+    owner_email: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 
