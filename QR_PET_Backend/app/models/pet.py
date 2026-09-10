@@ -30,15 +30,7 @@ class Pet(Base):
     nombre: Mapped[str] = mapped_column(String(100), nullable=False)
     
     # CORRECCIÓN AQUÍ: Forzamos el uso de los valores del Enum (minúsculas)
-    especie: Mapped[AnimalSpecies] = mapped_column(
-        Enum(
-            AnimalSpecies, 
-            name="animalspecies", 
-            native_enum=False
-            
-        ), 
-        nullable=False
-    )
+    especie: Mapped[str] = mapped_column(String(50), nullable=False)
     
     raza: Mapped[Optional[str]] = mapped_column(String(100))
     color: Mapped[Optional[str]] = mapped_column(String(100))
@@ -48,15 +40,7 @@ class Pet(Base):
     notas: Mapped[Optional[str]] = mapped_column(Text)
     
     # CORRECCIÓN AQUÍ: Aplicamos lo mismo para el estado
-    estado: Mapped[PetStatus] = mapped_column(
-        Enum(
-            PetStatus, 
-            name="petstatus", 
-            native_enum=False,
-            
-        ), 
-        default=PetStatus.ACTIVO
-    )
+    estado: Mapped[str] = mapped_column(String(50), default="en_casa")
     
     created_at: Mapped[datetime] = mapped_column(
         DateTime, 
