@@ -75,7 +75,7 @@ class PetDetailResponse(BaseModel):
     usuario_id: UUID
     created_at: datetime
     qr: Optional[QRMinimal] = Field(default=None, validation_alias="qr_code", serialization_alias="qr")
-    owner: Optional[UserMinimal] = None 
+    owner: UserMinimal 
     
     model_config = ConfigDict(
         from_attributes=True,

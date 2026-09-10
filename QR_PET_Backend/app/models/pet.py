@@ -34,8 +34,8 @@ class Pet(Base):
         Enum(
             AnimalSpecies, 
             name="animalspecies", 
-            native_enum=True,
-            values_callable=lambda x: [e.value for e in x]
+            native_enum=False
+            
         ), 
         nullable=False
     )
@@ -53,7 +53,7 @@ class Pet(Base):
             PetStatus, 
             name="petstatus", 
             native_enum=False,
-            values_callable=lambda x: [e.value for e in x]
+            
         ), 
         default=PetStatus.ACTIVO
     )
@@ -69,7 +69,7 @@ class Pet(Base):
         onupdate=func.now()
     )
     
-    owner: Mapped["User"] = relationship("User", back_populates="pets")
+    owner: Mapped["User"] = relationship("User", back_populates="pets",lazy="joined")
     qr_code: Mapped[Optional["QRCode"]] = relationship("QRCode", back_populates="mascota", uselist=False, lazy="joined")
     
 
