@@ -48,8 +48,8 @@ export interface AdminQR {
   } | null;
 }
 
-export interface PaginatedResponse<Pet> {
-  items: List[PetResponse];
+export interface PaginatedResponse<T> {
+  items: T[];
   total: number;
   page: number;
   limit: number;
