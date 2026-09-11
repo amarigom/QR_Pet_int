@@ -41,7 +41,8 @@ export default function AdminPetsPage() {
     const s = search.toLowerCase()
     return pets.filter(p => 
       p.nombre?.toLowerCase().includes(s) || 
-      p.owner?.nombre?.toLowerCase().includes(s)
+      p.owner_name?.toLowerCase().includes(s)||
+      p.owner_email?.toLowerCase().includes(s)
     )
   }, [search, pets])
 
