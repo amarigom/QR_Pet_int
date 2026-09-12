@@ -10,7 +10,7 @@ from app.api.v1.dependencies import get_vector_store_service
 from app.schemas.conocimiento import IngestaResponse, IngestaTextoInput, BusquedaQueryInput, PreguntaInput
 from app.services.pgvector_service import VectorStoreService
 
-router = APIRouter(prefix="/conocimiento", tags=["Base de Conocimiento"])
+router = APIRouter( tags=["Base de Conocimiento"])
 logger = logging.getLogger("uvicorn.error")
 
 # Splitter de LangChain: corta en bloques de ~800 caracteres con solapamiento
