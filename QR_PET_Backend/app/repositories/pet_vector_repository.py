@@ -68,32 +68,9 @@ class PetVectorRepository:
             logger.error(f"Error al buscar vectores en Postgres vía SQLAlchemy: {e}")
             return {"ids": [[]], "distances": [[]], "metadatas": [[]], "documents": [[]]}
         
-        
-        
-    import uuid
-import logging
-from typing import Any, Dict, Optional
-from sqlalchemy import select
-from app.models.pet_vector import PetVector
-
-logger = logging.getLogger(__name__)
+     
 
 
-class PetVectorRepository:
-    def __init__(self, db):
-        self.db = db
-
-    import uuid
-import logging
-from typing import Any, Dict, Optional
-from app.models.pet_vector import PetVector
-
-logger = logging.getLogger(__name__)
-
-
-class PetVectorRepository:
-    def __init__(self, db):
-        self.db = db
 
     async def index_pet_vector(
         self,

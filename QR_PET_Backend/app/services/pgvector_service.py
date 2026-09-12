@@ -58,7 +58,7 @@ class VectorStoreService:
             return {"ids": [[]], "distances": [[]], "metadatas": [[]], "documents": [[]]}
 
         # Llamada síncrona a Gemini (sin await)
-        query_vector = self._get_embedding(query, task_type="RETRIEVAL_QUERY")
+        query_vector =  await self._get_embedding(query, task_type="RETRIEVAL_QUERY")
 
         if not query_vector:
             return {"ids": [[]], "distances": [[]], "metadatas": [[]], "documents": [[]]}
