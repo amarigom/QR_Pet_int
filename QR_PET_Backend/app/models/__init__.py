@@ -3,7 +3,8 @@ from .base import Base
 from .user import User
 from .pet import Pet
 from .qr import QRCode
+from app.models.pet_vector import PetVector
 
 # Esto facilita importar todo desde un solo lugar: 
 # from app.models import User, Pet
-__all__ = ["Base", "User", "Pet", "QRCode"]
+__all__ = ["Base", "User", "Pet", "QRCode","PetVector"]

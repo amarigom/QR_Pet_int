@@ -1,6 +1,7 @@
 """
 PetFinder API - Main Application
 """
+import app.models
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
