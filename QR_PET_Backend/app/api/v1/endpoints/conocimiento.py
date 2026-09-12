@@ -1,12 +1,13 @@
 import io
 import logging
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from typing import Optional, List, Dict, Any
 import docx
 import pypdf
-
+from pydantic import BaseModel
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.api.v1.dependencies import get_vector_store_service
-from app.schemas.conocimiento import IngestaResponse, IngestaTextoInput
+from app.schemas.conocimiento import IngestaResponse, IngestaTextoInput, BusquedaQueryInput, PreguntaInput
 from app.services.pgvector_service import VectorStoreService
 
 router = APIRouter(prefix="/conocimiento", tags=["Base de Conocimiento"])
@@ -14,6 +15,8 @@ logger = logging.getLogger("uvicorn.error")
 
 # Splitter de LangChain: corta en bloques de ~800 caracteres con solapamiento
 splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=150)
+
+
 
 
 @router.post("/texto", response_model=IngestaResponse)
@@ -99,4 +102,27 @@ async def ingestar_archivo(
     except HTTPException:
         raise
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+class PreguntaInput(BaseModel):
+    pregunta: str
+    categoria: Optional[str] = "general"
+    limit: Optional[int] = 3
+    historial: Optional[List[Dict[str, Any]]] = None
+
+@router.post("/responder")
+async def responder_pregunta(
+    data: PreguntaInput,
+    v_service: VectorStoreService = Depends(get_vector_store_service),
+):
+    try:
+        resultado = await v_service.responder_con_rag(
+            pregunta=data.pregunta,
+            historial=data.historial,
+            categoria=data.categoria,
+            limit=data.limit,
+        )
+        return resultado
+    except Exception as e:
+        logger.error(f"Error en endpoint responder: {e}")
         raise HTTPException(status_code=500, detail=str(e))
