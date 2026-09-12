@@ -83,7 +83,7 @@ class VectorStoreService:
             return False
 
         # Generar embedding con Gemini
-        vector = self._get_embedding(contenido, task_type="RETRIEVAL_DOCUMENT")
+        vector =  await self._get_embedding(contenido, task_type="RETRIEVAL_DOCUMENT")
         if not vector:
             return False
 
@@ -118,7 +118,7 @@ class VectorStoreService:
         )
 
         # 2. Vectorizar la consulta
-        query_vector = self._get_embedding(
+        query_vector = await self._get_embedding(
             pregunta_busqueda, task_type="RETRIEVAL_QUERY"
         )
 
@@ -182,7 +182,8 @@ PREGUNTA ACTUAL DEL USUARIO:
 
         # 6. Generación de respuesta con Gemini SDK
         try:
-            response = self.ai_client.models.generate_content(
+            response = await asyncio.to_thread(
+                self.ai_client.models.generate_content,
                 model="gemini-2.5-flash",
                 contents=prompt_rag,
             )
