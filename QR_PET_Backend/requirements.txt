@@ -39,3 +39,4 @@ langchain-protocol==0.0.18
 langchain-text-splitters==1.1.2
 langsmith
 lxml==6.1.2
+python-docx
