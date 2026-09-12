@@ -41,3 +41,6 @@ langsmith
 lxml==6.1.2
 python-docx
 pypdf
+python-docx
+reportlab
+qrcode
