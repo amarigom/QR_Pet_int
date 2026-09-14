@@ -13,7 +13,9 @@ from app.api.v1.dependencies import get_current_user
 from fastapi import Body
 from app.services.auth_service import AuthService
 from app.models.user import User 
-from app.core.auth import create_access_token# Importamos el modelo para la anotación del Depends
+from app.core.auth import create_access_token
+from app.schemas.veterinario import RegistroVeterinarioCreate, AuthVeterinarioRegisterResponse
+# Importamos el modelo para la anotación del Depends
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
 
@@ -102,3 +104,13 @@ async def update_me(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+        
+   
+@router.post("/register-veterinario", response_model=AuthVeterinarioRegisterResponse, status_code=status.HTTP_201_CREATED)
+async def register_veterinario(
+    vet_data: RegistroVeterinarioCreate, 
+    db: AsyncSession = Depends(get_db)
+):
+    """Registra una clínica o profesional veterinario en la plataforma."""
+    auth_service = AuthService(db)
+    return await auth_service.register_veterinario(vet_data)

@@ -1,16 +1,18 @@
 import asyncio
 from logging.config import fileConfig
+from app.models.base import Base 
 
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-from app.models.base import Base  # Ajusta la importación a la ubicación de tus modelos
+ # Ajusta la importación a la ubicación de tus modelos
 #from app.core.config import settings  # Tu archivo de configuración de variables de entorno
 
 import os
 from dotenv import load_dotenv
+import app.models
 
 # Cargar las variables del archivo .env
 load_dotenv()
