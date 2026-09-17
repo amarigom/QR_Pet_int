@@ -92,9 +92,7 @@ export default function PublicScanPage() {
         setLoading(false)
         toast.error("Debes permitir el acceso al GPS para ayudar")
       },
-      { enableHighAccuracy: true,
-        timeout: 8000,           // Espera máximo 8 segundos antes de lanzar error
-        maximumAge: 0}
+      { enableHighAccuracy: true}
     )
   }
 
