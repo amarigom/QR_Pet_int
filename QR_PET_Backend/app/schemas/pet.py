@@ -66,23 +66,20 @@ class PetResponse(BaseModel):
 
 class PetDetailResponse(BaseModel):
     id: UUID
+    usuario_id: UUID
     nombre: str
     especie: str
+    estado: str
+    created_at: datetime
     raza: Optional[str] = None
     color: Optional[str] = None
     edad_aproximada: Optional[str] = None
     foto_url: Optional[str] = None
-    notas: Optional[str] = None
-    estado: str
-    usuario_id: UUID
-    created_at: datetime
-    qr: Optional[QRMinimal] = Field(default=None, validation_alias="qr_code", serialization_alias="qr")
-    owner: UserMinimal 
-    
-    model_config = ConfigDict(
-        from_attributes=True,
-        populate_by_name=True
-    )
+    notas: Optional[str] = None  
+    ultimo_escaneo: Optional[UltimoEscaneoSchema] = None
+    owner_name: Optional[str] = None
+    owner_email: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
     
 
 # ============================================================================
