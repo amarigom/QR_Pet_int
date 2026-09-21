@@ -14,13 +14,12 @@ export async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): 
   const headers = new Headers(options.headers);
 
   // 2. 🎯 CORRECCIÓN DE QA: Solo seteamos Content-Type si la petición TIENE un cuerpo (POST, PUT, PATCH)
-  // Evitamos inyectarlo en peticiones GET, previniendo conflictos de red y bucles de re-intento.
   if (options.body && !headers.has('content-type') && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
-  // 3. Inyectamos el token de autorización si existe
-  if (token) {
+  // 3. 🎯 CORRECCIÓN CLAVE: Inyectar token SOLO si es un string válido (no nulo, no vacío, no "null" / "undefined")
+  if (token && token !== 'null' && token !== 'undefined' && token.trim() !== '') {
     headers.set('Authorization', `Bearer ${token}`);
   }
 
@@ -32,18 +31,26 @@ export async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): 
   const metodo = options.method || 'GET';
   const cacheConfig = options.cache || (metodo === 'GET' ? 'no-store' : undefined);
 
-    // 5. Hacemos el fetch limpio pasando las opciones unificadas
+  // 5. Hacemos el fetch limpio pasando las opciones unificadas
   const res = await fetch(`${API_BASE}${endpoint}`, { 
     method: metodo,
     cache: cacheConfig,
     body: bodyProcesado,
-    headers: headers // 
+    headers: headers 
   });
 
   // AUDITORÍA DE RESPUESTA
   console.log("--- RESPUESTA DEL SERVIDOR ---");
   console.log(`[${res.status}] ${res.statusText} ➔ ${endpoint}`);
   
+  // 🎯 CORRECCIÓN CLAVE: Si el backend devuelve 401 (Token expirado/inválido), limpiamos el localStorage de inmediato
+  if (res.status === 401) {
+    if (typeof window !== 'undefined') {
+      console.warn("⚠️ Token expirado o inválido detectado. Limpiando localStorage...");
+      localStorage.removeItem('token');
+    }
+  }
+
   // Manejo de errores robusto para evitar el [object Object]
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
@@ -58,7 +65,11 @@ export async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): 
         errorMessage = errorData.detail;
       }
     }
-    throw new Error(errorMessage);
+    
+    // Crear objeto de error enriquecido con el status HTTP para capturarlo en catch(e)
+    const err = new Error(errorMessage) as Error & { status?: number };
+    err.status = res.status;
+    throw err;
   }
 
   if (res.status === 204) return {} as T;

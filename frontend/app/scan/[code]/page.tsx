@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-// Componentes de tu carpeta UI utilizados para simplificar y estilizar
+// Componentes UI
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -17,7 +17,7 @@ import { Label } from '@/components/ui/label'
 
 import {
   PawPrint, Phone, MessageCircle, MapPin, 
-  AlertCircle, QrCode, Heart, Send, Loader2
+  AlertCircle, Heart, Send, Loader2
 } from 'lucide-react'
 import { qrApi } from '@/lib/api/qr'
 import { toast } from 'sonner'
@@ -75,6 +75,7 @@ export default function ScanPage() {
     async function initAduana() {
       try {
         setIsLoading(true)
+        setError(null)
         
         const checkRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/qr/check/${code}`)
         const checkData = await checkRes.json()
@@ -85,6 +86,7 @@ export default function ScanPage() {
           return
         }
 
+        // 1. CASO: MEDALLA NUEVA / DISPONIBLE PARA ACTIVAR
         if (checkData.available) {
           const token = localStorage.getItem('token')
           if (!token) {
@@ -95,18 +97,37 @@ export default function ScanPage() {
 
           setIsAvailable(true)
           setIsLoading(false)
+
+        // 2. CASO: MEDALLA YA ASIGNADA A UNA MASCOTA
         } else if (checkData.has_pet) {
           setIsAvailable(false)
-          const response = await qrApi.scan(code) 
-          setData(response)
-          setScanId(response.scan_id)
-          // 🌟 EL DIAGNÓSTICO PROFESIONAL:
-          console.log("=== RESPUESTA REAL DEL BACKEND ===", response)
-
           
-          if (response.scan_id) sendLocation(response.scan_id)
-          setIsLoading(false)
+          try {
+            const response = await qrApi.scan(code) 
+            setData(response)
+            setScanId(response.scan_id)
+            
+            console.log("=== RESPUESTA REAL DEL BACKEND ===", response)
+
+            if (response.scan_id) {
+              sendLocation(response.scan_id)
+            }
+          } catch (scanErr) {
+            console.error("Error al obtener los datos de la mascota:", scanErr)
+            setError("No se pudieron cargar los datos de la mascota asociada.")
+          } finally {
+            setIsLoading(false)
+          }
+
+        // 3. CASO: MEDALLA NO VÁLIDA / REQUIERE AUTENTICACIÓN
         } else {
+          const token = localStorage.getItem('token')
+          if (!token) {
+            toast.error("Debes iniciar sesión para activar o reclamar esta medalla.")
+            router.push(`/auth/login?redirect=/scan/${code}`)
+            return
+          }
+
           setError("Código no válido o inactivo")
           setIsLoading(false)
         }
@@ -122,12 +143,28 @@ export default function ScanPage() {
   // 3. Enviar mensaje manual al dueño
   const handleSendMessage = async () => {
     if (!scanId || !extraMessage.trim()) return
+
+    // Verificación previa de autenticación
+    const token = localStorage.getItem('token')
+    if (!token) {
+      toast.error("Debes iniciar sesión para enviar un mensaje al dueño.")
+      router.push(`/auth/login?redirect=/scan/${code}`)
+      return
+    }
+
     setIsSendingMessage(true)
     try {
       await qrApi.updateScanMessage(scanId, extraMessage)
       setExtraMessage('') 
       toast.success("Mensaje enviado al dueño. ¡Gracias!")
-    } catch (e) {
+    } catch (e: any) {
+      if (e?.status === 401 || e?.response?.status === 401) {
+        localStorage.removeItem('token')
+        toast.error("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.")
+        router.push(`/auth/login?redirect=/scan/${code}`)
+        return
+      }
+
       toast.error("Error al enviar el mensaje.")
     } finally {
       setIsSendingMessage(false)
@@ -174,7 +211,7 @@ export default function ScanPage() {
     }
   }
 
-  // --- RENDERS DE CONTROL (Simplificados con tus UI Skeletons) ---
+  // --- RENDERS DE CONTROL ---
   if (isLoading) {
     return (
       <div className="max-w-md mx-auto p-6 space-y-6 mt-10">
@@ -212,10 +249,7 @@ export default function ScanPage() {
   if (isAvailable) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-secondary/5 to-accent/5 font-sans">
-        
         <Card className="w-full max-w-md shadow-md border border-border/60 rounded-2xl overflow-hidden bg-card">
-          
-          {/* 🎯 HEADER INTEGRADO CON LOGO E INFO REQUERIDA */}
           <CardHeader className="text-center pb-2 pt-6">
             <Link href="/" className="flex items-center justify-center gap-2 mb-4">
               <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center overflow-hidden">
@@ -234,11 +268,8 @@ export default function ScanPage() {
             </CardDescription>
           </CardHeader>
           
-          {/* CAMPOS DEL FORMULARIO */}
           <CardContent className="p-6 pt-4">
             <form onSubmit={handleRegisterPet} className="space-y-4">
-              
-              {/* Campo Nombre */}
               <div className="space-y-1.5">
                 <Label htmlFor="nombre" className="text-xs uppercase font-bold tracking-wider text-muted-foreground">
                   Nombre de la Mascota
@@ -257,7 +288,6 @@ export default function ScanPage() {
                 </div>
               </div>
 
-              {/* Grid Especie e Info */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs uppercase font-bold tracking-wider text-muted-foreground">
@@ -272,9 +302,9 @@ export default function ScanPage() {
                       <SelectValue placeholder="Especie" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="perro">Perro </SelectItem>
-                      <SelectItem value="gato">Gato </SelectItem>
-                      <SelectItem value="otro">Otro </SelectItem>
+                      <SelectItem value="perro">Perro</SelectItem>
+                      <SelectItem value="gato">Gato</SelectItem>
+                      <SelectItem value="otro">Otro</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -294,7 +324,6 @@ export default function ScanPage() {
                 </div>
               </div>
 
-              {/* Notas Médicas */}
               <div className="space-y-1.5">
                 <Label htmlFor="notas" className="text-xs uppercase font-bold tracking-wider text-muted-foreground">
                   Notas Médicas / Cuidados
@@ -309,10 +338,9 @@ export default function ScanPage() {
                 />
               </div>
 
-              {/* Botón de Envío */}
               <Button 
                 type="submit" 
-                className="w-full h-11 text-sm font-semibold bg-primary text-secundary-foreground hover:bg-primary/80 transition-all rounded-xl mt-2 cursor-pointer shadow-sm" 
+                className="w-full h-11 text-sm font-semibold bg-primary text-secondary-foreground hover:bg-primary/80 transition-all rounded-xl mt-2 cursor-pointer shadow-sm" 
                 disabled={submitting}
               >
                 {submitting ? (
@@ -328,18 +356,20 @@ export default function ScanPage() {
           </CardContent>
         </Card>
       </div>
-    );
+    )
   }
-  // --- INTERFAZ 2: VISTA DE REPORTE PÚBLICO (Mantenido el flujo de tu código viejo original) ---
+
+  // --- INTERFAZ 2: VISTA DE REPORTE PÚBLICO ---
   const whatsappUrl = data?.owner?.telefono 
     ? `https://wa.me/${data.owner.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(`¡Hola! Encontré a ${data.pet.nombre}.`)}`
     : null
 
   const tieneFotoValida = data?.pet.foto_url && data.pet.foto_url !== 'string' && data.pet.foto_url.trim() !== ''
-  const esPerdido = data?.pet.estado === 'perdido'
+  const esPerdido = data?.pet.estado === 'PERDIDO' || data?.pet.estado === 'perdido'
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/5 to-accent/5 pb-10 font-sans">
-      <div className={`${data?.pet.estado === 'PERDIDO' ? 'bg-destructive' : 'bg-primary'} text-white py-6 px-4 text-center shadow-xs`}>
+      <div className={`${esPerdido ? 'bg-destructive' : 'bg-primary'} text-white py-6 px-4 text-center shadow-xs`}>
         <h1 className="text-2xl font-bold flex items-center justify-center gap-2">
           <Heart className="fill-current" /> {data?.pet.nombre}
         </h1>
@@ -362,7 +392,7 @@ export default function ScanPage() {
           <div className="aspect-square relative bg-muted flex items-center justify-center">
             {tieneFotoValida ? (
               <img 
-                src={data?.pet.foto_url?? undefined} 
+                src={data?.pet.foto_url ?? undefined} 
                 alt={data?.pet.nombre} 
                 className="object-cover w-full h-full" 
               />
@@ -397,7 +427,7 @@ export default function ScanPage() {
           </Button>
           {whatsappUrl && (
             <Button asChild variant="outline" size="lg" className="h-14 text-base font-bold border-green-500 text-green-600 hover:bg-green-50/50 shadow-xs bg-background rounded-xl cursor-pointer">
-              <a href={whatsappUrl} target="_blank">
+              <a href={whatsappUrl} target="_blank" rel="noreferrer">
                 <MessageCircle className="mr-2 w-4 h-4" /> Enviar WhatsApp
               </a>
             </Button>
