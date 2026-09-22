@@ -64,9 +64,6 @@ async def get_me(current_user: User = Depends(get_current_user)):
     Retorna el perfil del usuario actual autenticado de forma limpia.
     """
     try:
-        # En lugar de model_validate directo del objeto ORM, 
-        # usamos los atributos planos convirtiendo a dict si es necesario, 
-        # o forzando la conversión desde los campos base de la DB.
         return UserResponse(
             id=current_user.id,
             email=current_user.email,
@@ -77,9 +74,12 @@ async def get_me(current_user: User = Depends(get_current_user)):
             created_at=current_user.created_at
         )
     except Exception as e:
-        print(f"ERROR EN MODEL_VALIDATE DE ME: {str(e)}")
-        # Si falla por los tipos, devolvemos el objeto mapeado tradicionalmente
-        return current_user
+        # Imprime la falla exacta en la consola de Uvicorn/FastAPI
+        print(f"ERROR CONCRETO EN USERRESPONSE: {type(e).__name__} - {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error al serializar el perfil de usuario: {str(e)}"
+        )
 
 @router.put("/me", response_model=UserResponse)
 async def update_me(

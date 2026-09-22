@@ -22,13 +22,10 @@ logger = logging.getLogger(__name__)
 class PetService:
     """Service para gestionar el ciclo de vida de las mascotas y sus estadísticas"""
     
-    def __init__(self, pet_repo: PetRepository,db: AsyncSession, vector_service: VectorStoreService,):
+    def __init__(self, db: AsyncSession):
         self.db = db
         self.pet_repo = PetRepository(db)
         self.qr_repo = QRRepository(db)
-        self.pet_repo = pet_repo
-        self.vector_service = vector_service
-    
     
     
     
@@ -180,6 +177,15 @@ class PetService:
             "limit": limit,
             "pages": (total + limit - 1) // limit,
         }
+
+    async def get_user_stats(self, user_id: uuid.UUID) -> UserDashboardStats:
+        """Obtiene las estadísticas básicas del usuario autenticado."""
+        return UserDashboardStats(
+            pets_count=await self.pet_repo.count_user_pets(user_id),
+            qrs_count=await self.pet_repo.count_user_active_qrs(user_id),
+            scans_count=await self.pet_repo.count_user_scans(user_id),
+            recent_scans=[],
+        )
     
         
     
@@ -202,7 +208,7 @@ class PetService:
     async def delete_pet(self, user_id: uuid.UUID, pet_id: uuid.UUID) -> bool:
         """Elimina una mascota validando propiedad"""
         pet = await self.pet_repo.get_by_id(pet_id)
-        if not pet or pet.owner_id != user_id:
+        if not pet or pet.usuario_id != user_id:
             raise ResourceNotFoundException("Mascota")
         
         success = await self.pet_repo.delete(pet_id)

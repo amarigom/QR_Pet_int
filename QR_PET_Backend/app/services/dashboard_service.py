@@ -26,11 +26,49 @@ class DashboardService:
         }
         
         # 3. Procesamos las mascotas a PetResponse
-        from app.schemas.pet import PetResponse
+        from app.schemas.pet import PetResponse, UserMinimal
         clean_pets = []
+        
         for p in raw_data["pets"]:
-            clean_pets.append(PetResponse.model_validate(p))
+            # Extraemos la información del dueño de la mascota de forma segura
+            owner_obj = getattr(p, "owner", None) or getattr(p, "usuario", None)
+            
+            # Si existe la relación con el dueño la armamos, de lo contrario usamos datos fallback del contexto
+            if owner_obj:
+                minimal_user = UserMinimal(
+                    id=owner_obj.id,
+                    email=owner_obj.email,
+                    nombre=owner_obj.nombre,
+                    avatar_url=getattr(owner_obj, "avatar_url", None)
+                )
+            else:
+                # Fallback seguro en caso de que la relación no venga precargada
+                owner_name_str = getattr(p, "owner_name", "Usuario")
+                if not isinstance(owner_name_str, str):
+                    owner_name_str = "Usuario"
+                    
+                minimal_user = UserMinimal(
+                    id=usuario_id,
+                    email=getattr(p, "owner_email", "sin_email@petqr.com"),
+                    nombre=owner_name_str,
+                    avatar_url=None
+                )
 
+            # Construimos el diccionario compatible con PetResponse
+            pet_dict = {
+                "id": p.id,
+                "nombre": p.nombre,
+                "especie": getattr(p, "especie", "Mascota"),
+                "estado": getattr(p, "estado", "activo"),
+                "created_at": p.created_at,
+                "owner_name": minimal_user,
+                "owner_email": getattr(p, "owner_email", minimal_user.email),
+                "edad":p.edad_aproximada,
+                "foto": p.foto_url,
+                "notas": p.notas
+            }
+
+            clean_pets.append(PetResponse.model_validate(pet_dict))
         # 4. 🚀 PROCESAMIENTO ANALÍTICO DE ESCANEOS RECIENTES
         # Extraemos los escaneos y los transformamos para cumplir 1:1 con ScanResponse
         from app.schemas.scan import ScanResponse  

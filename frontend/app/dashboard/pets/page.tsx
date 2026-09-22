@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { PawPrint, QrCode, Eye, Palette } from 'lucide-react'
 import { petsApi } from '@/lib/api'
-import type { Pet, PaginatedResponse } from '@/lib/types'
+import type { Pet } from '@/lib/types'
 
 export default function PetsPage() {
   const [pets, setPets] = useState<Pet[]>([])
@@ -18,7 +18,7 @@ export default function PetsPage() {
     async function loadPets() {
       try {
         setIsLoading(true)
-        const response = await petsApi.getAll() as unknown as PaginatedResponse<Pet>
+        const response = await petsApi.getAll() 
         setPets(response.items || [])
       } catch (error) {
         console.error('Error loading pets:', error)
@@ -121,8 +121,7 @@ export default function PetsPage() {
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground capitalize truncate">
-                        {pet.raza}
-                        {pet.raza && ` - ${pet.raza}`}
+                        {pet.raza || 'Raza no especificada'}
                       </p>
                     </div>
 

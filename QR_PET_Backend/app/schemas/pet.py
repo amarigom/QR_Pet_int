@@ -48,19 +48,17 @@ class UltimoEscaneoSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 class PetResponse(BaseModel):
     id: UUID
-    #usuario_id: UUID
+    usuario_id: Optional[UUID] = None
     nombre: str
     especie: str
     estado: str
     created_at: datetime
-    #raza: Optional[str] = None
-    #color: Optional[str] = None
-    #edad_aproximada: Optional[str] = None
-    #foto_url: Optional[str] = None
-    #notas: Optional[str] = None  
-    #ultimo_escaneo: Optional[UltimoEscaneoSchema] = None
-    owner_name: Optional[UserMinimal] = None
-    owner_email: Optional[str] = None
+    raza: Optional[str] = None
+    color: Optional[str] = None
+    edad_aproximada: Optional[str] = None
+    foto_url: Optional[str] = None
+    notas: Optional[str] = None  
+    ultimo_escaneo: Optional[UltimoEscaneoSchema] = None
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -75,11 +73,25 @@ class PetDetailResponse(BaseModel):
     color: Optional[str] = None
     edad_aproximada: Optional[str] = None
     foto_url: Optional[str] = None
+
     notas: Optional[str] = None  
     ultimo_escaneo: Optional[UltimoEscaneoSchema] = None
     owner_name: Optional[str] = None
     owner_email: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
+    notas: Optional[str] = None
+    estado: str
+    usuario_id: UUID
+    created_at: datetime
+    qr: Optional[QRMinimal] = Field(default=None, validation_alias="qr_code", serialization_alias="qr")
+    owner: Optional[UserMinimal] = None 
+    
+    model_config = ConfigDict(
+        from_attributes=True,
+        populate_by_name=True
+    )
+
+    
     
 
 # ============================================================================

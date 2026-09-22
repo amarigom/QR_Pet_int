@@ -54,6 +54,8 @@ class AdminService:
                     "especie": p.especie,
                     "owner_name": p.owner.nombre if p.owner else "Sin dueño",
                     "owner_email": p.owner.email if p.owner else None,
+                    "foto": p.foto_url,
+                    "notas": p.notas,
                     "estado": p.estado,
                     "created_at": p.created_at,
                     # 🎯 Cambiamos el bucle por un mapeo directo en singular de qr_code

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # 1. Imports de Esquemas (Atómicos y Compuestos)
 from app.schemas.pet import PetCreate, PetUpdate, PetResponse
 from app.schemas.composite import PetDetailResponse  # <--- La "Vista" con relaciones
-from app.schemas.common import SuccessResponse
+from app.schemas.common import SuccessResponse, PaginatedResponse
 from app.schemas.user import UserDashboardStats
 
 # 2. Core, Seguridad y Modelos
@@ -27,16 +27,16 @@ async def create_pet(
     pet_service = PetService(db)
     return await pet_service.create_pet(user.id, pet_data)
 
-@router.get("", response_model=dict)
+@router.get("", response_model=PaginatedResponse[PetResponse])
 async def get_pets(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
-):  
-    """Obtiene el listado paginado de mascotas del usuario."""
+):
+    """Obtiene el listado paginado de mascotas del usuario con detalles completos."""
     pet_service = PetService(db)
-    return await pet_service.get_user_pets(user.id, page, limit)
+    return await pet_service.get_user_pets(user_id=user.id, page=page, limit=limit)
 
 
 
