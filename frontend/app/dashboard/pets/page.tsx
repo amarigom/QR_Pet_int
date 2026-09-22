@@ -37,7 +37,7 @@ export default function PetsPage() {
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-10 w-40" />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-48" />
           ))}
@@ -53,8 +53,8 @@ export default function PetsPage() {
           <h1 className="text-2xl font-bold">Mis Mascotas</h1>
           <p className="text-muted-foreground">Gestiona la información de tus mascotas</p>
         </div>
-        <Link href="/dashboard/activate">
-          <Button>
+        <Link href="/dashboard/activate" className="w-full sm:w-auto">
+          <Button className="w-full sm:w-auto">
             <QrCode className="w-4 h-4 mr-2" />
             Activar QR
           </Button>
@@ -80,7 +80,7 @@ export default function PetsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {pets.map((pet) => (
             <Link key={pet.id} href={`/dashboard/pets/${pet.id}`}>
               <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full group flex flex-col justify-between overflow-hidden">

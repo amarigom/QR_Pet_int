@@ -170,9 +170,9 @@ export default function AdminLayout({
           </div>
 
           {/* Mobile Nav */}
-          <nav className="lg:hidden flex items-center gap-1 px-4 pb-3 overflow-x-auto">
+          <nav className="lg:hidden flex items-center gap-1 px-3 sm:px-4 pb-3 overflow-x-auto snap-x snap-mandatory scrollbar-none">
             {navItems.map((item) => (
-              <Link key={item.href} href={item.href}>
+              <Link key={item.href} href={item.href} className="shrink-0 snap-start">
                 <Button
                   variant={pathname === item.href ? 'secondary' : 'ghost'}
                   size="sm"
@@ -186,7 +186,7 @@ export default function AdminLayout({
         </header>
 
         {/* Main content */}
-        <main className="p-4 lg:p-6">{children}</main>
+        <main className="min-w-0 p-3 sm:p-4 lg:p-6">{children}</main>
       </div>
     </div>
   )

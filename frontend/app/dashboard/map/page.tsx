@@ -21,7 +21,7 @@ const TANDIL_DEFAULT = { lat: -37.32, lng: -59.13 };
 // Cargamos el mapa de forma dinámica deshabilitando SSR
 const ScanMap = dynamic(() => import('@/components/scan-map'), {
   ssr: false,
-  loading: () => <Skeleton className="w-full h-[450px] rounded-lg" />,
+  loading: () => <Skeleton className="w-full h-[300px] sm:h-[400px] lg:h-[450px] rounded-lg" />,
 })
 
 export default function MapPage() {
@@ -130,7 +130,7 @@ export default function MapPage() {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-[450px]" />
+        <Skeleton className="h-[300px] sm:h-[400px] lg:h-[450px]" />
         <Skeleton className="h-48" />
       </div>
     )
@@ -172,7 +172,7 @@ export default function MapPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="h-[450px] rounded-lg overflow-hidden border bg-muted/20 relative">
+          <div className="h-[300px] sm:h-[400px] lg:h-[450px] rounded-lg overflow-hidden border bg-muted/20 relative">
             
             {!isLoading && scansWithLocation.length > 0 ? (
               <ScanMap 
