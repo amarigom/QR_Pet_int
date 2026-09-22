@@ -12,6 +12,7 @@ from datetime import datetime
 from uuid import UUID
 from app.core.constants import PetStatus, AnimalSpecies
 from app.schemas.base import PetBase, PetMinimal,UserMinimal,QRMinimal
+from app.schemas.qr import QRResponse
 
 
 # ============================================================================
@@ -58,8 +59,13 @@ class PetResponse(BaseModel):
     edad_aproximada: Optional[str] = None
     foto_url: Optional[str] = None
     notas: Optional[str] = None  
+    qr: Optional[QRResponse] = Field(
+        default=None,
+        validation_alias="qr_code",
+        serialization_alias="qr",
+    )
     ultimo_escaneo: Optional[UltimoEscaneoSchema] = None
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class PetDetailResponse(BaseModel):

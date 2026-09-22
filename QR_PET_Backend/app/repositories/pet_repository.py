@@ -30,11 +30,14 @@ class PetRepository(BaseRepository[Pet]):
         return result.scalar_one_or_none()
 
     async def get_by_user(self, owner_id: uuid.UUID, limit: int = 100, offset: int = 0) -> List[Pet]:
-        """Obtiene mascotas de un usuario específico."""
+        """Obtiene mascotas de un usuario con sus relaciones necesarias para el dashboard."""
         query = (
             select(Pet)
             .where(Pet.usuario_id == owner_id)
-            .options(selectinload(Pet.owner))
+            .options(
+                selectinload(Pet.owner),
+                selectinload(Pet.qr_code),
+            )
             .order_by(Pet.created_at.desc())
             .limit(limit)
             .offset(offset)
