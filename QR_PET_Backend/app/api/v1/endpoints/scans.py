@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException,status
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.schemas.scan import ScanCreate, ScanResponse, ScanLocation
+from app.schemas.scan import ScanCreate, ScanResponse, ScanLocation, ScanLocationUpdate, ScanUpdate
 from app.schemas.common import SuccessResponse, PaginatedResponse
 from app.repositories.scan_repository import ScanRepository
 # Si en algún momento necesitas el detalle completo (Scan + QR + Mascota)
@@ -14,7 +14,6 @@ from app.repositories.scan_repository import ScanRepository
 from app.core.database import get_db
 from app.api.v1.dependencies import get_current_user, require_admin
 from app.services.scan_service import ScanService
-from app.schemas.scan import ScanResponse,ScanLocationUpdate
 from uuid import UUID
 
 router = APIRouter(prefix="/scans", tags=["Escaneos (Scans)"])
@@ -34,7 +33,7 @@ async def create_scan(
 @router.put("/{scan_id}", response_model=Dict[str, Any])
 async def update_scan(
     scan_id: UUID,
-    scan_data: ScanCreate,  # Usamos este validador para que no rebote con 422
+    scan_data: ScanUpdate,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -52,6 +51,17 @@ async def update_scan(
         )
     
     return updated_scan
+
+
+@router.patch("/{scan_id}/location", response_model=Dict[str, Any])
+async def update_scan_location(
+    scan_id: UUID,
+    location_data: ScanLocationUpdate,
+    db: AsyncSession = Depends(get_db),
+):
+    """Público: guarda las coordenadas GPS del escaneo creado al abrir el QR."""
+    service = ScanService(db)
+    return await service.update_scan_location(scan_id, location_data)
 
 @router.get("", response_model=PaginatedResponse[ScanLocation])
 async def get_all_scans(

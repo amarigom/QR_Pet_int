@@ -1,11 +1,12 @@
 """
-Excepciones personalizadas de la aplicación
+Excepciones personalizadas de la aplicación (app/core/exceptions.py)
 """
-from fastapi import HTTPException, status
 from typing import Optional
+from fastapi import HTTPException, status
+
 
 class AuthenticationException(HTTPException):
-    """Excepción para errores de autenticación"""
+    """Excepción para errores de autenticación (401)"""
     def __init__(self, detail: str = "No autorizado"):
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -15,7 +16,7 @@ class AuthenticationException(HTTPException):
 
 
 class PermissionDeniedException(HTTPException):
-    """Excepción para permisos insuficientes"""
+    """Excepción para permisos insuficientes (403)"""
     def __init__(self, detail: str = "Permiso denegado"):
         super().__init__(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -23,8 +24,15 @@ class PermissionDeniedException(HTTPException):
         )
 
 
+# Alias de conveniencia por si en alguna parte usas ForbiddenException
+class ForbiddenException(PermissionDeniedException):
+    """Alias para PermissionDeniedException"""
+    def __init__(self, message: str = "No tienes permiso para realizar esta acción"):
+        super().__init__(detail=message)
+
+
 class ResourceNotFoundException(HTTPException):
-    """Excepción para recurso no encontrado"""
+    """Excepción para recurso no encontrado (404)"""
     def __init__(self, resource: str = "Recurso", detail: Optional[str] = None):
         message = detail or f"{resource} no encontrado"
         super().__init__(
@@ -34,7 +42,7 @@ class ResourceNotFoundException(HTTPException):
 
 
 class InvalidDataException(HTTPException):
-    """Excepción para datos inválidos"""
+    """Excepción para datos inválidos (400)"""
     def __init__(self, detail: str = "Datos inválidos"):
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -43,21 +51,9 @@ class InvalidDataException(HTTPException):
 
 
 class ConflictException(HTTPException):
-    """Excepción para conflictos de datos"""
+    """Excepción para conflictos de datos (409)"""
     def __init__(self, detail: str = "Conflicto en los datos"):
         super().__init__(
             status_code=status.HTTP_409_CONFLICT,
             detail=detail,
         )
-
-# En app/core/exceptions.py
-
-class ResourceNotFoundException(Exception): # Esta seguro ya la tenés
-    def __init__(self, resource: str):
-        self.resource = resource
-
-class ForbiddenException(Exception): # AGREGÁ ESTA
-    def __init__(self, message: str = "No tienes permiso para realizar esta acción"):
-        self.message = message
-        
-from typing import Optional

@@ -94,7 +94,7 @@ export default function PetDetailPage() {
     setFormData({
       color: data.color || '',
       edad_aproximada: data.edad_aproximada || '',
-      notas: data.notes || '',
+      notas: data.notas || '',
       estado: data.estado || 'en_casa', 
       foto_url: data.foto_url || ''
     })
@@ -194,7 +194,7 @@ async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
       setFormData({
         color: updatedPet.color || '',
         edad_aproximada: updatedPet.edad_aproximada || '',
-        notas: updatedPet.notes || '',
+        notas: updatedPet.notas || '',
         estado: updatedPet.estado || 'en_casa',
         foto_url: updatedPet.foto_url || ''
       })
@@ -214,7 +214,7 @@ async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
       setFormData({
         color: pet.color || '',
         edad_aproximada: pet.edad_aproximada || '',
-        notas: pet.notes || '',
+        notas: pet.notas || '',
         estado: pet.estado || 'en_casa',
         foto_url: pet.foto_url || ''
       })
@@ -246,7 +246,7 @@ async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto space-y-6 p-4">
+      <div className="w-full max-w-4xl mx-auto space-y-5 sm:space-y-6">
         <Skeleton className="h-10 w-48" />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Skeleton className="h-96 lg:col-span-2" />

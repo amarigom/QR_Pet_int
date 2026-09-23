@@ -51,7 +51,10 @@ export default function ScanPage() {
 
   // 1. Envío de ubicación automática
   const sendLocation = useCallback(async (id: string) => {
-    if (!navigator.geolocation) return
+    if (!navigator.geolocation) {
+      setLocationStatus('denied')
+      return
+    }
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -65,8 +68,11 @@ export default function ScanPage() {
           console.error("Error actualizando ubicación", e)
         }
       },
-      () => setLocationStatus('denied'),
-      { enableHighAccuracy: true, timeout: 8000 }
+      (error) => {
+        console.warn('No se pudo obtener la ubicación del transeúnte:', error.message)
+        setLocationStatus('denied')
+      },
+      { enableHighAccuracy: true, timeout: 15000,maximumAge: 0 }
     )
   }, [])
 
@@ -387,6 +393,14 @@ export default function ScanPage() {
             </AlertDescription>
           </Alert>
         )}
+        {locationStatus === 'denied' && (
+          <Alert variant="destructive">
+            <MapPin className="w-4 h-4" />
+            <AlertDescription className="text-xs">
+              No se pudo guardar tu ubicación. Verifica que el navegador tenga permiso de ubicación y que la página se abra mediante HTTPS o localhost.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Card className="overflow-hidden shadow-md rounded-2xl border border-border/50">
           <div className="aspect-square relative bg-muted flex items-center justify-center">
@@ -408,11 +422,11 @@ export default function ScanPage() {
           </div>
           
           <CardContent className="pt-4">
-            {data?.pet.notes && data.pet.notes.trim() !== '' && (
+            {data?.pet.notas && data.pet.notas.trim() !== '' && (
               <div className="bg-amber-50/80 p-3 rounded-xl border border-amber-100 flex gap-2.5">
                 <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <p className="text-sm text-amber-900 leading-relaxed">
-                  <strong className="font-bold">Importante:</strong> {data.pet.notes}
+                  <strong className="font-bold">Importante:</strong> {data.pet.notas}
                 </p>
               </div>
             )}

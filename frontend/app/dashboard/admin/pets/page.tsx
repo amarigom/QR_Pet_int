@@ -41,7 +41,8 @@ export default function AdminPetsPage() {
     const s = search.toLowerCase()
     return pets.filter(p => 
       p.nombre?.toLowerCase().includes(s) || 
-      p.owner?.nombre?.toLowerCase().includes(s)
+      p.owner_name?.toLowerCase().includes(s)||
+      p.owner_email?.toLowerCase().includes(s)
     )
   }, [search, pets])
 
@@ -86,7 +87,8 @@ export default function AdminPetsPage() {
               {filteredPets.length > 0 ? (
                 filteredPets.map((pet) => {
                   // Limpieza de espacios del nombre (Andrea Marigomez)
-                  const ownerName = pet.owner?.nombre?.replace(/\s+/g, ' ').trim() || 'N/A'
+                  const ownerName = pet.owner_name.replace(/\s+/g, ' ').trim() || 'N/A'
+                  const ownerEmail = pet.owner_email || pet.owner?.email || 'Sin dueño'
                   
                   return (
                     <TableRow key={pet.id} className="hover:bg-muted/10 transition-colors">
@@ -112,7 +114,7 @@ export default function AdminPetsPage() {
                           </div>
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <Mail className="w-3.5 h-3.5" />
-                            {pet.owner?.email || 'Sin correo'}
+                            {ownerEmail}
                           </div>
                         </div>
                       </TableCell>

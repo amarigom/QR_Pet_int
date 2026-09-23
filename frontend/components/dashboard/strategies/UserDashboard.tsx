@@ -87,7 +87,7 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="w-full min-w-0 space-y-5 sm:space-y-6">
       
       {/* Encabezado del Dashboard */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -97,7 +97,7 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
             Gestioná tus mascotas y controlá el estado de tus códigos QR.
           </p>
         </div>
-        <Link href="/dashboard/activate" passHref>
+        <Link href="/dashboard/activate" passHref className="w-full sm:w-auto">
           <Button className="flex items-center gap-2 w-full sm:w-auto shadow-sm">
             <PlusCircle className="w-4 h-4" />
             Activar nuevo QR
@@ -109,7 +109,7 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         
         {/* Contadores (Mascotas y QRs) */}
-        <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           <Card className="border-muted/60 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -267,7 +267,7 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {pets.map((pet: PetData) => {
                 const tieneFotoValida = pet.foto_url && pet.foto_url !== 'string' && pet.foto_url.trim() !== ''
 
@@ -275,8 +275,8 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
                   <Link key={pet.id} href={`/dashboard/pets/${pet.id}`} passHref>
                     <Card className="hover:shadow-md transition-all hover:border-primary/40 cursor-pointer h-full border-muted/60 flex flex-col justify-between group bg-card">
                       <CardContent className="p-4">
-                        <div className="flex items-center gap-4">
-                          <Avatar className="w-16 h-16 rounded-lg border bg-muted/40 shrink-0">
+                        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                          <Avatar className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg border bg-muted/40 shrink-0">
                             {tieneFotoValida ? (
                               <img 
                                 src={pet.foto_url} 

@@ -25,12 +25,13 @@ class DashboardService:
             "scans_last_30_days": raw_data["scans_last_30_days"]
         }
         
-        # 3. Procesamos las mascotas a PetResponse
+        # PetResponse usa alias validation_alias="qr_code", por lo que puede
+        # serializar directamente la relación ORM precargada por el repositorio.
         from app.schemas.pet import PetResponse
-        clean_pets = []
-        for p in raw_data["pets"]:
-            clean_pets.append(PetResponse.model_validate(p))
-
+        clean_pets = [
+            PetResponse.model_validate(p)
+            for p in raw_data["pets"]
+        ]
         # 4. 🚀 PROCESAMIENTO ANALÍTICO DE ESCANEOS RECIENTES
         # Extraemos los escaneos y los transformamos para cumplir 1:1 con ScanResponse
         from app.schemas.scan import ScanResponse  

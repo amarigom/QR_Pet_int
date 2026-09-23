@@ -20,6 +20,7 @@ T = TypeVar("T")
 class UserMinimal(BaseModel):
     """Usuario mínimo: solo identificación y datos públicos"""
     id: UUID
+    email: str
     nombre: str
     avatar_url: Optional[str] = None
     
@@ -119,7 +120,7 @@ class ErrorResponse(BaseModel):
 
 
 class PaginatedResponse(BaseModel, Generic[T]):
-    """Respuesta paginada genérica"""
+    """Respuesta paginada genéricaXXXX"""
     items: List[T]
     total: int
     page: int

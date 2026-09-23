@@ -8,6 +8,7 @@ class UserRole(str, Enum):
     """Roles de usuario"""
     ADMIN = "admin"
     USER = "usuario"
+    VETERINARIO = "veterinario"
 
 
 class PetStatus(str, Enum):

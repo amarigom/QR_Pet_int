@@ -13,6 +13,7 @@ from app.core.constants import UserRole
 # Esto evita el error de importación circular durante la ejecución
 if TYPE_CHECKING:
     from app.models.pet import Pet
+    from app.models.veterinario import PerfilVeterinario
 
 class User(Base):
     __tablename__ = "usuarios"
@@ -56,6 +57,14 @@ class User(Base):
     pets: Mapped[List["Pet"]] = relationship(
         "Pet", 
         back_populates="owner", 
+        cascade="all, delete-orphan"
+    )
+    
+    # RELACIÓN: Si el usuario es veterinario, tiene 1 PerfilVeterinario (Opcional)
+    perfil_veterinario: Mapped[Optional["PerfilVeterinario"]] = relationship(
+        "PerfilVeterinario", 
+        back_populates="usuario", 
+        uselist=False, 
         cascade="all, delete-orphan"
     )
 

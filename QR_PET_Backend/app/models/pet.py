@@ -30,15 +30,7 @@ class Pet(Base):
     nombre: Mapped[str] = mapped_column(String(100), nullable=False)
     
     # CORRECCIÓN AQUÍ: Forzamos el uso de los valores del Enum (minúsculas)
-    especie: Mapped[AnimalSpecies] = mapped_column(
-        Enum(
-            AnimalSpecies, 
-            name="animalspecies", 
-            native_enum=True,
-            values_callable=lambda x: [e.value for e in x]
-        ), 
-        nullable=False
-    )
+    especie: Mapped[str] = mapped_column(String(50), nullable=False)
     
     raza: Mapped[Optional[str]] = mapped_column(String(100))
     color: Mapped[Optional[str]] = mapped_column(String(100))
@@ -48,15 +40,7 @@ class Pet(Base):
     notas: Mapped[Optional[str]] = mapped_column(Text)
     
     # CORRECCIÓN AQUÍ: Aplicamos lo mismo para el estado
-    estado: Mapped[PetStatus] = mapped_column(
-        Enum(
-            PetStatus, 
-            name="petstatus", 
-            native_enum=False,
-            values_callable=lambda x: [e.value for e in x]
-        ), 
-        default=PetStatus.ACTIVO
-    )
+    estado: Mapped[str] = mapped_column(String(50), default="en_casa")
     
     created_at: Mapped[datetime] = mapped_column(
         DateTime, 
@@ -69,9 +53,16 @@ class Pet(Base):
         onupdate=func.now()
     )
     
-    owner: Mapped["User"] = relationship("User", back_populates="pets")
+    owner: Mapped["User"] = relationship("User", back_populates="pets",lazy="joined")
     qr_code: Mapped[Optional["QRCode"]] = relationship("QRCode", back_populates="mascota", uselist=False, lazy="joined")
     
 
     def __repr__(self) -> str:
-        return f"<Pet(nombre={self.nombre}, especie={self.especie}, estado={self.estado})>"
+        return f"<Pet(nombre={self.nombre}, especie={self.especie}, estado={self.estado}, created_at={self.created_at},url={self.foto_url})>"
+    @property
+    def owner_name(self) -> Optional[str]:
+        return self.owner.nombre if self.owner else None
+
+    @property
+    def owner_email(self) -> Optional[str]:
+        return self.owner.email if self.owner else None

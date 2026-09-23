@@ -106,8 +106,8 @@ export default function DashboardLayout({
       {/* Header */}
       <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b w-full">
         {/* 🌟 CORRECCIÓN 2: Reemplazamos 'container' por un ancho fluido responsivo controlado */}
-        <div className="w-full max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-6">
+        <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 py-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 sm:gap-6 min-w-0">
             <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center shadow-sm">
                 <QrCode className="w-5 h-5 text-primary-foreground" />
@@ -116,7 +116,7 @@ export default function DashboardLayout({
             </Link>
 
             {/* Desktop Nav */}
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden lg:flex items-center gap-1">
               {isAdminZone && (
                 <Link href="/dashboard">
                   <Button variant="ghost" size="sm" className="text-primary font-semibold hover:bg-primary/10 mr-2">
@@ -183,7 +183,7 @@ export default function DashboardLayout({
             <Button
               variant="outline"
               size="icon"
-              className="md:hidden ml-2"
+              className="lg:hidden ml-1 shrink-0"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -193,7 +193,7 @@ export default function DashboardLayout({
 
         {/* Mobile Nav Overlay */}
         {mobileMenuOpen && (
-          <nav className="md:hidden border-t bg-card px-4 py-4 space-y-2 animate-in slide-in-from-top-2 duration-200">
+          <nav className="lg:hidden max-h-[calc(100vh-4.5rem)] overflow-y-auto border-t bg-card px-3 sm:px-4 py-3 space-y-2 animate-in slide-in-from-top-2 duration-200">
             {user.rol === 'admin' && isAdminZone && (
               <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
                 <Button
@@ -223,7 +223,7 @@ export default function DashboardLayout({
 
       {/* Main content */}
       {/* CORRECCIÓN 3: Blindamos el contenedor para obligar a los hijos (tablas/mapas) a encajarse sin empujar los bordes */}
-      <main className="w-full max-w-7xl mx-auto px-4 py-8 min-w-0 overflow-x-hidden animate-in fade-in duration-500">
+      <main className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 min-w-0 overflow-x-hidden animate-in fade-in duration-500">
         {children}
       </main>
 

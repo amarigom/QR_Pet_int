@@ -1,7 +1,7 @@
 import httpx
 
 async def obtener_direccion_reversa(lat: float, lon: float) -> str:
-    if not lat or not lon:
+    if lat is None or lon is None:
         return "Ubicación sin coordenadas"
         
     url = f"https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lon}&format=json&addressdetails=1"

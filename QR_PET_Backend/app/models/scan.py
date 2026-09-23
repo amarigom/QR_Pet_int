@@ -37,7 +37,7 @@ class Scan(Base):
     telefono_encontrador: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, 
+        DateTime(timezone=True), 
         server_default=func.now()
     )
 

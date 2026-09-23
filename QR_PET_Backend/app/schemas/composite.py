@@ -7,7 +7,7 @@ Nunca importa directamente entre composite.py y los esquemas que se usan en endp
 """
 
 from typing import Optional, List
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.user import UserResponse
 from app.schemas.auth import AuthResponse 
@@ -49,7 +49,12 @@ class PetWithOwner(PetResponse):
 class PetDetailResponse(PetResponse):
     """Vista completa: Mascota + Dueño + QR"""
     owner: Optional[UserResponse] = None
-    qr_code: Optional[QRResponse] = None
+    qr: Optional[QRResponse] = Field(
+        default=None,
+        validation_alias="qr_code",
+        serialization_alias="qr",
+    )
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class UserWithPets(UserResponse):

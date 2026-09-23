@@ -30,11 +30,14 @@ class PetRepository(BaseRepository[Pet]):
         return result.scalar_one_or_none()
 
     async def get_by_user(self, owner_id: uuid.UUID, limit: int = 100, offset: int = 0) -> List[Pet]:
-        """Obtiene mascotas de un usuario específico."""
+        """Obtiene mascotas de un usuario con sus relaciones necesarias para el dashboard."""
         query = (
             select(Pet)
             .where(Pet.usuario_id == owner_id)
-            .options(selectinload(Pet.owner))
+            .options(
+                selectinload(Pet.owner),
+                selectinload(Pet.qr_code),
+            )
             .order_by(Pet.created_at.desc())
             .limit(limit)
             .offset(offset)
@@ -144,3 +147,17 @@ class PetRepository(BaseRepository[Pet]):
         """
         await self.session.delete(db_obj)
         return True    
+    
+    async def count_all(self) -> int:
+        """
+        Devuelve el total de mascotas en PostgreSQL.
+        """
+        stmt = select(func.count()).select_from(Pet)
+        result = await self.session.execute(stmt)
+        return result.scalar_one()
+
+    async def get_paginated(self, offset: int, limit: int) -> list[Pet]:
+        """Devuelve un lote paginado de mascotas."""
+        stmt = select(Pet).offset(offset).limit(limit)
+        result = await self.session.execute(stmt)
+        return result.scalars().all()

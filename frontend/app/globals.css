@@ -146,4 +146,21 @@
 body {
   background-color: var(--background);
   color: var(--foreground);
+  min-width: 320px;
+  overflow-x: hidden;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
 }

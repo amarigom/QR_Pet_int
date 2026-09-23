@@ -44,7 +44,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6">
+    <div className="w-full min-w-0">
       <DashboardFactory 
         role={'user'} 
         user={user} 

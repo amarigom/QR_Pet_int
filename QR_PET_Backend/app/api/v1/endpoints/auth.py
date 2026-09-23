@@ -13,7 +13,9 @@ from app.api.v1.dependencies import get_current_user
 from fastapi import Body
 from app.services.auth_service import AuthService
 from app.models.user import User 
-from app.core.auth import create_access_token# Importamos el modelo para la anotación del Depends
+from app.core.auth import create_access_token
+from app.schemas.veterinario import RegistroVeterinarioCreate, AuthVeterinarioRegisterResponse
+# Importamos el modelo para la anotación del Depends
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
 
@@ -55,16 +57,13 @@ async def login(
     )
     return await auth_service.login(login_data)
 
-@router.get("/me", response_model=UserResponse)
+
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
     """
     Retorna el perfil del usuario actual autenticado de forma limpia.
     """
     try:
-        # En lugar de model_validate directo del objeto ORM, 
-        # usamos los atributos planos convirtiendo a dict si es necesario, 
-        # o forzando la conversión desde los campos base de la DB.
         return UserResponse(
             id=current_user.id,
             email=current_user.email,
@@ -75,9 +74,12 @@ async def get_me(current_user: User = Depends(get_current_user)):
             created_at=current_user.created_at
         )
     except Exception as e:
-        print(f"ERROR EN MODEL_VALIDATE DE ME: {str(e)}")
-        # Si falla por los tipos, devolvemos el objeto mapeado tradicionalmente
-        return current_user
+        # Imprime la falla exacta en la consola de Uvicorn/FastAPI
+        print(f"ERROR CONCRETO EN USERRESPONSE: {type(e).__name__} - {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error al serializar el perfil de usuario: {str(e)}"
+        )
 
 @router.put("/me", response_model=UserResponse)
 async def update_me(
@@ -102,3 +104,13 @@ async def update_me(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+        
+   
+@router.post("/register-veterinario", response_model=AuthVeterinarioRegisterResponse, status_code=status.HTTP_201_CREATED)
+async def register_veterinario(
+    vet_data: RegistroVeterinarioCreate, 
+    db: AsyncSession = Depends(get_db)
+):
+    """Registra una clínica o profesional veterinario en la plataforma."""
+    auth_service = AuthService(db)
+    return await auth_service.register_veterinario(vet_data)
