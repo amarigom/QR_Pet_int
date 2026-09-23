@@ -32,6 +32,7 @@ export default function ScanMap({ scans, pets, initialCenter }: ScanMapProps ) {
   const mapInstanceRef = useRef<L.Map | null>(null)
   // Generamos un ID único para este renderizado
   const [mapId] = useState(() => `map-${Math.random().toString(36).substr(2, 9)}`)
+  const markersLayerRef = useRef<L.LayerGroup | null>(null)
 
   useEffect(() => {
   // 1. INICIALIZACIÓN (Solo si no existe)
@@ -48,33 +49,45 @@ export default function ScanMap({ scans, pets, initialCenter }: ScanMapProps ) {
 
   const map = mapInstanceRef.current;
 
-  // 2. ACTUALIZACIÓN DE MARCADORES (Se ejecuta siempre que cambie 'scans')
-  // Primero limpiamos marcadores viejos si fuera necesario (opcional)
-  
-  if (scans && scans.length > 0) {
-    console.log(`Procesando ${scans.length} escaneos...`);
-    scans.forEach(scan => {
-      if (scan.latitud && scan.longitud) {
-        console.log(`Marcador agregado: ${scan.mascota_nombre}`);
-        L.marker([scan.latitud, scan.longitud])
-          .addTo(map)
-          .bindPopup(scan.mascota_nombre || "Mascota");
-      }
-    });
+  // 2. Actualizar marcadores sin duplicarlos en cada renderizado.
+  if (markersLayerRef.current) {
+    markersLayerRef.current.clearLayers()
   } else {
-    console.log('No hay escaneos para mostrar.');
+    markersLayerRef.current = L.layerGroup().addTo(map)
+  }
 
+  const validScans = scans.filter(
+    (scan) =>
+      Number.isFinite(scan.latitud) &&
+      Number.isFinite(scan.longitud) &&
+      scan.latitud !== null &&
+      scan.longitud !== null
+  )
+
+  validScans.forEach(scan => {
+      L.marker([scan.latitud!, scan.longitud!])
+        .addTo(markersLayerRef.current!)
+        .bindPopup(scan.mascota_nombre || "Mascota");
+  })
+
+  if (validScans.length > 0) {
+    map.fitBounds(
+      L.latLngBounds(validScans.map((scan) => [scan.latitud!, scan.longitud!])),
+      { padding: [24, 24], maxZoom: 15 }
+    )
+  } else if (initialCenter) {
+    map.setView([initialCenter.lat, initialCenter.lng], 13)
   }
     // 3. LIMPIEZA (Solo cuando el componente se destruye de verdad)
   
-}, [scans, initialCenter]);
+  }, [scans, initialCenter]);
 
   return (
     <div className="w-full h-full border-2 border-green-500 rounded-lg overflow-hidden">
       <div 
         id={mapId}
         ref={mapContainerRef} 
-        style={{ height: '450px', width: '100%' }} 
+        style={{ height: '100%', minHeight: '300px', width: '100%' }} 
       />
     </div>
   )

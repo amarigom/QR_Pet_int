@@ -51,7 +51,10 @@ export default function ScanPage() {
 
   // 1. Envío de ubicación automática
   const sendLocation = useCallback(async (id: string) => {
-    if (!navigator.geolocation) return
+    if (!navigator.geolocation) {
+      setLocationStatus('denied')
+      return
+    }
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -65,7 +68,10 @@ export default function ScanPage() {
           console.error("Error actualizando ubicación", e)
         }
       },
-      () => setLocationStatus('denied'),
+      (error) => {
+        console.warn('No se pudo obtener la ubicación del transeúnte:', error.message)
+        setLocationStatus('denied')
+      },
       { enableHighAccuracy: true, timeout: 15000,maximumAge: 0 }
     )
   }, [])
@@ -354,6 +360,14 @@ export default function ScanPage() {
             <MapPin className="w-4 h-4 text-green-600" />
             <AlertDescription className="text-green-700 font-medium text-xs">
               Tu ubicación fue enviada automáticamente al dueño.
+            </AlertDescription>
+          </Alert>
+        )}
+        {locationStatus === 'denied' && (
+          <Alert variant="destructive">
+            <MapPin className="w-4 h-4" />
+            <AlertDescription className="text-xs">
+              No se pudo guardar tu ubicación. Verifica que el navegador tenga permiso de ubicación y que la página se abra mediante HTTPS o localhost.
             </AlertDescription>
           </Alert>
         )}

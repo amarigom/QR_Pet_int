@@ -26,6 +26,17 @@ class ScanLocationUpdate(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ScanUpdate(BaseModel):
+    """Campos opcionales para completar un escaneo ya creado."""
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
+    mensaje_encontrador: Optional[str] = None
+    telefono_encontrador: Optional[str] = None
+    direccion_aproximada: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 # ============================================================================
 # 📤 2. ESQUEMAS DE SALIDA (RESPUESTAS UNIFICADAS Y SINCRONIZADAS CON NEON)
 # ============================================================================

@@ -46,7 +46,7 @@ class ScanService:
         )
         
         # 🎯 NUEVO: Si el impacto ya trae coordenadas, calculamos la ubicación antes de commitear
-        if scan.latitud and scan.longitud:
+        if scan.latitud is not None and scan.longitud is not None:
             scan.direccion_aproximada = await obtener_direccion_reversa(scan.latitud, scan.longitud)
         else:
             scan.direccion_aproximada = "Ubicación aproximada"
@@ -218,7 +218,10 @@ class ScanService:
             raise HTTPException(status_code=404, detail="Registro no encontrado")
 
         # 2. NUEVO: Si llegaron coordenadas precisas por GPS, actualizamos la dirección física en Neon
-        if fields_sent.get("latitud") and fields_sent.get("longitud"):
+        if (
+            fields_sent.get("latitud") is not None
+            and fields_sent.get("longitud") is not None
+        ):
             direccion_real = await obtener_direccion_reversa(
                 fields_sent.get("latitud"), fields_sent.get("longitud")
             )
@@ -268,7 +271,7 @@ class ScanService:
         
     
     async def get_user_latest_scans(self, user_id, limit: int = 100, offset: int = 0):
-        return await self.scan_repository.get_latest_scans_by_user(
+        return await self.scan_repo.get_latest_scans_by_user(
             user_id=user_id, 
             limit=limit, 
             offset=offset
