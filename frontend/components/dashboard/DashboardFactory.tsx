@@ -2,10 +2,11 @@
 
 import React from 'react'
 import AdminDashboard from '@/components/dashboard/strategies/AdminDashboard' 
-import UserDashboard from '@/components/dashboard/strategies/UserDashboard'   
+import UserDashboard from '@/components/dashboard/strategies/UserDashboard'
+import VeterinarianDashboard from '@/components/dashboard/strategies/VeterinarianDashboard'   
 
 // 🎯 Tipado estricto adaptado a tu base de datos
-export type UserRole = 'admin' | 'user'
+export type UserRole = 'admin' | 'user' | 'veterinario'
 
 interface DashboardFactoryProps {
   role: string 
@@ -17,11 +18,12 @@ interface DashboardFactoryProps {
 const dashboardStrategies = {
   admin: AdminDashboard,
   user: UserDashboard,
+  veterinario: VeterinarianDashboard,
 }
 
 export default function DashboardFactory({ role, user, dashboardData }: DashboardFactoryProps) {
   // 1. Normalizamos el rol a minúsculas con fallback seguro a 'user'
-  const normalizedRole = (role?.toLowerCase() === 'admin' ? 'admin' : 'user') as UserRole
+  const normalizedRole = (role?.toLowerCase() === 'admin' ? 'admin' : role?.toLowerCase() === 'veterinario' ? 'veterinario' : 'user') as UserRole
   
   const ActiveDashboard = dashboardStrategies[normalizedRole] || UserDashboard
 

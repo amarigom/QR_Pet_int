@@ -46,7 +46,7 @@ export default function DashboardPage() {
   return (
     <div className="w-full min-w-0">
       <DashboardFactory 
-        role={'user'} 
+        role={user.rol === 'veterinario' ? 'veterinario' : user.rol === 'admin' ? 'admin' : 'user'} 
         user={user} 
         dashboardData={dashboardData} 
       />
