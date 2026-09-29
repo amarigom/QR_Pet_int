@@ -81,7 +81,15 @@ const ENDPOINTS_POR_VISTA: Record<ActiveView, string> = {
   admin: '/dashboard/admin',
 }
 
+export interface ChatSource { doc_id: string; titulo: string; categoria: string }
+export interface ChatResponse { respuesta: string; fuentes: ChatSource[] }
+
 export const dashboardApi = {
+  chat: async (pregunta: string, historial: Array<{ role: string; content: string }> = []): Promise<ChatResponse> =>
+    fetchAPI<ChatResponse>('/pgvector/chat', {
+      method: 'POST',
+      body: JSON.stringify({ pregunta, historial, limit: 5 }),
+    }),
   /** Obtiene datos ya adaptados al contrato de la vista solicitada. */
   obtenerPorVista: async (vista: ActiveView): Promise<DashboardDataUnion> => {
     const endpoint = ENDPOINTS_POR_VISTA[vista] || ENDPOINTS_POR_VISTA.user

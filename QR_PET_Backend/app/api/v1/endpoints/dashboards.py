@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.models.user import User
 from app.api.v1.dependencies import get_current_user
-from app.schemas.dashboard import UserDashboardResponse
+from app.schemas.dashboard import UserDashboardResponse, VeterinarioDashboardResponse
 from app.services.dashboard_service import DashboardService
 
 router = APIRouter()
@@ -20,7 +20,7 @@ async def get_user_dashboard(
     return await service.get_user_dashboard_summary(current_user.id)
 
 
-@router.get("/veterinario")
+@router.get("/veterinario", response_model=VeterinarioDashboardResponse)
 async def get_veterinario_dashboard(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)

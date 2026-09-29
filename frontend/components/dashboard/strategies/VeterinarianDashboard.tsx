@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import { authApi } from '@/lib/api/auth'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/app/context/auth/AuthContext'
+import { VeterinaryKnowledgeChat } from '@/components/dashboard/VeterinaryKnowledgeChat'
 
 interface VeterinarianDashboardProps {
   data: any
@@ -435,6 +436,8 @@ export default function VeterinarianDashboard({ data, user }: VeterinarianDashbo
           </Card>
         </Link>
       </div>
+
+      <VeterinaryKnowledgeChat />
 
       {/* TARJETA DE INFORMACIÓN RÁPIDA */}
       <Card className="border-muted/60 shadow-sm bg-gradient-to-br from-primary/5 to-secondary/5">

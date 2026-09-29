@@ -15,6 +15,9 @@ from sqlalchemy.orm import joinedload
 from app.models.pet import Pet
 from app.models.qr import QRCode
 from app.models.scan import Scan
+from app.models.turno import Turno, EstadoTurno
+from app.models.historia_clinica import HistoriaClinica
+from app.models.conocimiento import KnowledgeVector
 from typing import Dict, Any
 
 class DashboardRepository:
@@ -76,6 +79,65 @@ class DashboardRepository:
             "scans_last_30_days": scans_last_30_days,
             "pets": pets_list,
             "recent_scans": recent_scans_list  # 🌟 Lista de objetos Scan 100% detallados y linkeados
+        }
+
+    async def get_veterinario_dashboard_data(self, veterinario_id: uuid.UUID) -> Dict[str, Any]:
+        """Calcula las métricas del panel veterinario en una única capa de persistencia."""
+        ahora = datetime.now(timezone.utc)
+        inicio_dia = ahora.replace(hour=0, minute=0, second=0, microsecond=0)
+        fin_dia = inicio_dia + timedelta(days=1)
+        fin_semana = inicio_dia + timedelta(days=7)
+
+        def count_query(model, *conditions):
+            return select(func.count()).select_from(model).where(*conditions)
+
+        turnos_hoy = (await self.session.execute(
+            count_query(Turno, Turno.veterinario_id == veterinario_id,
+                        Turno.fecha_hora_inicio >= inicio_dia,
+                        Turno.fecha_hora_inicio < fin_dia,
+                        Turno.estado != EstadoTurno.CANCELADO)
+        )).scalar_one()
+        turnos_proximos = (await self.session.execute(
+            count_query(Turno, Turno.veterinario_id == veterinario_id,
+                        Turno.fecha_hora_inicio >= fin_dia,
+                        Turno.fecha_hora_inicio < fin_semana,
+                        Turno.estado == EstadoTurno.PROGRAMADO)
+        )).scalar_one()
+        historias_clinicas = (await self.session.execute(
+            count_query(HistoriaClinica, HistoriaClinica.veterinario_id == veterinario_id)
+        )).scalar_one()
+        mascotas_activas = (await self.session.execute(
+            select(func.count(func.distinct(HistoriaClinica.mascota_id)))
+            .where(HistoriaClinica.veterinario_id == veterinario_id)
+        )).scalar_one()
+        documentos_cargados = (await self.session.execute(
+            select(func.count()).select_from(KnowledgeVector)
+        )).scalar_one()
+        qrs_asignados = (await self.session.execute(
+            select(func.count(QRCode.id)).where(QRCode.mascota_id.is_(None))
+        )).scalar_one()
+
+        consultas_por_dia = []
+        for offset in range(7):
+            fecha = inicio_dia - timedelta(days=6 - offset)
+            siguiente = fecha + timedelta(days=1)
+            total = (await self.session.execute(
+                count_query(HistoriaClinica, HistoriaClinica.veterinario_id == veterinario_id,
+                            HistoriaClinica.fecha_consulta >= fecha,
+                            HistoriaClinica.fecha_consulta < siguiente)
+            )).scalar_one()
+            consultas_por_dia.append({"date": fecha.date().isoformat(), "count": total})
+
+        return {
+            "stats": {
+                "turnos_hoy": turnos_hoy,
+                "turnos_proximos": turnos_proximos,
+                "historias_clinicas": historias_clinicas,
+                "mascotas_activas": mascotas_activas,
+                "qrs_asignados": qrs_asignados,
+                "documentos_cargados": documentos_cargados,
+            },
+            "consultas_por_dia": consultas_por_dia,
         }
 
     async def get_admin_dashboard_data(self) -> dict:

@@ -70,6 +70,10 @@ class DashboardService:
             "pets": clean_pets,
             "recent_scans": scans_for_map  
         }
+    async def get_veterinario_dashboard_summary(self, veterinario_id: uuid.UUID) -> dict:
+        """Orquesta el contrato estable del panel veterinario."""
+        return await self.dashboard_repo.get_veterinario_dashboard_data(veterinario_id)
+
     async def get_admin_dashboard_summary(self) -> dict:
         """Estructura las métricas globales para el administrador."""
         raw_data = await self.dashboard_repo.get_admin_dashboard_data()

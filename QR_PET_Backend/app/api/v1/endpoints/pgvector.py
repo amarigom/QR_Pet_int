@@ -12,6 +12,8 @@ from app.api.v1.dependencies import (
 )
 from app.services.pet_service import PetService
 from app.services.pet_service import VectorStoreService
+from app.api.v1.dependencies import get_current_user
+from app.models.user import User
 
 router = APIRouter()
 logger = logging.getLogger("uvicorn.error")
@@ -23,6 +25,12 @@ class PetVectorInput(BaseModel):
     pet_id: str
     description: str
     metadata: Optional[Dict[str, Any]] = None
+
+class RAGChatInput(BaseModel):
+    pregunta: str
+    historial: Optional[list[Dict[str, str]]] = None
+    categoria: Optional[str] = None
+    limit: int = 3
 
 
 @router.post("/sincronizar-todo")
@@ -64,6 +72,23 @@ async def indexar_mascota(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/chat")
+async def chat_conocimiento(
+    data: RAGChatInput,
+    v_service: VectorStoreService = Depends(get_vector_store_service),
+    current_user: User = Depends(get_current_user),
+):
+    """Responde usando mascotas vectorizadas y la base de conocimiento oficial."""
+    if not data.pregunta.strip():
+        raise HTTPException(status_code=422, detail="La pregunta es obligatoria.")
+    return await v_service.responder_con_rag(
+        pregunta=data.pregunta,
+        historial=data.historial,
+        categoria=data.categoria,
+        limit=max(1, min(data.limit, 10)),
+    )
 
 
 @router.get("/buscar")
