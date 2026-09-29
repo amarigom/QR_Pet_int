@@ -21,8 +21,13 @@ export default function DashboardPage() {
   console.log('🔍 [DEBUG PAGE] User object:', user)
   console.log('🔍 [DEBUG PAGE] enModoUsuario:', enModoUsuario)
 
-  const vistaDeseada = enModoUsuario ? 'user' : (user?.rol as any)
-  const vistaActiva = resolverVistaValida(user?.rol, vistaDeseada)
+  const rolNormalizado = user?.rol === 'veterinarian' || user?.rol === 'vet'
+    ? 'veterinario'
+    : user?.rol === 'user'
+      ? 'usuario'
+      : user?.rol
+  const vistaDeseada = enModoUsuario && rolNormalizado !== 'admin' ? 'user' : rolNormalizado
+  const vistaActiva = resolverVistaValida(rolNormalizado, enModoUsuario)
  // 🔍 LOG 2: Verificar la vista que finalmente se resuelve
   console.log('🔍 [DEBUG PAGE] Vista Deseada vs Resuelta:', { vistaDeseada, vistaActiva })
   

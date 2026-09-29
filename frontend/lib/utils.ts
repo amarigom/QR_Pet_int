@@ -80,7 +80,7 @@ export function resolverVistaValida(rol?: string, enModoUsuario: boolean = true)
     return 'admin'
   }
 
-  if (rolLimpio === 'veterinario') {
+  if (['veterinario', 'veterinarian', 'vet'].includes(rolLimpio)) {
     return 'veterinario'
   }
 

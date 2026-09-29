@@ -108,9 +108,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Calculamos isAdmin basándonos en el objeto completo
   const isAdmin = state.user?.rol === 'admin';
-  const toggleModoVista = () => {
-  dispatch({ type: 'TOGGLE_MODO_VISTA' });
-};
+  const toggleModoVista = useCallback(() => {
+    const siguienteModoUsuario = !state.enModoUsuario;
+    localStorage.setItem('enModoUsuario', JSON.stringify(siguienteModoUsuario));
+    dispatch({ type: 'TOGGLE_MODO_VISTA' });
+  }, [state.enModoUsuario]);
 
   return (
     <AuthContext.Provider value={{ ...state, login, logout,isAdmin: state.user?.rol === 'admin',

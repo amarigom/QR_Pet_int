@@ -51,8 +51,11 @@ export default function DashboardLayout({
 }) {
   const router = useRouter()
   const pathname = usePathname()
-  const { enModoUsuario, toggleModoVista } = useAuth()
+  const { user: authUser, enModoUsuario, toggleModoVista } = useAuth()
   const [user, setUser] = useState<User | null>(null)
+  const normalizedRole = String(authUser?.rol ?? user?.rol ?? '').toLowerCase()
+  const isVeterinarian = ['veterinario', 'veterinarian', 'vet'].includes(normalizedRole)
+  const isAdmin = normalizedRole === 'admin'
   const [isLoading, setIsLoading] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -165,7 +168,7 @@ export default function DashboardLayout({
                 </div>
                 <DropdownMenuSeparator />
                 
-                {user.rol === 'admin' && (
+                {isAdmin && (
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard/admin" className="cursor-pointer">
                       <Settings className="w-4 h-4 mr-2" />
@@ -174,7 +177,7 @@ export default function DashboardLayout({
                   </DropdownMenuItem>
                 )}
 
-                {user.rol === 'veterinario' && (
+                {isVeterinarian && (
                   <DropdownMenuItem
                     onSelect={(event) => {
                       event.preventDefault()
