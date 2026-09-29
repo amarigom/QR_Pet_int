@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import { authApi } from '@/lib/api'
 import type { User } from '@/lib/types'
+import { useAuth } from '@/app/context/auth/AuthContext'
 import QrScannerModal from '@/components/QrScannerModal'
 
 const userNavItems = [
@@ -50,6 +51,7 @@ export default function DashboardLayout({
 }) {
   const router = useRouter()
   const pathname = usePathname()
+  const { enModoUsuario, toggleModoVista } = useAuth()
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -171,6 +173,33 @@ export default function DashboardLayout({
                     </Link>
                   </DropdownMenuItem>
                 )}
+
+                {user.rol === 'veterinario' && (
+                  <DropdownMenuItem
+                    onSelect={(event) => {
+                      event.preventDefault()
+                      toggleModoVista()
+                      router.push('/dashboard')
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <LayoutDashboard className="w-4 h-4 mr-2" />
+                    {enModoUsuario ? 'Ir a panel veterinario' : 'Volver a panel usuario'}
+                  </DropdownMenuItem>
+                )}
+
+                {user.rol === 'admin' && isAdminZone && (
+                  <DropdownMenuItem
+                    onSelect={(event) => {
+                      event.preventDefault()
+                      router.push('/dashboard')
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Volver a panel usuario
+                  </DropdownMenuItem>
+                )}
                 
                 <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:bg-destructive/10 cursor-pointer">
                   <LogOut className="w-4 h-4 mr-2" />
@@ -204,6 +233,21 @@ export default function DashboardLayout({
                   Volver a mi Dashboard
                 </Button>
               </Link>
+            )}
+
+            {user.rol === 'veterinario' && (
+              <Button
+                variant="secondary"
+                className="w-full justify-start text-base font-semibold bg-primary/10 text-primary hover:bg-primary/20"
+                onClick={() => {
+                  toggleModoVista()
+                  setMobileMenuOpen(false)
+                  router.push('/dashboard')
+                }}
+              >
+                <LayoutDashboard className="w-5 h-5 mr-3" />
+                {enModoUsuario ? 'Ir a panel veterinario' : 'Volver a panel usuario'}
+              </Button>
             )}
 
             {activeNavItems.map((item) => (
