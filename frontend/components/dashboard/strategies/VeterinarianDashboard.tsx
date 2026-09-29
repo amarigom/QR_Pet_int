@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { toast } from 'sonner'
 import { authApi } from '@/lib/api/auth'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/app/context/auth/AuthContext'
 
 interface VeterinarianDashboardProps {
   data: any
@@ -21,6 +22,7 @@ interface VeterinarianDashboardProps {
 
 export default function VeterinarianDashboard({ data, user }: VeterinarianDashboardProps) {
   const router = useRouter()
+  const { toggleModoVista } = useAuth()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [currentUser, setCurrentUser] = useState(user)
@@ -51,7 +53,8 @@ export default function VeterinarianDashboard({ data, user }: VeterinarianDashbo
     try {
       const updatedUser = await authApi.updateProfile({
         nombre: profileData.nombre.trim(),
-        telefono: cleanPhone
+        telefono: cleanPhone,
+        direccion: user?.direccion || ""
       })
       
       setCurrentUser(updatedUser)
@@ -87,6 +90,16 @@ export default function VeterinarianDashboard({ data, user }: VeterinarianDashbo
           </p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+          {/* Botón para alternar a vista de usuario común */}
+          <Button 
+            variant="outline" 
+            onClick={toggleModoVista} 
+            className="flex items-center gap-2 border-primary/30 w-full sm:w-auto"
+          >
+            <User className="w-4 h-4 text-primary" />
+            Ver Vista Usuario
+          </Button>
+
           <Link href="/dashboard/veterinario/turnos" className="flex-1 sm:flex-initial">
             <Button variant="outline" className="flex items-center gap-2 w-full sm:w-auto">
               <Calendar className="w-4 h-4" />

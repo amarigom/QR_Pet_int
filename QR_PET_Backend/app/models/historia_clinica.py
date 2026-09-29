@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, Text, Float, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
@@ -14,7 +14,7 @@ class HistoriaClinica(Base):
     veterinario_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False, index=True)
     mascota_id = Column(UUID(as_uuid=True), ForeignKey("mascotas.id", ondelete="CASCADE"), nullable=False, index=True)
     
-    fecha_consulta = Column(DateTime, default=datetime.utcnow, index=True)
+    fecha_consulta = Column(DateTime(timezone=True), default=datetime.utcnow, index=True)
     motivo_consulta = Column(String(255), nullable=False)
     diagnostico = Column(Text, nullable=True)
     tratamiento = Column(Text, nullable=True)
@@ -23,4 +23,4 @@ class HistoriaClinica(Base):
     
     # Recetas, análisis y ecografías (URLs)
     adjuntos = Column(JSONB, default=list, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)

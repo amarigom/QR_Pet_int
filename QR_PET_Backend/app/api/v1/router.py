@@ -10,11 +10,9 @@ from app.api.v1.endpoints import auth, pets, qr, admin,maps,dashboards,conocimie
 
 router = APIRouter(prefix="/api/v1")
 
-router.include_router(
-    pgvector.router, prefix="/vectors", tags=["pgvector & Vector Search"]
+router.include_router(pgvector.router, prefix="/vectors", tags=["pgvector & Vector Search"]
 )
-router.include_router(
-    conocimiento.router, prefix="/conocimiento", tags=["Base de Conocimiento"]
+router.include_router(conocimiento.router, prefix="/conocimiento", tags=["Base de Conocimiento"]
 )
 
 # 2. Inclusión de rutas

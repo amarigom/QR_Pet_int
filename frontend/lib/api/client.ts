@@ -10,10 +10,10 @@ export async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): 
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
-  // 1. 🛡️ Inicializamos Headers nativos
+  // 1. Inicializamos Headers nativos
   const headers = new Headers(options.headers);
 
-  // 2. 🎯 CORRECCIÓN DE QA: Solo seteamos Content-Type si la petición TIENE un cuerpo (POST, PUT, PATCH)
+  // 2. CORRECCIÓN DE QA: Solo seteamos Content-Type si la petición TIENE un cuerpo (POST, PUT, PATCH)
   if (options.body && !headers.has('content-type') && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }

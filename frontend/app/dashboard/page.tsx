@@ -1,25 +1,39 @@
 'use client'
 
+
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/app/context/auth/AuthContext'
 import DashboardFactory from '@/components/dashboard/DashboardFactory' 
 import { dashboardApi } from '@/lib/api/dashboard'
-import { UserDashboardData } from '@/lib/types/dashboard'
+import { resolverVistaValida } from '@/lib/utils'
+import { DashboardDataUnion } from '@/lib/types/dashboard'
+
 
 export default function DashboardPage() {
-  const { user, loading: authLoading } = useAuth()
-  const [dashboardData, setDashboardData] = useState<UserDashboardData | null>(null)
+  const { user, loading: authLoading, enModoUsuario } = useAuth()
+  const [dashboardData, setDashboardData] = useState<DashboardDataUnion | null>(null)
   const [dataLoading, setDataLoading] = useState<boolean>(true)
 
+  // 1. Invariante de Dominio: Se resuelve la vista válida en 1 sola línea declarativa
+  // 🔍 LOG 1: Verificar el objeto usuario real del backend y la bandera del contexto
+  console.log('🔍 [DEBUG PAGE] User object:', user)
+  console.log('🔍 [DEBUG PAGE] enModoUsuario:', enModoUsuario)
+
+  const vistaDeseada = enModoUsuario ? 'user' : (user?.rol as any)
+  const vistaActiva = resolverVistaValida(user?.rol, vistaDeseada)
+ // 🔍 LOG 2: Verificar la vista que finalmente se resuelve
+  console.log('🔍 [DEBUG PAGE] Vista Deseada vs Resuelta:', { vistaDeseada, vistaActiva })
+  
   useEffect(() => {
-    async function fetchDashboardContent() {
+    async function cargarDashboard() {
       if (authLoading || !user) return
+      
       try {
         setDataLoading(true)
-        const data = await dashboardApi.getUserData()
+        // Pide los datos a /dashboard/user, /dashboard/veterinario o /dashboard/admin
+        const data = await dashboardApi.obtenerPorVista(vistaActiva)
         setDashboardData(data)
       } catch (error) {
         console.error("Error al cargar el dashboard:", error)
@@ -27,11 +41,12 @@ export default function DashboardPage() {
         setDataLoading(false)
       }
     }
-    fetchDashboardContent()
-  }, [user, authLoading])
+
+    cargarDashboard()
+  }, [user, authLoading, vistaActiva])
 
   if (authLoading || (user && dataLoading)) {
-    return <div className="p-6">Cargando panel...</div> // Reemplazar por tus Skeletons
+    return <div className="p-6">Cargando panel...</div>
   }
 
   if (!user) {
@@ -46,7 +61,7 @@ export default function DashboardPage() {
   return (
     <div className="w-full min-w-0">
       <DashboardFactory 
-        role={user.rol === 'veterinario' ? 'veterinario' : 'user'} 
+        role={vistaActiva} 
         user={user} 
         dashboardData={dashboardData} 
       />

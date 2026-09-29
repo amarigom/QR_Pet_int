@@ -36,7 +36,7 @@ function LoginForm() {
 
       toast.success("¡Inicio de sesión exitoso!");
 
-      // 🎯 DIRECCIÓN INTELIGENTE: Si venía de escanear un QR, lo mandamos de vuelta ahí. Si no, al dashboard.
+      // DIRECCIÓN INTELIGENTE: Si venía de escanear un QR, lo mandamos de vuelta ahí. Si no, al dashboard.
       const targetDestination = redirectUrl || '/dashboard';
       console.log("Redirigiendo de forma limpia a:", targetDestination);
 
@@ -145,7 +145,7 @@ function LoginForm() {
 
         <p className="text-center text-sm text-muted-foreground">
           No tienes cuenta?{' '}
-          {/* 🎯 EL PASAMANOS: Pasamos el redirect limpio al formulario de registro */}
+          {/* EL PASAMANOS: Pasamos el redirect limpio al formulario de registro */}
           <Link 
             href={redirectUrl ? `/auth/register?redirect=${encodeURIComponent(redirectUrl)}` : '/auth/register'} 
             className="text-primary hover:underline font-medium"

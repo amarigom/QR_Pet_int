@@ -12,12 +12,15 @@ from app.schemas.common import SuccessResponse
 from app.schemas.user import UserResponse, DashboardStats
 from app.schemas.composite import PetDetailResponse
 from app.models.user import User
+from app.schemas.veterinario import ( RegistroVeterinarioCreate, PerfilVeterinarioResponse)
+
 
 # 2. Core y Seguridad (Importamos las dependencias necesarias)
 from app.core.database import get_db
-from ..dependencies import get_admin_service, require_admin, get_qr_service
+from ..dependencies import get_admin_service, require_admin, get_qr_service, get_veterinario_service
 from app.services.admin_service import AdminService
 from app.services.qr_service import QRService 
+from app.services.veterinario_service import VeterinarioService
 
 from app.core.database import get_db  # <--- Solucionado acá!
 from app.utils.qr_generator import generar_qr_memoria 
@@ -25,6 +28,23 @@ from app.repositories.qr_repository import QRRepository
 
 
 router = APIRouter(prefix="/admin", tags=["Administración"])
+
+
+@router.post(
+    "/veterinarios",
+    response_model=PerfilVeterinarioResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Dar de alta un veterinario (Solo Administrador)"
+)
+async def crear_veterinario_desde_admin(
+    datos: RegistroVeterinarioCreate,
+    current_admin: User = Depends(require_admin), # 🔒 Solo ADMIN
+    service: VeterinarioService = Depends(get_veterinario_service),
+):
+    """
+    El administrador registra un nuevo profesional en el sistema.
+    """
+    return await service.registrar_veterinario_por_admin(datos)
 
 @router.post("/qr/generate", response_model=Dict[str, Any], status_code=status.HTTP_201_CREATED)
 async def generate_qrs(
