@@ -11,6 +11,7 @@ from app.models.user import User
 from app.schemas.turno import TurnoCreate, TurnoResponse, TurnoUpdateEstado
 from app.services.turno_service import TurnoService
 
+
 router = APIRouter()
 
 

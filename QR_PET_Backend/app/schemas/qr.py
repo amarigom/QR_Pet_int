@@ -62,6 +62,15 @@ class QRCheckResponse(BaseModel):
     has_pet: Optional[bool] = None
 
 
+class QRAssignResponse(BaseModel):
+    id: UUID
+    codigo: str
+    mascota_id: UUID
+    activo: bool
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
 # ============================================================================
 # INICIALIZACIÓN SEGURA
 # ============================================================================

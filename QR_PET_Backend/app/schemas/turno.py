@@ -1,9 +1,10 @@
+
 # app/schemas/turno.py
 import uuid
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, ConfigDict
-from app.models.turno import EstadoTurno
+from app.models.turno import EstadoTurno  # Usa tu mismo Enum de SQLAlchemy
 
 class TurnoBase(BaseModel):
     mascota_id: uuid.UUID

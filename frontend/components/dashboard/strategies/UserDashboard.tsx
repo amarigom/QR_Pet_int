@@ -1,9 +1,10 @@
 
+
 'use client'
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { PawPrint, QrCode, PlusCircle, Map, Phone, User, Loader2 } from 'lucide-react'
+import { PawPrint, QrCode, PlusCircle, Map, Phone, User, Loader2 ,MapPin} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -38,7 +39,8 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
   // Estado local para el formulario de edición rápida del perfil
   const [profileData, setProfileData] = useState({
     nombre: user?.nombre || '',
-    telefono: user?.telefono || ''
+    telefono: user?.telefono || '',
+    direccion: user?.direccion || ''
   })
 
   // Extracción segura de datos
@@ -70,7 +72,8 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
     try {
       const updatedUser = await authApi.updateProfile({
         nombre: profileData.nombre.trim(),
-        telefono: cleanPhone
+        telefono: cleanPhone,
+        direccion: profileData.direccion.trim() || null
       })
       
       // Actualizamos el estado local para reflejar el cambio al milisegundo
@@ -87,7 +90,7 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
   }
 
   return (
-    <div className="w-full min-w-0 space-y-5 sm:space-y-6">
+    <div className="space-y-6 p-6">
       
       {/* Encabezado del Dashboard */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -97,7 +100,7 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
             Gestioná tus mascotas y controlá el estado de tus códigos QR.
           </p>
         </div>
-        <Link href="/dashboard/activate" passHref className="w-full sm:w-auto">
+        <Link href="/dashboard/activate" passHref>
           <Button className="flex items-center gap-2 w-full sm:w-auto shadow-sm">
             <PlusCircle className="w-4 h-4" />
             Activar nuevo QR
@@ -109,7 +112,7 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         
         {/* Contadores (Mascotas y QRs) */}
-        <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Card className="border-muted/60 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -166,6 +169,13 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
                   <span className="text-amber-600 font-semibold">Falta WhatsApp</span>
                 )}
               </p>
+                {/* 👈 NUEVO: Mostrar Domicilio si existe */}
+                {currentUser?.direccion && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 truncate">
+                <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
+                  <span className="truncate">{currentUser.direccion}</span>
+              </p>
+                )}
             </div>
           </CardContent>
           <div className="px-4 pb-4 pt-0">
@@ -213,6 +223,23 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
                     </div>
                     <p className="text-[11px] text-muted-foreground leading-tight">
                       Incluí código de país (ej: +54) seguido de tu celular con código de área.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="direccion">Domicilio / Dirección <span className="text-xs text-muted-foreground font-normal">(Opcional)</span></Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="direccion"
+                        type="text"
+                        placeholder="Ej: Av. España 450, Tandil"
+                        value={profileData.direccion}
+                        onChange={(e) => setProfileData(prev => ({ ...prev, direccion: e.target.value }))}
+                        className="pl-10"
+                      />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-tight">
+                      Dirección de contacto en caso de emergencia.
                     </p>
                   </div>
                   <div className="flex justify-end gap-2 pt-2">
@@ -267,7 +294,7 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {pets.map((pet: PetData) => {
                 const tieneFotoValida = pet.foto_url && pet.foto_url !== 'string' && pet.foto_url.trim() !== ''
 
@@ -275,8 +302,8 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
                   <Link key={pet.id} href={`/dashboard/pets/${pet.id}`} passHref>
                     <Card className="hover:shadow-md transition-all hover:border-primary/40 cursor-pointer h-full border-muted/60 flex flex-col justify-between group bg-card">
                       <CardContent className="p-4">
-                        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                          <Avatar className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg border bg-muted/40 shrink-0">
+                        <div className="flex items-center gap-4">
+                          <Avatar className="w-16 h-16 rounded-lg border bg-muted/40 shrink-0">
                             {tieneFotoValida ? (
                               <img 
                                 src={pet.foto_url} 

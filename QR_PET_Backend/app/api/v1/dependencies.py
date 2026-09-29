@@ -73,6 +73,18 @@ async def require_admin(user: User = Depends(get_current_user)) -> User:
     return user
 
 
+async def require_veterinario(user: User = Depends(get_current_user)) -> User:
+    """Protege operaciones clínicas y de carga de conocimiento."""
+    if user.rol not in (UserRole.VETERINARIO, UserRole.ADMIN):
+        raise PermissionDeniedException("Se requieren permisos de veterinario")
+    return user
+
+
+async def require_veterinario_o_usuario(user: User = Depends(get_current_user)) -> User:
+    """Permite consultas de conocimiento a cualquier usuario autenticado."""
+    return user
+
+
 async def get_optional_user(
     token: Optional[str] = Depends(oauth2_scheme), 
     db: AsyncSession = Depends(get_db)
@@ -150,3 +162,34 @@ async def get_pet_service(
     
     # Pasamos vector_service en lugar de vector_repo
     return PetService(db=db,pet_repo=pet_repo, vector_service=vector_service)
+# =====================================================================
+# DEPENDENCIAS PARA MÓDULOS DE VETERINARIA, TURNOS E HISTORIA CLÍNICA
+# =====================================================================
+
+from app.repositories.veterinario_repository import VeterinarioRepository
+from app.repositories.turno_repository import TurnoRepository
+from app.repositories.historia_clinica_repository import HistoriaClinicaRepository
+
+from app.services.veterinario_service import VeterinarioService
+from app.services.turno_service import TurnoService
+from app.services.historia_clinica_service import HistoriaClinicaService
+
+
+
+async def get_veterinario_service(db: AsyncSession = Depends(get_db)) -> VeterinarioService:
+    """Proveedor del servicio de perfiles profesionales veterinarios."""
+    return VeterinarioService(db)
+
+
+async def get_turno_service(db: AsyncSession = Depends(get_db)) -> TurnoService:
+    """Proveedor del servicio de gestión de turnos y agenda."""
+    return TurnoService(db)
+
+
+async def get_historia_clinica_service(db: AsyncSession = Depends(get_db)) -> HistoriaClinicaService:
+    """Proveedor del servicio de historias clínicas y registros médicos."""
+    return HistoriaClinicaService(db)
+from app.services.veterinario_service import VeterinarioService
+
+async def get_veterinario_service(db: AsyncSession = Depends(get_db)) -> VeterinarioService:
+    return VeterinarioService(db)

@@ -6,7 +6,8 @@ import docx
 import pypdf
 from pydantic import BaseModel
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from app.api.v1.dependencies import get_vector_store_service
+from app.api.v1.dependencies import get_vector_store_service, require_veterinario, require_veterinario_o_usuario
+from app.models.user import User
 from app.schemas.conocimiento import IngestaResponse, IngestaTextoInput, BusquedaQueryInput, PreguntaInput
 from app.services.pgvector_service import VectorStoreService
 
@@ -57,6 +58,7 @@ async def ingestar_archivo(
     categoria: str = Form("general"),
     file: UploadFile = File(...),
     v_service: VectorStoreService = Depends(get_vector_store_service),
+    current_user: User = Depends(require_veterinario),
 ):
     file_bytes = await file.read()
     filename = file.filename.lower()
