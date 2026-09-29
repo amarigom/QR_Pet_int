@@ -17,6 +17,10 @@ interface ApiCollection<T> {
 type DashboardApiResponse = Partial<UserDashboardData & VeterinarioDashboardData & AdminDashboardData> & {
   data?: Partial<UserDashboardData & VeterinarioDashboardData & AdminDashboardData>
   items?: unknown[]
+  recent_scans?: unknown[]
+  scans?: unknown[]
+  pets_count?: number
+  qrs_count?: number
 }
 
 function unwrap(response: DashboardApiResponse | null | undefined): DashboardApiResponse {
