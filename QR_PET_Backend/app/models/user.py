@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 from typing import List, Optional, TYPE_CHECKING
 
-from sqlalchemy import String, DateTime, func
+from sqlalchemy import String, DateTime, Boolean, false, func
 from sqlalchemy.dialects.postgresql import UUID  # Tipo específico para Postgres
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -35,6 +35,16 @@ class User(Base):
     nombre: Mapped[str] = mapped_column(String(100), nullable=False)
     
     telefono: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+
+    whatsapp_recordatorios_consent: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=false()
+    )
+
+    pending_activation: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=false()
+    )
+    activation_token_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, unique=True)
+    activation_token_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     
@@ -67,6 +77,5 @@ class User(Base):
         uselist=False, 
         cascade="all, delete-orphan"
     )
-
     def __repr__(self) -> str:
         return f"<User(email={self.email}, nombre={self.nombre})>"

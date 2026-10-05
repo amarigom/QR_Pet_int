@@ -1,7 +1,7 @@
 // 1. El reflejo exacto de tu tabla 'mascotas' en la base de datos
 export interface Pet {
   id: string;
-  usuario_id: string;
+  usuario_id?: string;
   nombre: string;
   especie: string;          // ➔ ¡Ya no va a ser undefined!
   raza?: string | null;
@@ -18,13 +18,16 @@ export interface Pet {
     id: string;
     nombre: string;
     email: string;
-    rol: string;
-    created_at: string;
+    rol?: string;
+    created_at?: string;
+    avatar_url?: string | null;
   };
+  owner_name?: string;
+  owner_email?: string | null;
   qr?: {
     id: string;
     codigo: string;
-    mascota_id: string;
+    mascota_id: string | null;
     activo: boolean;
     lote?: string;
   } | null;

@@ -11,6 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User
 from app.schemas.dashboard import UserDashboardResponse
 from app.services.dashboard_service import DashboardService
+from app.api.v1.dependencies import require_veterinarian
+from app.repositories.veterinarian_dashboard_repository import VeterinarianDashboardRepository
+from app.schemas.veterinarian_dashboard import VeterinarianDashboardResponse
 
 router = APIRouter()
 
@@ -41,3 +44,12 @@ async def get_admin_dashboard(
     service = DashboardService(db)
     return await service.get_admin_dashboard_summary()
 
+
+@router.get("/veterinario", response_model=VeterinarianDashboardResponse)
+async def get_veterinarian_dashboard(
+    db: AsyncSession = Depends(get_db),
+    veterinarian: User = Depends(require_veterinarian),
+):
+    """Datos del veterinario y de sus clientes vinculados, sin acceso a los datos globales."""
+    repository = VeterinarianDashboardRepository(db)
+    return await repository.get_dashboard_data(veterinarian.id)

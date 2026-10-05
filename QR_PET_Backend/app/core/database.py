@@ -24,7 +24,11 @@ if DATABASE_URL and "localhost" not in DATABASE_URL and "127.0.0.1" not in DATAB
 engine = create_async_engine(
     DATABASE_URL,
     connect_args=connect_args,
-    echo=True
+    echo=True,
+    pool_pre_ping=True,
+    pool_recycle=300,
+    pool_size=settings.DB_MIN_SIZE,
+    max_overflow=settings.DB_MAX_SIZE - settings.DB_MIN_SIZE,
 )
 
 # Esto sustituye a tu antigua clase Database

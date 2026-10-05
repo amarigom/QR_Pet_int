@@ -66,7 +66,11 @@ export const authApi = {
     }
   },
 
-  updateProfile: async (data: { nombre: string; telefono: string }): Promise<User> => {
+  updateProfile: async (data: {
+    nombre: string
+    telefono: string
+    whatsapp_recordatorios_consent: boolean
+  }): Promise<User> => {
     const updatedUser = await fetchAPI<User>('/auth/me', {
       method: 'PUT',
       body: data as any, 
@@ -77,5 +81,11 @@ export const authApi = {
     }
 
     return updatedUser;
-  }
+  },
+
+  activateAccount: (data: { token: string; password: string }): Promise<User> =>
+    fetchAPI<User>('/auth/activate-account', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 }

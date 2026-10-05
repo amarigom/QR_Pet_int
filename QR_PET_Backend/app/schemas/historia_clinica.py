@@ -32,6 +32,7 @@ class HistoriaClinicaResponse(HistoriaClinicaBase):
     mascota_id: uuid.UUID
     fecha_consulta: datetime
     created_at: datetime
+    vectorizada: bool = False
 
     # Permite mapear directamente atributos del ORM de SQLAlchemy 2.0
     model_config = ConfigDict(from_attributes=True)

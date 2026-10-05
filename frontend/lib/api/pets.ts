@@ -6,8 +6,14 @@ export const petsApi = {
 
   getDashboardStats: () => fetchAPI<UserDashboardStats>('/pets/stats/summary'), 
   
-  getAll: (page = 1, limit = 20) => 
-    fetchAPI<PaginatedResponse<Pet>>(`/pets?page=${page}&limit=${limit}`),
+  getAll: (page = 1, limit = 20, search = '') => {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    })
+    if (search.trim()) params.set('search', search.trim())
+    return fetchAPI<PaginatedResponse<Pet>>(`/pets?${params.toString()}`)
+  },
   
   // api/pets.ts
   getById: (id: string) => fetchAPI<Pet>(`/pets/${id}`),

@@ -31,12 +31,18 @@ async def create_pet(
 async def get_pets(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
+    search: str | None = Query(None, max_length=100),
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Obtiene el listado paginado de mascotas del usuario con detalles completos."""
     pet_service = PetService(db)
-    return await pet_service.get_user_pets(user_id=user.id, page=page, limit=limit)
+    return await pet_service.get_user_pets(
+        user_id=user.id,
+        page=page,
+        limit=limit,
+        search=search,
+    )
 
 
 

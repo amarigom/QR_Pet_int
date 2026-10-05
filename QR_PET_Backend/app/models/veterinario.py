@@ -35,6 +35,7 @@ class PerfilVeterinario(Base):
     especialidad: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     direccion_consultorio: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     telefono_agenda: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    logo_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
     
     created_at: Mapped[datetime] = mapped_column(
@@ -47,6 +48,5 @@ class PerfilVeterinario(Base):
         "User", 
         back_populates="perfil_veterinario"
     )
-
     def __repr__(self) -> str:
         return f"<PerfilVeterinario(matricula={self.matricula}, clinica={self.nombre_clinica})>"

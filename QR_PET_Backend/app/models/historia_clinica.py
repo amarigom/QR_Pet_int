@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Text, Float, DateTime, ForeignKey
+from sqlalchemy import Boolean, Column, String, Text, Float, DateTime, ForeignKey, false
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from app.models import Base
@@ -23,4 +23,5 @@ class HistoriaClinica(Base):
     
     # Recetas, análisis y ecografías (URLs)
     adjuntos = Column(JSONB, default=list, nullable=True)
+    vectorizada = Column(Boolean, nullable=False, default=False, server_default=false())
     created_at = Column(DateTime, default=datetime.utcnow)

@@ -3,13 +3,14 @@ Repository para operaciones de Códigos QR usando SQLAlchemy 2.0
 """
 from typing import Optional, List, Any, Union
 import uuid
-from sqlalchemy import select, exists
+from sqlalchemy import select, exists, func, or_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.base import BaseRepository
 from app.models.qr import QRCode
 from app.models.pet import Pet
+from app.models.user import User
 
 class QRRepository(BaseRepository[QRCode]):
     """Repository para la tabla codigos_qr con lógica ORM"""
@@ -93,13 +94,42 @@ class QRRepository(BaseRepository[QRCode]):
         return list(result.scalars().all())
 
     # 🎯 Asegurate de que empiece con "async def"
-    async def get_all_with_details(self, limit: int = 100, offset: int = 0) -> List[QRCode]:
+    def _list_query(self, search: str | None = None, assignment: str = "all"):
+        query = (
+            select(QRCode)
+            .outerjoin(Pet, QRCode.mascota_id == Pet.id)
+            .outerjoin(User, Pet.usuario_id == User.id)
+        )
+        if search and search.strip():
+            term = f"%{search.strip()}%"
+            query = query.where(
+                or_(
+                    QRCode.codigo.ilike(term),
+                    QRCode.lote.ilike(term),
+                    Pet.nombre.ilike(term),
+                    User.nombre.ilike(term),
+                    User.email.ilike(term),
+                )
+            )
+        if assignment == "assigned":
+            query = query.where(QRCode.mascota_id.is_not(None))
+        elif assignment == "available":
+            query = query.where(QRCode.mascota_id.is_(None))
+        return query
+
+    async def get_all_with_details(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+        search: str | None = None,
+        assignment: str = "all",
+    ) -> List[QRCode]:
         """
         Obtiene todos los QRs cargando la mascota, su dueño y la relación inversa del QR 
         en una sola consulta para evitar la carga perezosa en Pydantic.
         """
         query = (
-            select(QRCode)
+            self._list_query(search, assignment)
             .options(
                 joinedload(QRCode.mascota).joinedload(Pet.owner),
                 joinedload(QRCode.mascota).joinedload(Pet.qr_code)
@@ -112,6 +142,13 @@ class QRRepository(BaseRepository[QRCode]):
         # El await acá adentro ahora va a funcionar perfectamente
         result = await self.session.execute(query)
         return list(result.scalars().unique().all())
+
+    async def count_filtered(self, search: str | None = None, assignment: str = "all") -> int:
+        query = self._list_query(search, assignment).with_only_columns(
+            func.count(func.distinct(QRCode.id))
+        )
+        result = await self.session.execute(query)
+        return result.scalar() or 0
 
     async def code_exists(self, codigo: str) -> bool:
         """Verifica existencia de código de forma rápida"""

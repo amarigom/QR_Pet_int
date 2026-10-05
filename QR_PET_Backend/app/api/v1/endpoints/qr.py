@@ -21,12 +21,14 @@ router = APIRouter(prefix="/qr", tags=["Códigos QR"])
 async def list_qrs(
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=200),
+    search: str | None = Query(None, max_length=100),
+    assignment: str = Query("all", pattern="^(all|assigned|available)$"),
     admin: dict = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
     """Admin: Lista todos los códigos QR registrados."""
     service = QRService(db)
-    return await service.get_all_qrs(page, limit)
+    return await service.get_all_qrs(page, limit, search, assignment)
 
 
 @router.get("/download-pdf")
@@ -83,4 +85,3 @@ async def check_qr_availability(
     """Público: Verifica el estado de un QR (Disponible, Vinculado o No existe)."""
     service = QRService(db)
     return await service.check_qr_availability(code)
-

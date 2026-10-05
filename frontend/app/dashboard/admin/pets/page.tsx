@@ -15,9 +15,10 @@ import {
 import { PawPrint, Search, Eye, Mail, User, Fingerprint } from 'lucide-react'
 import { adminApi } from '@/lib/api'
 import { formatDate } from '@/lib/utils'
+import type { Pet } from '@/lib/types/pets'
 
 export default function AdminPetsPage() {
-  const [pets, setPets] = useState<any[]>([])
+  const [pets, setPets] = useState<Pet[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState('')
 
@@ -25,9 +26,7 @@ export default function AdminPetsPage() {
     async function loadPets() {
       try {
         const data = await adminApi.getPets()
-        // Normalización: Nos aseguramos de tener un array siempre
-        const normalizedData = Array.isArray(data) ? data : (data ? [data] : [])
-        setPets(normalizedData)
+        setPets(data)
       } catch (error) {
         console.error('Error en el panel de admin:', error)
       } finally {
@@ -41,7 +40,7 @@ export default function AdminPetsPage() {
     const s = search.toLowerCase()
     return pets.filter(p => 
       p.nombre?.toLowerCase().includes(s) || 
-      p.owner_name?.toLowerCase().includes(s)||
+      p.owner_name?.toLowerCase().includes(s) ||
       p.owner_email?.toLowerCase().includes(s)
     )
   }, [search, pets])
@@ -87,7 +86,7 @@ export default function AdminPetsPage() {
               {filteredPets.length > 0 ? (
                 filteredPets.map((pet) => {
                   // Limpieza de espacios del nombre (Andrea Marigomez)
-                  const ownerName = pet.owner_name.replace(/\s+/g, ' ').trim() || 'N/A'
+                  const ownerName = pet.owner_name?.replace(/\s+/g, ' ').trim() || pet.owner?.nombre || 'N/A'
                   const ownerEmail = pet.owner_email || pet.owner?.email || 'Sin dueño'
                   
                   return (

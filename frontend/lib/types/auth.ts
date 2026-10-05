@@ -4,8 +4,9 @@ export interface User {
   nombre: string;
   telefono: string | null;
   // Cambié 'user' por 'usuario' para que coincida con tu base de datos de Python
-  rol: 'admin' | 'usuario'; 
+  rol: 'admin' | 'usuario' | 'veterinario';
   avatar_url: string | null;
+  whatsapp_recordatorios_consent: boolean;
   created_at: string;
 }
 

@@ -4,3 +4,4 @@ export * from './pets';
 export * from './qr';
 export * from './admin';
 export * from './scan'; // <--- Si esta línea falta, '../types' no sabe qué es AdminQR
+export * from './veterinarian'

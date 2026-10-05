@@ -11,9 +11,7 @@ import { AuthState } from './types';
 // función segura para inicializar el Modo Usuario
 const getInitialModoUsuario = (): boolean => {
   if (typeof window !== 'undefined') {
-    const guardado = localStorage.getItem('enModoUsuario');
-    // Si hay un valor guardado lo usamos, si no, que arranque por defecto en true (modo usuario) o false
-    return guardado ? JSON.parse(guardado) : true; 
+    return localStorage.getItem('enModoUsuario') !== 'false'
   }
   return true;
 };
@@ -65,35 +63,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = useCallback(async (email: string, password: string) => {
   dispatch({ type: 'SET_LOADING', payload: true });
   try {
-    console.log("DEBUG 1: Iniciando llamada al servicio...");
     const result = await authService.login({ email, password });
-    
-    console.log("DEBUG 2: Respuesta recibida:", result);
 
     if (!result) {
-      console.error("DEBUG ERROR: El servicio no devolvió nada");
-      return;
+      throw new Error('El servidor no devolvió los datos de inicio de sesión.');
     }
 
     const token = result.access_token;
     const userData = result.user;
 
-    console.log("DEBUG 3: Intentando guardar token:", token);
-    localStorage.setItem('token', token);
-    
-    console.log("DEBUG 4: Intentando guardar usuario:", userData);
-    localStorage.setItem('auth_user', JSON.stringify(userData));
+    if (!token || !userData) {
+      throw new Error('La respuesta de inicio de sesión está incompleta.');
+    }
 
-    console.log("DEBUG 5: ¡TODO GUARDADO EN LOCALSTORAGE!");
+    localStorage.setItem('token', token);
+    localStorage.setItem('auth_user', JSON.stringify(userData));
+    localStorage.setItem('enModoUsuario', 'true');
 
     dispatch({ 
       type: 'LOGIN_SUCCESS', 
-      payload: { user: userData, token: token } 
+      payload: { user: userData, token: token }
     });
+    dispatch({ type: 'SET_MODO_USUARIO', payload: true });
 
     router.push('/dashboard');
-  } catch (error) {
-    console.error("DEBUG CRASH: El código explotó aquí:", error);
   } finally {
     dispatch({ type: 'SET_LOADING', payload: false });
   }
@@ -102,19 +95,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('auth_user');
+    localStorage.removeItem('enModoUsuario');
     dispatch({ type: 'LOGOUT' });
     router.push('/login');
   }, [router]);
 
-  // Calculamos isAdmin basándonos en el objeto completo
-  const isAdmin = state.user?.rol === 'admin';
-  const toggleModoVista = () => {
-  dispatch({ type: 'TOGGLE_MODO_VISTA' });
-};
+  const toggleModoVista = useCallback(() => {
+    if (state.user?.rol !== 'admin') return
+
+    const nextMode = !state.enModoUsuario
+    localStorage.setItem('enModoUsuario', String(nextMode))
+    dispatch({ type: 'SET_MODO_USUARIO', payload: nextMode })
+  }, [state.enModoUsuario, state.user?.rol])
 
   return (
-    <AuthContext.Provider value={{ ...state, login, logout,isAdmin: state.user?.rol === 'admin',
-    toggleModoVista }}>
+    <AuthContext.Provider value={{
+      ...state,
+      login,
+      logout,
+      isAdmin: state.user?.rol === 'admin',
+      toggleModoVista,
+    }}>
       {children}
     </AuthContext.Provider>
   );

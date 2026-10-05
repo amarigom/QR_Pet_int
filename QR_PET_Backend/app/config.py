@@ -11,6 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(dotenv_path=BASE_DIR / ".env")
 class Settings:
     """Variables de entorno y configuración general"""
+    BASE_DIR: Path = BASE_DIR
     
     # Base de datos
     DATABASE_URL: str = os.getenv(
@@ -42,12 +43,24 @@ class Settings:
 
     #Frontend
     STATIC_QR_DIR: Path = BASE_DIR / "static" / "qrs"
+    STATIC_BRAND_DIR: Path = BASE_DIR / "static" / "brands"
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
             
     SMTP_SERVER: str = "smtp-relay.brevo.com"
     SMTP_PORT: int = 587
     SMTP_USER: str
     SMTP_PASSWORD: str
+
+    # WhatsApp Cloud API (los recordatorios quedan desactivados hasta configurar estas variables)
+    WHATSAPP_ACCESS_TOKEN: str = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+    WHATSAPP_PHONE_NUMBER_ID: str = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+    WHATSAPP_TEMPLATE_NAME: str = os.getenv("WHATSAPP_TEMPLATE_NAME", "turno_recordatorio")
+    WHATSAPP_TEMPLATE_LANGUAGE: str = os.getenv("WHATSAPP_TEMPLATE_LANGUAGE", "es_AR")
+    WHATSAPP_ACTIVATION_TEMPLATE_NAME: str = os.getenv(
+        "WHATSAPP_ACTIVATION_TEMPLATE_NAME", "activacion_cuenta"
+    )
+    WHATSAPP_API_VERSION: str = os.getenv("WHATSAPP_API_VERSION", "v22.0")
+    REMINDER_TIMEZONE: str = os.getenv("REMINDER_TIMEZONE", "America/Argentina/Buenos_Aires")
     
 class Config:
         env_file = ".env"

@@ -1,5 +1,4 @@
 
-import { Pet } from './pets'; 
 import { ScanWithLocation } from './scan';
 
 export interface QRInfo {
@@ -23,7 +22,12 @@ export interface PetData {
     codigo: string;
     estado: string;
   } | null;
-  qr_code?: any;
+  qr_code?: {
+    id: string;
+    codigo: string;
+    estado?: string;
+    activo?: boolean;
+  } | null;
 }
 
 export interface RecentScanData {
@@ -33,8 +37,8 @@ export interface RecentScanData {
   longitud?: number;
   direccion_aproximada?: string;
   created_at: string;
-  recent_scans?: any[]; 
-  scans?: any[];
+  recent_scans?: ScanWithLocation[];
+  scans?: ScanWithLocation[];
 }
 
 export interface DashboardSummary {
@@ -42,10 +46,21 @@ export interface DashboardSummary {
   active_qrs: number;
 }
 
+export interface AdminDashboardData {
+  users_count: number;
+  pets_count: number;
+  qrs_count: number;
+  scans_count: number;
+  scans_by_day: Array<{ date: string; count: number }>;
+}
 
 export interface UserDashboardData {
   role: 'user';
   summary: DashboardSummary;
   pets: PetData[];
-  recent_activity: ScanWithLocation[]; // Mapeado exacto para tus escaneos
+  recent_activity: ScanWithLocation[];
+  veterinary_brands: Array<{
+    nombre_clinica: string
+    logo_url: string | null
+  }>
 }

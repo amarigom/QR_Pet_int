@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { MapPin, Clock, PawPrint } from 'lucide-react'
 import { dashboardApi } from '@/lib/api/dashboard'
 import { adminApi, petsApi, scansApi } from '@/lib/api'
+import { veterinarianApi } from '@/lib/api/veterinarian'
 import { useAuth } from '@/app/context/auth/AuthContext'
 import { formatDateTime } from '@/lib/utils'
 
@@ -71,7 +72,10 @@ export default function MapPage() {
         let rawPets: any[] = [];
         let rawScans: any[] = [];
 
-        if (isAdminGlobal) {
+        if (userRol === 'veterinario') {
+          const veterinarianData = await veterinarianApi.getDashboard();
+          rawScans = veterinarianData.scans;
+        } else if (isAdminGlobal) {
           console.log("MAPA: Cargando datos globales como Administrador...");
           const [petsRes, scansRes] = await Promise.all([
             adminApi.getPets(),
@@ -79,14 +83,14 @@ export default function MapPage() {
           ]);
           
           // CORRECCIÓN DE TIPADO SEGURO:
-          rawPets = (petsRes as any)?.items || (Array.isArray(petsRes) ? petsRes : []);
-          rawScans = (scansRes as any)?.items || (Array.isArray(scansRes) ? scansRes : []);
+          rawPets = petsRes;
+          rawScans = scansRes;
         } else {
           console.log("MAPA: Cargando datos del usuario común...");
           const dashboardRes: UserDashboardData = await dashboardApi.getUserData();
 
           rawPets = dashboardRes.pets || [];
-          rawScans = (dashboardRes as any).recent_scans || [];
+          rawScans = dashboardRes.recent_activity;
         } 
 
         const formattedScans: RecentScan[] = rawScans.map((scan: any) => ({
@@ -145,12 +149,18 @@ export default function MapPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">
-          {userRol === 'admin' && !enModoUsuario ? "Mapa Global de Escaneos" : "Mapa de mis Mascotas"}
+          {userRol === 'admin' && !enModoUsuario
+            ? "Mapa Global de Escaneos"
+            : userRol === 'veterinario'
+              ? "Mapa de Escaneos de Pacientes"
+              : "Mapa de mis Mascotas"}
         </h1>
         <p className="text-muted-foreground">
           {userRol === 'admin' && !enModoUsuario 
             ? "Visualiza la ubicación de todos los códigos QR escaneados en el sistema" 
-            : "Visualiza donde han sido escaneados los códigos QR de tus mascotas"}
+            : userRol === 'veterinario'
+              ? "Visualiza los escaneos QR de las mascotas vinculadas a tu veterinaria"
+              : "Visualiza donde han sido escaneados los códigos QR de tus mascotas"}
         </p>
       </div>
 

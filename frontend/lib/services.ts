@@ -9,7 +9,12 @@ export class APIError extends Error {
 }
 
 // 2. URL de tu backend (FastAPI)
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const configuredApiUrl = (
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+).replace(/\/+$/, '');
+const API_URL = configuredApiUrl.endsWith('/api/v1')
+  ? configuredApiUrl
+  : `${configuredApiUrl}/api/v1`;
 
 export const authService = {
   async login(credentials: { email: string; password: string }) {
@@ -79,7 +84,12 @@ export const authService = {
       },
     });
 
-    // ... resto de tu lógica de validación
-    return await response.json();
+    const data = await response.json();
+    if (!response.ok) {
+      const errorMsg = Array.isArray(data.detail) ? data.detail[0].msg : data.detail;
+      throw new APIError(errorMsg || 'No se pudo validar la sesión', response.status);
+    }
+
+    return data;
   }
 };
