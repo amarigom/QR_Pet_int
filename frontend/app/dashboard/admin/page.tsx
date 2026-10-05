@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { adminApi } from '@/lib/api'
-import AdminDashboard from '@/components/dashboard/strategies/AdminDashboard' // 🌟 Tu componente estrategia
+import DashboardFactory from '@/components/dashboard/DashboardFactory'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/app/context/auth/AuthContext'
+import type { AdminDashboardData } from '@/lib/types/dashboard'
 
 export default function AdminDashboardPage() {
   const { user, loading: authLoading } = useAuth()
-  const [stats, setStats] = useState<any>(null)
+  const [stats, setStats] = useState<AdminDashboardData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -16,32 +17,6 @@ export default function AdminDashboardPage() {
       try {
         setIsLoading(true)
         const data = await adminApi.getStats()
-        
-        // 🛡️ CONTROL DE CALIDAD (QA): Dejamos el formateo de los escaneos que ya tenías
-        if (data && data.recent_scans) {
-          data.recent_scans = data.recent_scans.map((scan: any) => {
-            const lat = scan.latitud != null ? Number(scan.latitud) : null
-            const lng = scan.longitud != null ? Number(scan.longitud) : null
-
-            let direccion = scan.direccion_aproximada || scan.direccion
-            if (!direccion && lat !== null && lng !== null) {
-              direccion = `Coordenadas: ${lat.toFixed(4)}, ${lng.toFixed(4)}`
-            } else if (!direccion) {
-              direccion = "Ubicación no disponible"
-            }
-
-            return {
-              ...scan,
-              id: String(scan.id ?? Math.random()),
-              latitud: lat,
-              longitud: lng,
-              mascota_nombre: scan.pet_name || scan.mascota_nombre || "Mascota",
-              direccion_aproximada: direccion,
-              created_at: scan.created_at || scan.fecha || null,
-            }
-          })
-        }
-
         setStats(data)
       } catch (error) {
         console.error('Error loading admin stats:', error)
@@ -50,8 +25,12 @@ export default function AdminDashboardPage() {
       }
     }
 
-    if (!authLoading && user) {
-      loadStats()
+    if (!authLoading) {
+      if (user?.rol === 'admin') {
+        loadStats()
+      } else {
+        setIsLoading(false)
+      }
     }
   }, [user, authLoading])
 
@@ -68,6 +47,14 @@ export default function AdminDashboardPage() {
     )
   }
 
+  if (user?.rol !== 'admin') {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">No tenés permisos para ver el panel de administración.</p>
+      </div>
+    )
+  }
+
   if (!stats) {
     return (
       <div className="text-center py-12">
@@ -76,6 +63,5 @@ export default function AdminDashboardPage() {
     )
   }
 
-  // 🌟 PUENTE DE ORO: Renderizamos tu componente de Estrategia inyectándole la data limpia
-  return <AdminDashboard user={user} data={stats} />
+  return <DashboardFactory role="admin" user={user} data={stats} />
 }

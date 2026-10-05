@@ -15,6 +15,8 @@ from sqlalchemy.orm import joinedload
 from app.models.pet import Pet
 from app.models.qr import QRCode
 from app.models.scan import Scan
+from app.models.veterinario import PerfilVeterinario
+from app.models.veterinario_cliente import veterinario_clientes
 from typing import Dict, Any
 
 class DashboardRepository:
@@ -68,6 +70,15 @@ class DashboardRepository:
         )
         total_scans = (await self.session.execute(total_scans_query)).scalar() or 0
         scans_last_30_days = len(recent_scans_list)
+        brands_result = await self.session.execute(
+            select(PerfilVeterinario)
+            .join(
+                veterinario_clientes,
+                veterinario_clientes.c.veterinario_id == PerfilVeterinario.user_id,
+            )
+            .where(veterinario_clientes.c.cliente_id == usuario_id)
+            .order_by(PerfilVeterinario.nombre_clinica.asc())
+        )
 
         return {
             "total_pets": total_pets,
@@ -75,7 +86,14 @@ class DashboardRepository:
             "total_scans": total_scans,
             "scans_last_30_days": scans_last_30_days,
             "pets": pets_list,
-            "recent_scans": recent_scans_list  # 🌟 Lista de objetos Scan 100% detallados y linkeados
+            "recent_scans": recent_scans_list,
+            "veterinary_brands": [
+                {
+                    "nombre_clinica": profile.nombre_clinica,
+                    "logo_url": profile.logo_url,
+                }
+                for profile in brands_result.scalars().all()
+            ],
         }
 
     async def get_admin_dashboard_data(self) -> dict:

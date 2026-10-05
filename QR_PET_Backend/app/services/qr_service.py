@@ -167,11 +167,22 @@ class QRService:
         
         return QRDetailResponse.model_validate(qr)
     
-    async def get_all_qrs(self, page: int = 1, limit: int = 50) -> Dict[str, Any]:
+    async def get_all_qrs(
+        self,
+        page: int = 1,
+        limit: int = 50,
+        search: str | None = None,
+        assignment: str = "all",
+    ) -> Dict[str, Any]:
         """Listado administrative de QRs con información de mascota y dueño"""
         offset = (page - 1) * limit
-        qrs = await self.qr_repo.get_all_with_details(limit, offset)
-        total = await self.qr_repo.count()
+        qrs = await self.qr_repo.get_all_with_details(
+            limit,
+            offset,
+            search=search,
+            assignment=assignment,
+        )
+        total = await self.qr_repo.count_filtered(search, assignment)
         
         return {
             "items": [QRDetailResponse.model_validate(q) for q in qrs],

@@ -1,5 +1,14 @@
 // lib/api/client.ts
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const configuredApiBase = (
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+).replace(/\/+$/, '');
+const API_BASE = configuredApiBase.endsWith('/api/v1')
+  ? configuredApiBase
+  : `${configuredApiBase}/api/v1`;
+
+export function getApiOrigin() {
+  return API_BASE.replace(/\/api\/v1$/, '')
+}
 
 export async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   console.log("--- AUDITORÍA DE FETCH ---");
@@ -12,9 +21,11 @@ export async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): 
 
   // 1. 🛡️ Inicializamos Headers nativos
   const headers = new Headers(options.headers);
+  const isFormDataBody =
+    typeof FormData !== 'undefined' && options.body instanceof FormData;
 
   // 2. 🎯 CORRECCIÓN DE QA: Solo seteamos Content-Type si la petición TIENE un cuerpo (POST, PUT, PATCH)
-  if (options.body && !headers.has('content-type') && !headers.has('Content-Type')) {
+  if (options.body && !isFormDataBody && !headers.has('content-type') && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
@@ -24,7 +35,7 @@ export async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): 
   }
 
   // 4. Serializamos el body una sola vez si es un objeto puro
-  const bodyProcesado = options.body && typeof options.body === 'object'
+  const bodyProcesado = options.body && typeof options.body === 'object' && !isFormDataBody
     ? JSON.stringify(options.body)
     : options.body;
 

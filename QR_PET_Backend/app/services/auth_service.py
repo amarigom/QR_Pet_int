@@ -11,7 +11,13 @@ from app.repositories.user_repository import UserRepository
 from app.schemas.user import UserResponse, TokenResponse, UserLogin, UserCreate, UserUpdate
 
 from app.repositories.veterinario_repository import VeterinarioRepository
-from app.schemas.veterinario import RegistroVeterinarioCreate, AuthVeterinarioRegisterResponse, PerfilVeterinarioResponse
+from app.schemas.veterinario import (
+    AccountActivation,
+    RegistroVeterinarioCreate,
+    AuthVeterinarioRegisterResponse,
+    PerfilVeterinarioResponse,
+)
+from app.services.veterinarian_client_service import VeterinarianClientService
 class AuthService:
     """Service para lógica de autenticación y gestión de identidad"""
     
@@ -52,6 +58,8 @@ class AuthService:
         # Usamos una sola validación para no dar pistas de si el email existe
         if not user or not verify_password(login_data.password, user.password_hash):
             raise AuthenticationException(MESSAGE_INVALID_CREDENTIALS)
+        if user.pending_activation:
+            raise AuthenticationException("Activá tu cuenta desde el enlace enviado por WhatsApp.")
         
         # Generar token
         access_token = create_access_token(
@@ -62,6 +70,13 @@ class AuthService:
             access_token=access_token,
             user=UserResponse.model_validate(user)
         )
+
+    async def activate_client_account(self, data: AccountActivation) -> UserResponse:
+        user = await VeterinarianClientService(self.db).activate_account(
+            data.token,
+            data.password,
+        )
+        return UserResponse.model_validate(user)
     
     async def get_user(self, user_id: str) -> UserResponse:
         """Obtiene el perfil de un usuario por ID"""
@@ -81,7 +96,10 @@ class AuthService:
                 user_id=user_id,
                 telefono=fields_sent.get("telefono"),
                 nombre=fields_sent.get("nombre"),
-                avatar_url=fields_sent.get("avatar_url")
+                avatar_url=fields_sent.get("avatar_url"),
+                whatsapp_recordatorios_consent=fields_sent.get(
+                    "whatsapp_recordatorios_consent"
+                ),
             )
 
             if not user:

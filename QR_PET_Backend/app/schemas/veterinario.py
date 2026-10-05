@@ -11,6 +11,32 @@ class PerfilVeterinarioCreate(BaseModel):
     direccion_consultorio: Optional[str] = None
     telefono_agenda: Optional[str] = None
 
+
+class VeterinarianClientCreate(BaseModel):
+    nombre: str = Field(..., min_length=1, max_length=100)
+    email: EmailStr
+    telefono: str = Field(..., pattern=r"^\+[1-9]\d{9,14}$")
+
+
+class VeterinarianClientCreated(BaseModel):
+    id: UUID
+    nombre: str
+    email: EmailStr
+    whatsapp_sent: bool
+    activation_url: Optional[str] = None
+    whatsapp_error: Optional[str] = None
+    message: str
+
+
+class AccountActivation(BaseModel):
+    token: str = Field(..., min_length=32, max_length=200)
+    password: str = Field(..., min_length=8, max_length=128)
+
+
+class VeterinarianClinicBrand(BaseModel):
+    nombre_clinica: str
+    logo_url: Optional[str] = None
+
 class RegistroVeterinarioCreate(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8)
@@ -23,6 +49,7 @@ class PerfilVeterinarioResponse(PerfilVeterinarioCreate):
     user_id: UUID
     activo: bool
     created_at: datetime
+    logo_url: Optional[str] = None
 
     class Config:
         from_attributes = True

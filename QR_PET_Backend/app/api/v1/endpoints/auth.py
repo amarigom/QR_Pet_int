@@ -14,10 +14,21 @@ from fastapi import Body
 from app.services.auth_service import AuthService
 from app.models.user import User 
 from app.core.auth import create_access_token
-from app.schemas.veterinario import RegistroVeterinarioCreate, AuthVeterinarioRegisterResponse
+from app.schemas.veterinario import (
+    AccountActivation,
+    RegistroVeterinarioCreate,
+    AuthVeterinarioRegisterResponse,
+)
 # Importamos el modelo para la anotación del Depends
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
+
+@router.post("/activate-account", response_model=UserResponse)
+async def activate_account(
+    data: AccountActivation,
+    db: AsyncSession = Depends(get_db),
+):
+    return await AuthService(db).activate_client_account(data)
 
 @router.post("/register", response_model=AuthRegisterResponse, status_code=status.HTTP_201_CREATED)
 async def register(
@@ -71,7 +82,8 @@ async def get_me(current_user: User = Depends(get_current_user)):
             telefono=current_user.telefono,
             rol=current_user.rol,
             avatar_url=current_user.avatar_url,
-            created_at=current_user.created_at
+            created_at=current_user.created_at,
+            whatsapp_recordatorios_consent=current_user.whatsapp_recordatorios_consent,
         )
     except Exception as e:
         # Imprime la falla exacta en la consola de Uvicorn/FastAPI

@@ -25,15 +25,13 @@ export const authReducer = (state: AuthState, action: AuthAction): AuthState => 
         token: null,
         isAuthenticated: false,
         loading: false,
+        enModoUsuario: true,
       };
     case 'SET_LOADING':
       return { ...state, loading: action.payload };
 
-    case 'TOGGLE_MODO_VISTA':
-    return {
-    ...state,
-    enModoUsuario: !state.enModoUsuario, // Modifica el booleano en memoria
-  };
+    case 'SET_MODO_USUARIO':
+      return { ...state, enModoUsuario: action.payload };
     default:
       return state;
   }

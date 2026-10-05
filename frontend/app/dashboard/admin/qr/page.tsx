@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -15,6 +15,8 @@ import { toast } from 'sonner'
 import { adminApi } from '@/lib/api/admin' 
 import { formatDateTime } from '@/lib/utils'
 import type { AdminQR } from '@/lib/types/admin'
+import type { PaginatedResponse } from '@/lib/types/admin'
+import { PaginationControls } from '@/components/dashboard/pagination-controls'
 
 // 🎨 Mapeo de estilos y componentes visuales según el estado extendido de la mascota
 const ESTADOS_MASCOTA = {
@@ -26,6 +28,11 @@ const ESTADOS_MASCOTA = {
 
 export default function AdminQRPage() {
   const [qrs, setQrs] = useState<AdminQR[]>([])
+  const [totalQrs, setTotalQrs] = useState(0)
+  const [page, setPage] = useState(1)
+  const [searchInput, setSearchInput] = useState('')
+  const [appliedSearch, setAppliedSearch] = useState('')
+  const [assignment, setAssignment] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
   const [isGenerating, setIsGenerating] = useState(false)
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false)
@@ -37,21 +44,31 @@ export default function AdminQRPage() {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState<string | null>(null)
 
   // 1. Cargar QRs usando adminApi.getQRs
-  async function loadQRs() {
+  const loadQRs = useCallback(async (
+    requestedPage = page,
+    search = appliedSearch,
+    assignmentFilter = assignment,
+  ) => {
     try {
-      setIsLoading(true);
-      const data = await adminApi.getQRs(); 
-      setQrs(data); 
+      setIsLoading(true)
+      const data: PaginatedResponse<AdminQR> = await adminApi.getQRs(
+        requestedPage,
+        25,
+        search,
+        assignmentFilter,
+      )
+      setQrs(data.items)
+      setTotalQrs(data.total)
     } catch (error) {
-      toast.error('Error al cargar QRs');
+      toast.error(error instanceof Error ? error.message : 'Error al cargar QRs')
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  }
+  }, [page, appliedSearch, assignment])
 
   useEffect(() => {
-    loadQRs()
-  }, [])
+    void loadQRs()
+  }, [loadQRs])
 
   // Acción de alternar estado (Mantenemos la firma pero adaptada internamente si cambia la lógica)
   async function handleToggleStatus(codigo: string, currentStatus: boolean) {
@@ -87,7 +104,8 @@ export default function AdminQRPage() {
       setLote('') 
       setCantidad(1) 
       setDialogOpen(false)
-      loadQRs() 
+      setPage(1)
+      void loadQRs(1, appliedSearch, assignment)
     } catch (error) {
       toast.error('Error al generar el lote');
     } finally {
@@ -248,6 +266,36 @@ export default function AdminQRPage() {
 
       <Card>
         <CardContent className="pt-6">
+          <form
+            className="mb-4 flex flex-col gap-3 sm:flex-row"
+            onSubmit={(event) => {
+              event.preventDefault()
+              setPage(1)
+              setAppliedSearch(searchInput.trim())
+            }}
+          >
+            <Input
+              aria-label="Buscar códigos QR"
+              placeholder="Buscar por código, lote, mascota o dueño"
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              className="sm:max-w-md"
+            />
+            <select
+              aria-label="Filtrar asignación de QR"
+              value={assignment}
+              onChange={(event) => {
+                setPage(1)
+                setAssignment(event.target.value)
+              }}
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="all">Todos los QRs</option>
+              <option value="assigned">Vinculados a mascota</option>
+              <option value="available">Libres</option>
+            </select>
+            <Button type="submit" variant="secondary">Buscar</Button>
+          </form>
           <Table>
             <TableHeader>
               <TableRow>
@@ -262,6 +310,13 @@ export default function AdminQRPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
+              {qrs.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
+                    No hay códigos QR que coincidan con la búsqueda.
+                  </TableCell>
+                </TableRow>
+              )}
               {qrs.map((qr) => {
                 // Obtenemos los detalles específicos del estado actual
                 const estadoClave = getQrEstado(qr) as keyof typeof ESTADOS_MASCOTA;
@@ -329,6 +384,12 @@ export default function AdminQRPage() {
               })}
             </TableBody>
           </Table>
+          <PaginationControls
+            page={page}
+            total={totalQrs}
+            pageSize={25}
+            onPageChange={setPage}
+          />
         </CardContent>
       </Card>
     </div>

@@ -14,7 +14,7 @@ export type AuthAction =
   | { type: 'LOGIN_SUCCESS'; payload: { user: User; token: string } }
   | { type: 'LOGOUT' }
   | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'TOGGLE_MODO_VISTA' };
+  | { type: 'SET_MODO_USUARIO'; payload: boolean };
 
 export interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;

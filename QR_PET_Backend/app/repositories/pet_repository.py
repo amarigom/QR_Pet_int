@@ -1,6 +1,6 @@
 from typing import Optional, List
 import uuid
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.base import BaseRepository
@@ -29,7 +29,13 @@ class PetRepository(BaseRepository[Pet]):
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
-    async def get_by_user(self, owner_id: uuid.UUID, limit: int = 100, offset: int = 0) -> List[Pet]:
+    async def get_by_user(
+        self,
+        owner_id: uuid.UUID,
+        limit: int = 100,
+        offset: int = 0,
+        search: str | None = None,
+    ) -> List[Pet]:
         """Obtiene mascotas de un usuario con sus relaciones necesarias para el dashboard."""
         query = (
             select(Pet)
@@ -39,9 +45,22 @@ class PetRepository(BaseRepository[Pet]):
                 selectinload(Pet.qr_code),
             )
             .order_by(Pet.created_at.desc())
-            .limit(limit)
-            .offset(offset)
         )
+        if search and search.strip():
+            term = f"%{search.strip()}%"
+            query = (
+                query.outerjoin(QRCode, Pet.id == QRCode.mascota_id)
+                .where(
+                    or_(
+                        Pet.nombre.ilike(term),
+                        Pet.especie.ilike(term),
+                        Pet.raza.ilike(term),
+                        QRCode.codigo.ilike(term),
+                    )
+                )
+                .distinct()
+            )
+        query = query.limit(limit).offset(offset)
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
@@ -57,9 +76,24 @@ class PetRepository(BaseRepository[Pet]):
 
     # --- MÉTODOS DE CONTEO (Para el Service / Dashboard) ---
 
-    async def count_user_pets(self, owner_id: uuid.UUID) -> int:
+    async def count_user_pets(self, owner_id: uuid.UUID, search: str | None = None) -> int:
         """Cuenta eficiente de mascotas por usuario."""
-        query = select(func.count()).select_from(Pet).where(Pet.usuario_id == owner_id)
+        query = select(func.count(func.distinct(Pet.id))).select_from(Pet).where(
+            Pet.usuario_id == owner_id
+        )
+        if search and search.strip():
+            term = f"%{search.strip()}%"
+            query = (
+                query.outerjoin(QRCode, Pet.id == QRCode.mascota_id)
+                .where(
+                    or_(
+                        Pet.nombre.ilike(term),
+                        Pet.especie.ilike(term),
+                        Pet.raza.ilike(term),
+                        QRCode.codigo.ilike(term),
+                    )
+                )
+            )
         result = await self.session.execute(query)
         return result.scalar() or 0
 

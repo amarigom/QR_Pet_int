@@ -23,11 +23,14 @@ import {
   X, 
   LayoutDashboard, 
   Users, 
-  ArrowLeft 
+  ArrowLeft,
+  BookOpen,
 } from 'lucide-react'
 import { authApi } from '@/lib/api'
 import type { User } from '@/lib/types'
 import QrScannerModal from '@/components/QrScannerModal'
+import { useAuth } from '@/app/context/auth/AuthContext'
+import { PetAssistantChat } from '@/components/dashboard/pet-assistant-chat'
 
 const userNavItems = [
   { href: '/dashboard', icon: Home, label: 'Inicio' },
@@ -41,6 +44,7 @@ const adminNavItems = [
   { href: '/dashboard/admin/users', icon: Users, label: 'Usuarios' },
   { href: '/dashboard/admin/pets', icon: PawPrint, label: 'Mascotas' },
   { href: '/dashboard/admin/scans', icon: MapPin, label: 'Escaneos' },
+  { href: '/dashboard/admin/conocimiento', icon: BookOpen, label: 'Conocimiento IA' },
 ]
 
 export default function DashboardLayout({
@@ -50,12 +54,22 @@ export default function DashboardLayout({
 }) {
   const router = useRouter()
   const pathname = usePathname()
+  const { enModoUsuario, toggleModoVista } = useAuth()
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const isAdminZone = pathname.startsWith('/dashboard/admin')
   const activeNavItems = isAdminZone ? adminNavItems : userNavItems
+
+  const switchDashboardView = useCallback(() => {
+    if (user?.rol !== 'admin') return
+
+    const targetUserMode = isAdminZone
+    if (targetUserMode !== enModoUsuario) toggleModoVista()
+    setMobileMenuOpen(false)
+    router.push(targetUserMode ? '/dashboard' : '/dashboard/admin')
+  }, [enModoUsuario, isAdminZone, router, toggleModoVista, user])
 
   const loadUser = useCallback(async () => {
     try {
@@ -117,13 +131,25 @@ export default function DashboardLayout({
 
             {/* Desktop Nav */}
             <nav className="hidden lg:flex items-center gap-1">
-              {isAdminZone && (
-                <Link href="/dashboard">
-                  <Button variant="ghost" size="sm" className="text-primary font-semibold hover:bg-primary/10 mr-2">
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Vista Usuario
-                  </Button>
-                </Link>
+              {user.rol === 'admin' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-primary font-semibold hover:bg-primary/10 mr-2"
+                  onClick={switchDashboardView}
+                >
+                  {isAdminZone ? (
+                    <>
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Vista Usuario
+                    </>
+                  ) : (
+                    <>
+                      <Settings className="w-4 h-4 mr-2" />
+                      Vista Admin
+                    </>
+                  )}
+                </Button>
               )}
 
               {activeNavItems.map((item) => {
@@ -164,11 +190,18 @@ export default function DashboardLayout({
                 <DropdownMenuSeparator />
                 
                 {user.rol === 'admin' && (
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/admin" className="cursor-pointer">
-                      <Settings className="w-4 h-4 mr-2" />
-                      Panel Admin
-                    </Link>
+                  <DropdownMenuItem onClick={switchDashboardView} className="cursor-pointer">
+                    {isAdminZone ? (
+                      <>
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        Vista Usuario
+                      </>
+                    ) : (
+                      <>
+                        <Settings className="w-4 h-4 mr-2" />
+                        Vista Admin
+                      </>
+                    )}
                   </DropdownMenuItem>
                 )}
                 
@@ -194,16 +227,24 @@ export default function DashboardLayout({
         {/* Mobile Nav Overlay */}
         {mobileMenuOpen && (
           <nav className="lg:hidden max-h-[calc(100vh-4.5rem)] overflow-y-auto border-t bg-card px-3 sm:px-4 py-3 space-y-2 animate-in slide-in-from-top-2 duration-200">
-            {user.rol === 'admin' && isAdminZone && (
-              <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
-                <Button
-                  variant="secondary"
-                  className="w-full justify-start text-base font-semibold bg-primary/10 text-primary hover:bg-primary/20 mb-2"
-                >
-                  <ArrowLeft className="w-5 h-5 mr-3" />
-                  Volver a mi Dashboard
-                </Button>
-              </Link>
+            {user.rol === 'admin' && (
+              <Button
+                variant="secondary"
+                className="w-full justify-start text-base font-semibold bg-primary/10 text-primary hover:bg-primary/20 mb-2"
+                onClick={switchDashboardView}
+              >
+                {isAdminZone ? (
+                  <>
+                    <ArrowLeft className="w-5 h-5 mr-3" />
+                    Vista Usuario
+                  </>
+                ) : (
+                  <>
+                    <Settings className="w-5 h-5 mr-3" />
+                    Vista Admin
+                  </>
+                )}
+              </Button>
             )}
 
             {activeNavItems.map((item) => (
@@ -228,6 +269,9 @@ export default function DashboardLayout({
       </main>
 
       <QrScannerModal />
+      {(user.rol === 'usuario' || user.rol === 'veterinario') && (
+        <PetAssistantChat audience={user.rol} />
+      )}
     </div>
   )
 }

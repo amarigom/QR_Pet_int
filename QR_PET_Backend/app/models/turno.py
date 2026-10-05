@@ -24,7 +24,11 @@ class Turno(Base):
     fecha_hora_inicio = Column(DateTime, nullable=False, index=True)
     fecha_hora_fin = Column(DateTime, nullable=False)
     
-    estado = Column(SQLEnum(EstadoTurno), default=EstadoTurno.PROGRAMADO, nullable=False)
+    estado = Column(
+        SQLEnum(EstadoTurno, native_enum=False, length=30),
+        default=EstadoTurno.PROGRAMADO,
+        nullable=False,
+    )
     tipo_servicio = Column(String(50), nullable=False)  # Consulta, Vacunación, Cirugía
     observaciones = Column(Text, nullable=True)
     

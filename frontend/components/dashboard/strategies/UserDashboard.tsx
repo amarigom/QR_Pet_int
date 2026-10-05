@@ -1,9 +1,9 @@
 
 'use client'
 
-import React, { useState } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { PawPrint, QrCode, PlusCircle, Map, Phone, User, Loader2 } from 'lucide-react'
+import { PawPrint, QrCode, PlusCircle, Map, Phone, User as UserIcon, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -12,84 +12,53 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { UserDashboardData, PetData } from '@/lib/types/dashboard'
-import { toast } from 'sonner'
-import { authApi } from '@/lib/api/auth'
-import { useRouter } from 'next/navigation'
+import type { User } from '@/lib/types/auth'
+import { useContactProfile } from '@/hooks/useContactProfile'
 
 // Importación del nuevo mapa unificado y optimizado
 import { ScanMapProvider } from '@/components/map/map-provider'
-import type { ScanWithLocation } from '@/lib/types'
+import { getApiOrigin } from '@/lib/api/client'
+import { PaginationControls } from '@/components/dashboard/pagination-controls'
 
 interface UserDashboardProps {
   data: UserDashboardData
-  user: any
-  allPets: any[]
-  recent_scans?: ScanWithLocation[]
+  user: User
 }
 
 export default function UserDashboard({ data, user }: UserDashboardProps) {
-  const router = useRouter()
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-  
-  // Estado local para forzar el renderizado inmediato del usuario actualizado
-  const [currentUser, setCurrentUser] = useState(user)
+  const {
+    currentUser,
+    profileData,
+    setProfileData,
+    isSaving,
+    isDialogOpen,
+    setIsDialogOpen,
+    handleSubmit,
+  } = useContactProfile(user)
 
-  // Estado local para el formulario de edición rápida del perfil
-  const [profileData, setProfileData] = useState({
-    nombre: user?.nombre || '',
-    telefono: user?.telefono || ''
-  })
-
-  // Extracción segura de datos
-  const pets = data?.pets || []
-  const summary = data?.summary || { total_pets: pets.length, active_qrs: 10 }
-  const misScans = data?.recent_activity || []
-
-  // Manejo del guardado del celular
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!profileData.nombre.trim() || !profileData.telefono.trim()) {
-      toast.error("Por favor, completa todos los campos.")
-      return
-    }
-
-    // Limpieza de formato internacional para WhatsApp
-    let cleanPhone = profileData.telefono.trim().replace(/[^\d+]/g, '')
-    if (cleanPhone && !cleanPhone.startsWith('+')) {
-      cleanPhone = `+${cleanPhone}`
-    }
-
-    const phoneRegex = /^\+[1-9]\d{9,14}$/
-    if (!phoneRegex.test(cleanPhone)) {
-      toast.error("Número inválido. Usa formato internacional (ej: +5492494112233).")
-      return
-    }
-
-    setIsSaving(true)
-    try {
-      const updatedUser = await authApi.updateProfile({
-        nombre: profileData.nombre.trim(),
-        telefono: cleanPhone
-      })
-      
-      // Actualizamos el estado local para reflejar el cambio al milisegundo
-      setCurrentUser(updatedUser)
-      
-      toast.success("¡Datos de contacto guardados!")
-      setIsModalOpen(false)
-      router.refresh()
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Error al actualizar contacto')
-    } finally {
-      setIsSaving(false)
-    }
-  }
+  const pets = data.pets
+  const summary = data.summary
+  const misScans = data.recent_activity
+  const [qrSearch, setQrSearch] = useState('')
+  const [qrPage, setQrPage] = useState(1)
+  const qrPageSize = 9
+  const filteredPets = useMemo(() => {
+    const term = qrSearch.trim().toLocaleLowerCase()
+    if (!term) return pets
+    return pets.filter((pet) => [
+      pet.nombre,
+      pet.especie,
+      pet.raza,
+      pet.qr?.codigo,
+    ].some((value) => value?.toLocaleLowerCase().includes(term)))
+  }, [pets, qrSearch])
+  const visiblePets = filteredPets.slice((qrPage - 1) * qrPageSize, qrPage * qrPageSize)
 
   return (
     <div className="w-full min-w-0 space-y-5 sm:space-y-6">
       
       {/* Encabezado del Dashboard */}
+      <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Mi Panel</h1>
@@ -97,12 +66,32 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
             Gestioná tus mascotas y controlá el estado de tus códigos QR.
           </p>
         </div>
-        <Link href="/dashboard/activate" passHref className="w-full sm:w-auto">
-          <Button className="flex items-center gap-2 w-full sm:w-auto shadow-sm">
+
+      </div>
+      <div className="flex flex-col gap-4 border-b pb-4 sm:flex-row sm:items-center sm:justify-between">
+        {data.veterinary_brands.some((brand) => brand.logo_url) ? (
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-3" aria-label="Veterinarias vinculadas">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Veterinarias vinculadas
+            </span>
+            {data.veterinary_brands.filter((brand) => brand.logo_url).map((brand) => (
+              <img
+                key={brand.nombre_clinica}
+                src={`${getApiOrigin()}${brand.logo_url}`}
+                alt={`Logo de ${brand.nombre_clinica}`}
+                title={brand.nombre_clinica}
+                className="h-12 max-w-36 object-contain"
+              />
+            ))}
+          </div>
+        ) : <span />}
+        <Link href="/dashboard/activate" passHref className="w-full shrink-0 sm:w-auto">
+          <Button className="flex w-full items-center gap-2 shadow-sm sm:w-auto">
             <PlusCircle className="w-4 h-4" />
             Activar nuevo QR
           </Button>
         </Link>
+      </div>
       </div>
 
       {/* SECCIÓN DE METRICAS + TARJETA DE PERFIL */}
@@ -169,7 +158,7 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
             </div>
           </CardContent>
           <div className="px-4 pb-4 pt-0">
-            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="secondary" size="sm" className="w-full text-xs font-medium flex items-center gap-1.5">
                   <Phone className="w-3.5 h-3.5" />
@@ -183,11 +172,11 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
                     Asegurate de que tu número de WhatsApp esté correcto para recibir alertas en tiempo real.
                   </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleUpdateProfile} className="space-y-4 pt-2">
+                <form onSubmit={handleSubmit} className="space-y-4 pt-2">
                   <div className="space-y-2">
                     <Label htmlFor="nombre">Nombre Completo</Label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
                         id="nombre"
                         value={profileData.nombre}
@@ -215,8 +204,23 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
                       Incluí código de país (ej: +54) seguido de tu celular con código de área.
                     </p>
                   </div>
+                  <label className="flex items-start gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={profileData.whatsapp_recordatorios_consent}
+                      onChange={(event) => setProfileData((previous) => ({
+                        ...previous,
+                        whatsapp_recordatorios_consent: event.target.checked,
+                      }))}
+                      className="mt-1"
+                    />
+                    <span>
+                      Acepto recibir por WhatsApp recordatorios automáticos de turnos, un día antes de la consulta.
+                      Puedo revocar este permiso desde esta pantalla.
+                    </span>
+                  </label>
                   <div className="flex justify-end gap-2 pt-2">
-                    <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
                     <Button type="submit" disabled={isSaving}>
                       {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                       Guardar Cambios
@@ -255,20 +259,43 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 max-w-sm">
+            <Input
+              aria-label="Buscar mascotas o códigos QR"
+              placeholder="Buscar mascota, especie o código QR"
+              value={qrSearch}
+              onChange={(event) => {
+                setQrSearch(event.target.value)
+                setQrPage(1)
+              }}
+            />
+          </div>
           {pets.length === 0 ? (
             <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/10">
               <PawPrint className="w-12 h-12 mx-auto text-muted-foreground/40 mb-4" />
-              <h3 className="text-lg font-medium">No hay mascotas registradas</h3>
-              <p className="text-muted-foreground mb-6 text-sm max-w-xs mx-auto">
-                Comenzá activando un código QR para vincular tu primer perfil.
-              </p>
-              <Link href="/dashboard/activate" passHref>
-                <Button variant="outline">Activar mi primer QR</Button>
-              </Link>
+              {qrSearch ? (
+                <h3 className="text-lg font-medium">No hay mascotas que coincidan con la búsqueda</h3>
+              ) : (
+                <>
+                  <h3 className="text-lg font-medium">No hay mascotas registradas</h3>
+                  <p className="text-muted-foreground mb-6 text-sm max-w-xs mx-auto">
+                    Comenzá activando un código QR para vincular tu primer perfil.
+                  </p>
+                  <Link href="/dashboard/activate" passHref>
+                    <Button variant="outline">Activar mi primer QR</Button>
+                  </Link>
+                </>
+              )}
             </div>
           ) : (
+            <>
+            {filteredPets.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No hay mascotas que coincidan con la búsqueda.
+              </p>
+            ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-              {pets.map((pet: PetData) => {
+              {visiblePets.map((pet: PetData) => {
                 const tieneFotoValida = pet.foto_url && pet.foto_url !== 'string' && pet.foto_url.trim() !== ''
 
                 return (
@@ -313,6 +340,14 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
                 )
               })}
             </div>
+            )}
+            <PaginationControls
+              page={qrPage}
+              total={filteredPets.length}
+              pageSize={qrPageSize}
+              onPageChange={setQrPage}
+            />
+            </>
           )}
         </CardContent>
       </Card>

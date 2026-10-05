@@ -1,33 +1,55 @@
 'use client'
 
-import React from 'react'
-import AdminDashboard from '@/components/dashboard/strategies/AdminDashboard' 
-import UserDashboard from '@/components/dashboard/strategies/UserDashboard'   
+import type { ReactNode } from 'react'
+import AdminDashboard from '@/components/dashboard/strategies/AdminDashboard'
+import UserDashboard from '@/components/dashboard/strategies/UserDashboard'
+import VeterinarianDashboard from '@/components/dashboard/strategies/VeterinarianDashboard'
+import type { AdminDashboardData, UserDashboardData } from '@/lib/types/dashboard'
+import type { User } from '@/lib/types/auth'
 
-// 🎯 Tipado estricto adaptado a tu base de datos
-export type UserRole = 'admin' | 'user'
+export type DashboardRole = 'admin' | 'usuario' | 'veterinario'
 
-interface DashboardFactoryProps {
-  role: string 
-  dashboardData: any 
-  user: any 
+type AdminDashboardProps = {
+  role: 'admin'
+  user: User
+  data: AdminDashboardData
 }
 
-// 🎯 Mapa de estrategias limpio y directo
+type UserDashboardProps = {
+  role: 'usuario'
+  user: User
+  data: UserDashboardData
+}
+
+type VeterinarianDashboardProps = {
+  role: 'veterinario'
+  user: User
+}
+
+export type DashboardFactoryProps =
+  | AdminDashboardProps
+  | UserDashboardProps
+  | VeterinarianDashboardProps
+
 const dashboardStrategies = {
-  admin: AdminDashboard,
-  user: UserDashboard,
+  admin: ({ user, data }: AdminDashboardProps): ReactNode => (
+    <AdminDashboard user={user} data={data} />
+  ),
+  usuario: ({ user, data }: UserDashboardProps): ReactNode => (
+    <UserDashboard user={user} data={data} />
+  ),
+  veterinario: ({ user }: VeterinarianDashboardProps): ReactNode => (
+    <VeterinarianDashboard user={user} />
+  ),
 }
 
-export default function DashboardFactory({ role, user, dashboardData }: DashboardFactoryProps) {
-  // 1. Normalizamos el rol a minúsculas con fallback seguro a 'user'
-  const normalizedRole = (role?.toLowerCase() === 'admin' ? 'admin' : 'user') as UserRole
-  
-  const ActiveDashboard = dashboardStrategies[normalizedRole] || UserDashboard
-
-  // 3. Forzamos el tipado como componente dinámico para que TypeScript acepte las propiedades
-  const ComponentToRender = ActiveDashboard as React.ComponentType<any>
-
-  // 4. Retornamos inyectando de forma segura 'user' y 'data' (dashboardData)
-  return <ComponentToRender user={user} data={dashboardData} />
+export default function DashboardFactory(props: DashboardFactoryProps) {
+  switch (props.role) {
+    case 'admin':
+      return dashboardStrategies.admin(props)
+    case 'usuario':
+      return dashboardStrategies.usuario(props)
+    case 'veterinario':
+      return dashboardStrategies.veterinario(props)
+  }
 }

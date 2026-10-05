@@ -6,6 +6,7 @@ import type {
     Scan, 
     PaginatedResponse 
 } from '../types';
+import { adaptPet, readPetCollection } from '@/lib/adapters/petAdapter'
 
 export const userApi = {
     // 1. Estadísticas exclusivas del usuario logueado
@@ -13,9 +14,8 @@ export const userApi = {
 
     // 2. Obtener solo MIS mascotas
     getMyPets: async (): Promise<Pet[]> => {
-        const data = await fetchAPI<any>('/pets/me');
-        // Manejamos si el backend devuelve array directo o paginado
-        return Array.isArray(data) ? data : (data.items || []);
+        const data = await fetchAPI<unknown>('/pets/me');
+        return readPetCollection(data).map(adaptPet);
     },
 
     // 3. Obtener solo MIS escaneos recientes

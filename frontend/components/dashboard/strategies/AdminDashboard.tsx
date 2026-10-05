@@ -4,7 +4,9 @@
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Users, PawPrint, QrCode, Eye, TrendingUp, Clock, Plus, Activity } from 'lucide-react'
+import type { AdminDashboardData } from '@/lib/types/dashboard'
+import type { User } from '@/lib/types/auth'
+import { Users, PawPrint, QrCode, Eye, TrendingUp, Clock, Plus, Activity, BookOpen } from 'lucide-react'
 import {
   BarChart,
   Bar,
@@ -15,14 +17,8 @@ import {
 } from 'recharts'
 
 interface AdminDashboardProps {
-  user: any
-  data: {
-    users_count: number
-    pets_count: number
-    qrs_count: number
-    scans_count: number
-    scans_by_day?: Array<{ date: string; count: number }>
-  }
+  user: User
+  data: AdminDashboardData
 }
 
 export default function AdminDashboard({ user, data }: AdminDashboardProps) {
@@ -198,7 +194,7 @@ export default function AdminDashboard({ user, data }: AdminDashboardProps) {
       </div>
 
       {/* Quick Links */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <Link href="/dashboard/admin/qr">
           <Card className="hover:border-primary/50 transition-colors cursor-pointer">
             <CardContent className="pt-6">
@@ -241,6 +237,22 @@ export default function AdminDashboard({ user, data }: AdminDashboardProps) {
                 <div>
                   <h3 className="font-semibold">Mascotas</h3>
                   <p className="text-sm text-muted-foreground">Ver todas las mascotas</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/dashboard/admin/conocimiento">
+          <Card className="hover:border-primary/50 transition-colors cursor-pointer">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <BookOpen className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Conocimiento IA</h3>
+                  <p className="text-sm text-muted-foreground">Cargar guías para el asistente</p>
                 </div>
               </div>
             </CardContent>

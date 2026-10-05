@@ -1,14 +1,11 @@
 import asyncio
 import logging
-from typing import Optional, List, Dict, Any
+import uuid
+from typing import Any, Dict, List, Optional
 from app.repositories.pet_vector_repository import PetVectorRepository
 from app.repositories.knowledge_repository import KnowledgeRepository
-from typing import Dict, List, Optional
-import logging
 
 from google.genai import types
-
-logger = logging.getLogger(__name__)
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -25,8 +22,6 @@ class VectorStoreService:
         self.knowledge_repo = knowledge_repo
         self.ai_client = ai_client
         self.embedding_client = embedding_client
-
-    import asyncio
 
     async def _get_embedding(
         self, text: str, task_type: str = "RETRIEVAL_QUERY"
@@ -77,6 +72,10 @@ class VectorStoreService:
         titulo: str,
         contenido: str,
         categoria: str = "general",
+        owner_type: str = "admin",
+        owner_id: Optional[uuid.UUID] = None,
+        pet_id: Optional[uuid.UUID] = None,
+        source_type: str = "document",
     ) -> bool:
         """Genera el embedding e indexa en Neon."""
         if not contenido or not contenido.strip():
@@ -95,6 +94,10 @@ class VectorStoreService:
             contenido=contenido,
             categoria=categoria,
             embedding=vector,
+            owner_type=owner_type,
+            owner_id=owner_id,
+            pet_id=pet_id,
+            source_type=source_type,
         )
 
 
@@ -103,6 +106,8 @@ class VectorStoreService:
     async def responder_con_rag(
         self,
         pregunta: str,
+        user_id: uuid.UUID,
+        user_role: str,
         historial: Optional[List[Dict[str, str]]] = None,
         categoria: Optional[str] = None,
         limit: int = 3,
@@ -123,29 +128,56 @@ class VectorStoreService:
         )
 
         if not query_vector:
-            return {
-                "respuesta": "No pude procesar tu pregunta en este momento. Por favor intenta más tarde.",
-                "fuentes": [],
-            }
+            raise RuntimeError("No se pudo generar el vector de la pregunta.")
 
         # 3. Búsqueda vectorial en la tabla knowledge_vectors mediante el repositorio
         registros_similares = await self.knowledge_repo.buscar_similares(
             query_vector=query_vector,
+            user_id=user_id,
+            user_role=user_role,
             categoria=categoria,
-            limit=limit,
+            limit=limit if user_role != "veterinario" else limit * 2,
         )
 
-        # Formatear documentos y fuentes desde el modelo ORM (KnowledgeVector)
-        documents = [reg.contenido for reg in registros_similares]
-        
+        retrieved = []
+        for reg, distance in registros_similares:
+            retrieved.append(
+                (
+                    distance,
+                    reg.contenido,
+                    {
+                        "doc_id": reg.doc_id,
+                        "titulo": reg.titulo,
+                        "categoria": reg.categoria,
+                        "tipo": reg.source_type,
+                    },
+                )
+            )
+        if user_role == "veterinario":
+            pet_records = await self.repository.search_similar_for_veterinarian(
+                query_vector=query_vector,
+                veterinarian_id=user_id,
+                limit=limit,
+            )
+            retrieved.extend(
+                (
+                    distance,
+                    content,
+                    {
+                        "doc_id": f"pet:{pet_id}",
+                        "titulo": metadata.get("nombre", "Mascota vinculada"),
+                        "categoria": "mascotas",
+                        "tipo": "mascota",
+                    },
+                )
+                for pet_id, content, metadata, distance in pet_records
+            )
+        retrieved.sort(key=lambda item: item[0])
+        retrieved = retrieved[: limit + (limit if user_role == "veterinario" else 0)]
+        documents = [item[1] for item in retrieved]
         fuentes_unicas = {}
-        for reg in registros_similares:
-            if reg.doc_id not in fuentes_unicas:
-                fuentes_unicas[reg.doc_id] = {
-                    "doc_id": reg.doc_id,
-                    "titulo": reg.titulo,
-                    "categoria": reg.categoria,
-                }
+        for _, _, source in retrieved:
+            fuentes_unicas[source["doc_id"]] = source
 
         contexto_unificado = (
             "\n\n---\n\n".join(documents)
@@ -156,19 +188,22 @@ class VectorStoreService:
         # 4. Formatear historial reciente para el prompt
         texto_historial = ""
         if historial:
-            for m in historial[-6:]:
-                rol = "Usuario" if m.get("role") in ["user", "human"] else "Asistente"
-                texto_historial += f"{rol}: {m.get('content')}\n"
+            for message in historial[-6:]:
+                if message.get("role") not in ("user", "assistant", "human"):
+                    continue
+                rol = "Usuario" if message.get("role") in ("user", "human") else "Asistente"
+                texto_historial += f"{rol}: {str(message.get('content', ''))[:4000]}\n"
 
         # 5. Prompt con instrucciones de grounding
         prompt_rag = f"""
 Sos el asistente virtual inteligente de la aplicación de mascotas.
 
 INSTRUCCIONES ESTRICTAS:
-1. Respondé a la pregunta del usuario utilizando la información del CONTEXTO OFICIAL recuperado.
-2. Tené en cuenta el HISTORIAL DE CONVERSACIÓN para mantener la continuidad de la charla.
-3. Si la respuesta no está en el contexto, indicá amablemente que no disponés de esa información específica.
-4. Sé directo, conciso y cordial.
+1. Respondé usando el CONTEXTO OFICIAL recuperado y el HISTORIAL para mantener continuidad.
+2. Si la respuesta no está en el contexto, decí con claridad que no disponés de esa información.
+3. Sé directo, conciso y cordial. No inventes datos de mascotas ni historias clínicas.
+4. Si se pregunta por salud animal y no hay información clínica suficiente, recomendá consultar a un veterinario.
+5. La información veterinaria recuperada pertenece exclusivamente a pacientes vinculados al veterinario autenticado; no la reveles ni infieras datos de otros pacientes.
 
 CONTEXTO OFICIAL RECUPERADO:
 {contexto_unificado}
@@ -189,8 +224,8 @@ PREGUNTA ACTUAL DEL USUARIO:
             )
             respuesta_texto = response.text.strip()
         except Exception as e:
-            logger.error(f"Error al generar respuesta en Gemini: {e}")
-            respuesta_texto = "Ocurrió un error al generar la respuesta con la inteligencia artificial."
+            logger.exception("Error al generar respuesta en Gemini.")
+            raise RuntimeError("No se pudo generar una respuesta con el asistente.") from e
 
         # 7. Retornar contrato de respuesta
         return {

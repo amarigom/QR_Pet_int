@@ -160,15 +160,21 @@ class PetService:
         return PetDetailResponse.model_validate(pet)
     
     
-    async def get_user_pets(self, user_id: uuid.UUID, page: int = 1, limit: int = 20) -> Dict[str, Any]:
+    async def get_user_pets(
+        self,
+        user_id: uuid.UUID,
+        page: int = 1,
+        limit: int = 20,
+        search: str | None = None,
+    ) -> Dict[str, Any]:
         """Listado paginado de mascotas del usuario con ejecución secuencial segura"""
         offset = (page - 1) * limit
     
     # 1. Primero buscamos los datos de las mascotas
-        pets = await self.pet_repo.get_by_user(user_id, limit, offset)
+        pets = await self.pet_repo.get_by_user(user_id, limit, offset, search)
     
     # 2. Luego contamos el total (una vez que la sesión anterior se liberó)
-        total = await self.pet_repo.count_user_pets(user_id)
+        total = await self.pet_repo.count_user_pets(user_id, search)
     
         return {
             "items": [PetResponse.model_validate(p) for p in pets],

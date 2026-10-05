@@ -1,9 +1,15 @@
 import { fetchAPI } from './client';
 import type { AdminQR, RecentScan } from '../types/admin';
 import type { User, Pet, AdminStats, QRCode, PaginatedResponse, ScanWithLocation, ScanResponse } from '../types';
+import { adaptPet, readPetCollection } from '../adapters/petAdapter'
+import type { AdminDashboardData } from '../types/dashboard'
+import { adaptAdminDashboardResponse } from '../adapters/dashboardAdapter'
 
 export const adminApi = {
-  getStats: () => fetchAPI<AdminStats>('/admin/stats'),
+  getStats: async (): Promise<AdminDashboardData> => {
+    const response = await fetchAPI<unknown>('/admin/stats')
+    return adaptAdminDashboardResponse(response)
+  },
 
   async toggleQRStatus(codigo: string) {
     return await fetchAPI(`/admin/qrs/${codigo}/status`, {
@@ -20,18 +26,8 @@ export const adminApi = {
 
   // Asegúrate de que el tipo sea consistente con tu interfaz Pet
   getPets: async (): Promise<Pet[]> => {
-    // fetchAPI debe apuntar internamente al puerto 8000
-    const data = await fetchAPI<any>('/admin/pets');
-
-    // Normalización limpia
-    const rawItems = Array.isArray(data) ? data : (data.items || []);
-
-    // Mapeo (Si el backend manda 'owner', pero quieres asegurar compatibilidad)
-    return rawItems.map((item: any) => ({
-      ...item,
-      // Si el backend manda 'owner', lo usamos. Si no, mantenemos consistencia.
-      owner: item.owner || item.datos_dueño || null 
-    })) as Pet[];
+    const data = await fetchAPI<unknown>('/admin/pets');
+    return readPetCollection(data).map(adaptPet);
   },
 
   deleteUser: (userId: string) => fetchAPI(`/admin/users/${userId}`, { 
@@ -42,12 +38,14 @@ export const adminApi = {
     method: 'POST' 
   }),
 
-  getQRs: async (): Promise<AdminQR[]> => {
-    const response = await fetchAPI<PaginatedResponse<AdminQR>>('/qr');
-    
-    // Si por alguna razón el backend fallara y no enviara items, 
-    // devolvemos un array vacío para que el .map() no rompa la UI
-    return response?.items || [];
+  getQRs: (page = 1, limit = 25, search = '', assignment = 'all') => {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      assignment,
+    })
+    if (search.trim()) params.set('search', search.trim())
+    return fetchAPI<PaginatedResponse<AdminQR>>(`/qr?${params.toString()}`)
   },
 
   generateQRs: (cantidad: number, lote: string) => 

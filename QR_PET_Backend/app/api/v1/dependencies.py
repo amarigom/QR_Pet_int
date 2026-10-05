@@ -73,6 +73,13 @@ async def require_admin(user: User = Depends(get_current_user)) -> User:
     return user
 
 
+async def require_veterinarian(user: User = Depends(get_current_user)) -> User:
+    """Requiere que el usuario autenticado tenga rol veterinario."""
+    if user.rol != UserRole.VETERINARIO:
+        raise PermissionDeniedException("Se requieren permisos de veterinario")
+    return user
+
+
 async def get_optional_user(
     token: Optional[str] = Depends(oauth2_scheme), 
     db: AsyncSession = Depends(get_db)

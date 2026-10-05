@@ -30,6 +30,26 @@ class HistoriaClinicaRepository:
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
+    async def get_by_veterinarian_and_pet(
+        self,
+        veterinarian_id: uuid.UUID,
+        pet_id: uuid.UUID,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> List[HistoriaClinica]:
+        query = (
+            select(HistoriaClinica)
+            .where(
+                HistoriaClinica.veterinario_id == veterinarian_id,
+                HistoriaClinica.mascota_id == pet_id,
+            )
+            .order_by(HistoriaClinica.fecha_consulta.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        result = await self.db.execute(query)
+        return list(result.scalars().all())
+
     async def get_by_veterinario(self, veterinario_id: uuid.UUID, limit: int = 50, offset: int = 0) -> List[HistoriaClinica]:
         query = (
             select(HistoriaClinica)
@@ -37,6 +57,21 @@ class HistoriaClinicaRepository:
             .order_by(HistoriaClinica.fecha_consulta.desc())
             .limit(limit)
             .offset(offset)
+        )
+        result = await self.db.execute(query)
+        return list(result.scalars().all())
+
+    async def get_pending_vectorization_by_veterinarian(
+        self, veterinarian_id: uuid.UUID, limit: int = 100
+    ) -> List[HistoriaClinica]:
+        query = (
+            select(HistoriaClinica)
+            .where(
+                HistoriaClinica.veterinario_id == veterinarian_id,
+                HistoriaClinica.vectorizada.is_(False),
+            )
+            .order_by(HistoriaClinica.fecha_consulta.asc())
+            .limit(limit)
         )
         result = await self.db.execute(query)
         return list(result.scalars().all())

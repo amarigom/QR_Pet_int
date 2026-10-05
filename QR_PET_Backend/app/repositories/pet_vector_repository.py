@@ -6,16 +6,47 @@ import uuid
 import logging
 from typing import Optional
 from sqlalchemy import select, text
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Any, Dict, List, Optional
+from app.models.pet import Pet
 from app.models.pet_vector import PetVector  # <--- Importa el modelo aquí
+from app.models.veterinario_cliente import veterinario_clientes
 
 
 logger = logging.getLogger(__name__)
 
 
 class PetVectorRepository:
-    def __init__(self, db):
+    def __init__(self, db: AsyncSession):
         self.db = db
+
+    async def search_similar_for_veterinarian(
+        self,
+        query_vector: list[float],
+        veterinarian_id: uuid.UUID,
+        limit: int,
+    ) -> list[tuple[uuid.UUID, str, dict[str, Any], float]]:
+        distance = PetVector.embedding.cosine_distance(query_vector).label("distance")
+        linked_clients = select(veterinario_clientes.c.cliente_id).where(
+            veterinario_clientes.c.veterinario_id == veterinarian_id
+        )
+        stmt = (
+            select(PetVector.pet_id, PetVector.document, PetVector.metadata_, distance)
+            .join(Pet, Pet.id == PetVector.pet_id)
+            .where(Pet.usuario_id.in_(linked_clients))
+            .order_by(distance)
+            .limit(limit)
+        )
+        result = await self.db.execute(stmt)
+        return [
+            (
+                row.pet_id,
+                row.document,
+                row.metadata_ or {},
+                float(row.distance),
+            )
+            for row in result
+        ]
 
     async def search_similar(
         self, 

@@ -68,7 +68,8 @@ class DashboardService:
         return {
             "summary": summary_data,
             "pets": clean_pets,
-            "recent_scans": scans_for_map  
+            "recent_scans": scans_for_map,
+            "veterinary_brands": raw_data.get("veterinary_brands", []),
         }
     async def get_admin_dashboard_summary(self) -> dict:
         """Estructura las métricas globales para el administrador."""
