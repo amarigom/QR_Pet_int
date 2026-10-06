@@ -100,7 +100,7 @@ export default function DashboardLayout({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+      <div className="app-background min-h-screen flex flex-col items-center justify-center">
         <div className="flex items-center gap-3 animate-bounce">
           <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-lg">
             <QrCode className="w-7 h-7 text-primary-foreground" />
@@ -115,7 +115,7 @@ export default function DashboardLayout({
 
   return (
     /* 🌟 CORRECCIÓN 1: Forzamos el ancho máximo de la pantalla y bloqueamos scrolls horizontales rebeldes */
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-background relative">
+    <div className="app-background min-h-screen w-full max-w-full overflow-x-hidden relative">
       
       {/* Header */}
       <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b w-full">
