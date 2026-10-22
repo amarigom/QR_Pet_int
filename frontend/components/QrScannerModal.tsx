@@ -94,8 +94,9 @@ return (
       {/* Botón Principal Estilo Mercado Pago */}
     <Button 
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 w-16 h-16 rounded-full shadow-2xl flex items-center justify-center bg-primary hover:bg-primary/90 transition-all hover:scale-110 z-50 animate-bounce"
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 animate-bounce items-center justify-center rounded-full bg-primary shadow-2xl transition-all hover:scale-110 hover:bg-primary/90 sm:h-16 sm:w-16"
         title="Escanear Medalla"
+        aria-label="Escanear medalla"
     >
         <QrCode className="w-8 h-8 text-white" />
     </Button>

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
-import { Bot, Loader2, MessageCircle, Send } from 'lucide-react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { Bot, Loader2, MessageCircle, Mic, Send, Square } from 'lucide-react'
 import { knowledgeApi, type AssistantMessage, type AssistantSource } from '@/lib/api/knowledge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -13,6 +13,38 @@ interface PetAssistantChatProps {
 
 interface ChatEntry extends AssistantMessage {
   sources?: AssistantSource[]
+}
+
+interface SpeechResultLike {
+  readonly isFinal: boolean
+  readonly length: number
+  [index: number]: { readonly transcript: string }
+}
+
+interface SpeechRecognitionEventLike extends Event {
+  readonly resultIndex: number
+  readonly results: SpeechResultLike[]
+}
+
+interface SpeechRecognitionLike {
+  lang: string
+  interimResults: boolean
+  continuous: boolean
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null
+  onerror: ((event: Event & { error: string }) => void) | null
+  onend: (() => void) | null
+  start(): void
+  stop(): void
+}
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike
+
+function getSpeechRecognitionConstructor() {
+  const browserWindow = window as Window & {
+    SpeechRecognition?: SpeechRecognitionConstructor
+    webkitSpeechRecognition?: SpeechRecognitionConstructor
+  }
+  return browserWindow.SpeechRecognition ?? browserWindow.webkitSpeechRecognition
 }
 
 function introduction(audience: PetAssistantChatProps['audience']): ChatEntry {
@@ -29,11 +61,79 @@ export function PetAssistantChat({ audience }: PetAssistantChatProps) {
   const [messages, setMessages] = useState<ChatEntry[]>([introduction(audience)])
   const [question, setQuestion] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const [isListening, setIsListening] = useState(false)
+  const [voiceStatus, setVoiceStatus] = useState('')
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
+  const voiceBaseQuestionRef = useRef('')
+
+  useEffect(() => () => {
+    const recognition = recognitionRef.current
+    if (!recognition) return
+    recognition.onresult = null
+    recognition.onerror = null
+    recognition.onend = null
+    recognition.stop()
+  }, [])
+
+  function startVoiceInput() {
+    const SpeechRecognition = getSpeechRecognitionConstructor()
+    if (!SpeechRecognition) {
+      setVoiceStatus('Este navegador no admite dictado por voz. Podés escribir tu pregunta.')
+      return
+    }
+
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'es-AR'
+    recognition.interimResults = true
+    recognition.continuous = false
+    voiceBaseQuestionRef.current = question.trim()
+      ? `${question.trim()} `
+      : ''
+    recognition.onresult = (event) => {
+      let finalTranscript = ''
+      let interimTranscript = ''
+      for (let index = 0; index < event.results.length; index += 1) {
+        const result = event.results[index]
+        if (result.isFinal) finalTranscript += result[0].transcript
+        else interimTranscript += result[0].transcript
+      }
+      setQuestion(`${voiceBaseQuestionRef.current}${finalTranscript}${interimTranscript}`)
+    }
+    recognition.onerror = (event) => {
+      setVoiceStatus(event.error === 'not-allowed'
+        ? 'No se concedió permiso para usar el micrófono.'
+        : 'No se pudo reconocer el audio. Intentá nuevamente o escribí tu pregunta.')
+      setIsListening(false)
+      recognitionRef.current = null
+    }
+    recognition.onend = () => {
+      setIsListening(false)
+      recognitionRef.current = null
+      setVoiceStatus('Dictado finalizado. Revisá el texto y enviá tu pregunta.')
+    }
+
+    recognitionRef.current = recognition
+    setVoiceStatus('Escuchando… hablá ahora.')
+    setIsListening(true)
+    try {
+      recognition.start()
+    } catch {
+      recognitionRef.current = null
+      setIsListening(false)
+      setVoiceStatus('No se pudo iniciar el micrófono. Intentá nuevamente.')
+    }
+  }
+
+  function stopVoiceInput() {
+    recognitionRef.current?.stop()
+  }
 
   async function handleSend(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const currentQuestion = question.trim()
     if (!currentQuestion || isSending) return
+    stopVoiceInput()
+    setVoiceStatus('')
 
     const history: AssistantMessage[] = messages
       .slice(1)
@@ -65,8 +165,14 @@ export function PetAssistantChat({ audience }: PetAssistantChatProps) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <div className="fixed bottom-4 right-4 z-40 flex items-end gap-3">
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) stopVoiceInput()
+        setOpen(nextOpen)
+      }}
+    >
+      <div className="fixed bottom-24 right-4 z-40 flex items-end gap-3 sm:bottom-6 sm:right-24">
         {!open && (
           <div className="max-w-56 rounded-lg border bg-card px-3 py-2 text-sm shadow-lg">
             Estoy disponible para ayudarte con tus dudas.
@@ -76,7 +182,7 @@ export function PetAssistantChat({ audience }: PetAssistantChatProps) {
           <Button
             size="icon"
             aria-label="Abrir asistente PetQR"
-            className="h-14 w-14 rounded-full shadow-lg"
+            className="h-14 w-14 rounded-full bg-sky-700 text-white shadow-lg hover:bg-sky-800"
           >
             <MessageCircle className="h-6 w-6" />
           </Button>
@@ -130,10 +236,28 @@ export function PetAssistantChat({ audience }: PetAssistantChatProps) {
             disabled={isSending}
             className="min-h-11 resize-none"
           />
+          {audience === 'veterinario' && (
+            <Button
+              type="button"
+              variant={isListening ? 'destructive' : 'outline'}
+              size="icon"
+              aria-label={isListening ? 'Detener dictado por voz' : 'Dictar pregunta por voz'}
+              title={isListening ? 'Detener dictado' : 'Dictar pregunta por voz'}
+              disabled={isSending}
+              onClick={isListening ? stopVoiceInput : startVoiceInput}
+            >
+              {isListening ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            </Button>
+          )}
           <Button type="submit" size="icon" aria-label="Enviar pregunta" disabled={isSending || !question.trim()}>
             {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </form>
+        {audience === 'veterinario' && (
+          <p className="px-3 pb-3 text-xs text-muted-foreground" aria-live="polite">
+            {voiceStatus || 'Podés dictar tu pregunta con el micrófono; se transcribirá antes de enviarla.'}
+          </p>
+        )}
       </DialogContent>
     </Dialog>
   )
