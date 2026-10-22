@@ -21,12 +21,14 @@ from app.repositories.qr_repository import QRRepository
 from app.repositories.pet_repository import PetRepository
 from app.repositories.pet_vector_repository import PetVectorRepository
 from app.repositories.knowledge_repository import KnowledgeRepository 
+from app.repositories.veterinario_repository import VeterinarioRepository
 
 # 3. Imports de Servicios
 from app.services.admin_service import AdminService
 from app.services.qr_service import QRService 
 from app.services.pet_service import PetService
 from app.services.pgvector_service import VectorStoreService
+from app.services.veterinarian_profile_service import VeterinarianProfileService
 
 # Definimos el esquema de seguridad
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -146,6 +148,12 @@ async def get_vector_store_service(
         knowledge_repo=knowledge_repo,
         ai_client=embedding_client  
     )
+
+
+async def get_veterinarian_profile_service(
+    db: AsyncSession = Depends(get_db),
+) -> VeterinarianProfileService:
+    return VeterinarianProfileService(VeterinarioRepository(db))
 
 
 

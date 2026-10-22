@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { QrCode, Shield, MapPin, Bell, Heart, Smartphone } from 'lucide-react'
 import ContactSection from '@/components/contactSection'
+import { TiltMedalScene } from '@/components/tilt-medal-scene'
 
 export default function HomePage() {
   return (
@@ -59,6 +60,7 @@ export default function HomePage() {
                 </Button>
               </Link>
             </div>
+            <TiltMedalScene />
           </div>
         </div>
       </section>

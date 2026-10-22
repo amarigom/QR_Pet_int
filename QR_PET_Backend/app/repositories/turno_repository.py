@@ -8,6 +8,8 @@ from sqlalchemy import select, extract, and_, or_
 from app.models.turno import Turno, EstadoTurno
 from app.models.pet import Pet
 from app.models.user import User
+from app.models.historia_clinica import HistoriaClinica
+from app.models.veterinario_mascota import veterinario_mascotas
 
 class TurnoRepository:
     def __init__(self, db: AsyncSession):
@@ -26,12 +28,55 @@ class TurnoRepository:
     async def has_veterinarian_patient(
         self, veterinario_id: uuid.UUID, mascota_id: uuid.UUID
     ) -> bool:
-        query = select(Turno.id).where(
-            Turno.veterinario_id == veterinario_id,
-            Turno.mascota_id == mascota_id,
+        has_appointment = (
+            select(Turno.id)
+            .where(
+                Turno.veterinario_id == veterinario_id,
+                Turno.mascota_id == mascota_id,
+            )
+            .exists()
+        )
+        has_history = (
+            select(HistoriaClinica.id)
+            .where(
+                HistoriaClinica.veterinario_id == veterinario_id,
+                HistoriaClinica.mascota_id == mascota_id,
+            )
+            .exists()
+        )
+        has_explicit_link = (
+            select(veterinario_mascotas.c.mascota_id)
+            .where(
+                veterinario_mascotas.c.veterinario_id == veterinario_id,
+                veterinario_mascotas.c.mascota_id == mascota_id,
+            )
+            .exists()
+        )
+        query = select(Pet.id).where(
+            Pet.id == mascota_id,
+            has_appointment | has_history | has_explicit_link,
         ).limit(1)
         result = await self.db.execute(query)
         return result.scalar_one_or_none() is not None
+
+    async def has_direct_veterinarian_link(
+        self, veterinarian_id: uuid.UUID, pet_id: uuid.UUID
+    ) -> bool:
+        query = select(veterinario_mascotas.c.mascota_id).where(
+            veterinario_mascotas.c.veterinario_id == veterinarian_id,
+            veterinario_mascotas.c.mascota_id == pet_id,
+        ).limit(1)
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none() is not None
+
+    async def get_bookable_pet(self, pet_id: uuid.UUID) -> Optional[Pet]:
+        query = (
+            select(Pet)
+            .join(User, User.id == Pet.usuario_id)
+            .where(Pet.id == pet_id, User.rol == "usuario")
+        )
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
 
     async def get_agenda_dia(self, fecha: date, veterinario_id: Optional[uuid.UUID] = None) -> List[Turno]:
         """Recupera turnos no cancelados para un día específico."""

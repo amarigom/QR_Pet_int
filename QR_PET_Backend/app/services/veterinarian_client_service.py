@@ -5,16 +5,14 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
 from fastapi import HTTPException, status
-from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.core.auth import hash_password
 from app.core.exceptions import ConflictException, ResourceNotFoundException
 from app.models.user import User
-from app.models.veterinario import PerfilVeterinario
-from app.models.veterinario_cliente import veterinario_clientes
 from app.repositories.user_repository import UserRepository
+from app.repositories.veterinario_repository import VeterinarioRepository
 from app.schemas.veterinario import VeterinarianClientCreate
 from app.services.turno_reminder_service import WhatsAppCloudSender
 from app.utils.logger import logger
@@ -22,7 +20,7 @@ from app.utils.logger import logger
 
 class VeterinarianClientService:
     def __init__(self, db: AsyncSession):
-        self.db = db
+        self.repository = VeterinarioRepository(db)
         self.user_repository = UserRepository(db)
 
     async def create_client(
@@ -31,13 +29,7 @@ class VeterinarianClientService:
         veterinarian: User,
         sender: WhatsAppCloudSender | None = None,
     ) -> dict:
-        clinic_result = await self.db.execute(
-            select(PerfilVeterinario).where(
-                PerfilVeterinario.user_id == veterinarian.id,
-                PerfilVeterinario.activo.is_(True),
-            )
-        )
-        clinic = clinic_result.scalar_one_or_none()
+        clinic = await self.repository.get_active_profile(veterinarian.id)
         if clinic is None:
             raise ResourceNotFoundException(
                 "Perfil veterinario",
@@ -61,16 +53,7 @@ class VeterinarianClientService:
             activation_token_expires_at=expires_at,
             whatsapp_recordatorios_consent=False,
         )
-        self.db.add(client)
-        await self.db.flush()
-        await self.db.execute(
-            insert(veterinario_clientes).values(
-                veterinario_id=veterinarian.id,
-                cliente_id=client.id,
-            )
-        )
-        await self.db.commit()
-        await self.db.refresh(client)
+        client = await self.repository.create_linked_client(veterinarian.id, client)
 
         return await self._send_activation_link(client, token, sender)
 
@@ -80,16 +63,9 @@ class VeterinarianClientService:
         veterinarian: User,
         sender: WhatsAppCloudSender | None = None,
     ) -> dict:
-        result = await self.db.execute(
-            select(User)
-            .join(veterinario_clientes, veterinario_clientes.c.cliente_id == User.id)
-            .where(
-                veterinario_clientes.c.veterinario_id == veterinarian.id,
-                User.id == client_id,
-                User.pending_activation.is_(True),
-            )
+        client = await self.repository.get_pending_linked_client(
+            veterinarian.id, client_id
         )
-        client = result.scalar_one_or_none()
         if client is None:
             raise ResourceNotFoundException(
                 "Cliente pendiente de activación",
@@ -97,12 +73,11 @@ class VeterinarianClientService:
             )
 
         token = secrets.token_urlsafe(32)
-        client.activation_token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
-        client.activation_token_expires_at = (
-            datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=48)
+        client = await self.repository.update_client_activation(
+            client,
+            hashlib.sha256(token.encode("utf-8")).hexdigest(),
+            datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=48),
         )
-        await self.db.commit()
-        await self.db.refresh(client)
         return await self._send_activation_link(client, token, sender)
 
     async def _send_activation_link(
@@ -155,13 +130,7 @@ class VeterinarianClientService:
         password: str,
     ) -> User:
         token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
-        result = await self.db.execute(
-            select(User).where(
-                User.activation_token_hash == token_hash,
-                User.pending_activation.is_(True),
-            )
-        )
-        user = result.scalar_one_or_none()
+        user = await self.repository.get_pending_activation_by_hash(token_hash)
         now = datetime.now(timezone.utc).replace(tzinfo=None)
         if (
             user is None
@@ -173,10 +142,4 @@ class VeterinarianClientService:
                 detail="El enlace de activación es inválido o venció. Pedile al veterinario uno nuevo.",
             )
 
-        user.password_hash = hash_password(password)
-        user.pending_activation = False
-        user.activation_token_hash = None
-        user.activation_token_expires_at = None
-        await self.db.commit()
-        await self.db.refresh(user)
-        return user
+        return await self.repository.activate_client(user, hash_password(password))

@@ -50,6 +50,19 @@ class HistoriaClinicaRepository:
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
+    async def get_all_by_pet(
+        self, pet_id: uuid.UUID, limit: int = 50, offset: int = 0
+    ) -> List[HistoriaClinica]:
+        query = (
+            select(HistoriaClinica)
+            .where(HistoriaClinica.mascota_id == pet_id)
+            .order_by(HistoriaClinica.fecha_consulta.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        result = await self.db.execute(query)
+        return list(result.scalars().all())
+
     async def get_by_veterinario(self, veterinario_id: uuid.UUID, limit: int = 50, offset: int = 0) -> List[HistoriaClinica]:
         query = (
             select(HistoriaClinica)
@@ -75,3 +88,11 @@ class HistoriaClinicaRepository:
         )
         result = await self.db.execute(query)
         return list(result.scalars().all())
+
+    async def set_vectorized(
+        self, historia: HistoriaClinica, vectorizada: bool
+    ) -> HistoriaClinica:
+        historia.vectorizada = vectorizada
+        await self.db.commit()
+        await self.db.refresh(historia)
+        return historia

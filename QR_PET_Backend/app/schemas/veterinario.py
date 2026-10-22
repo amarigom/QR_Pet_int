@@ -37,6 +37,22 @@ class VeterinarianClinicBrand(BaseModel):
     nombre_clinica: str
     logo_url: Optional[str] = None
 
+
+class VeterinarianClinicSearchResult(BaseModel):
+    veterinario_id: UUID
+    nombre_clinica: str
+    matricula: str
+    logo_url: Optional[str] = None
+
+
+class PetVeterinarianLinkCreate(BaseModel):
+    veterinario_id: UUID
+
+
+class PetVeterinarianLinkResponse(VeterinarianClinicSearchResult):
+    created_at: datetime
+
+
 class RegistroVeterinarioCreate(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8)

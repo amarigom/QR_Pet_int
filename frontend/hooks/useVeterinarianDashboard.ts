@@ -199,7 +199,16 @@ export function useVeterinarianDashboard() {
   const uploadClinicLogo = useCallback(async (file: File) => {
     setIsSubmitting(true)
     try {
-      await veterinarianApi.uploadClinicLogo(file)
+      const profile = await veterinarianApi.uploadClinicLogo(file)
+      setData((current) => current
+        ? {
+            ...current,
+            clinic: {
+              nombre_clinica: profile.nombre_clinica,
+              logo_url: profile.logo_url,
+            },
+          }
+        : current)
       toast.success('Logo institucional actualizado.')
       await reload()
     } catch (submitError) {

@@ -10,6 +10,10 @@ export function getApiOrigin() {
   return API_BASE.replace(/\/api\/v1$/, '')
 }
 
+export function getApiAssetUrl(path: string) {
+  return new URL(path, `${getApiOrigin()}/`).toString()
+}
+
 export async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   console.log("--- AUDITORÍA DE FETCH ---");
   console.log("Endpoint:", endpoint);

@@ -26,7 +26,7 @@ import { ScanMapProvider } from '@/components/map/map-provider'
 import { PaginationControls } from '@/components/dashboard/pagination-controls'
 import { KnowledgeManager } from '@/components/dashboard/knowledge-manager'
 import { useVeterinarianDashboard } from '@/hooks/useVeterinarianDashboard'
-import { getApiOrigin } from '@/lib/api/client'
+import { getApiAssetUrl } from '@/lib/api/client'
 import type { User } from '@/lib/types/auth'
 import type { VeterinarianPet } from '@/lib/types/veterinarian'
 
@@ -191,7 +191,8 @@ export default function VeterinarianDashboard({ user }: VeterinarianDashboardPro
               <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 {data.clinic?.logo_url ? (
                   <img
-                    src={`${getApiOrigin()}${data.clinic.logo_url}`}
+                    key={data.clinic.logo_url}
+                    src={getApiAssetUrl(data.clinic.logo_url)}
                     alt={`Logo de ${data.clinic.nombre_clinica}`}
                     className="h-20 w-20 rounded-lg border object-contain p-1"
                   />
@@ -335,7 +336,9 @@ export default function VeterinarianDashboard({ user }: VeterinarianDashboardPro
           <Card>
             <CardHeader>
               <CardTitle>Mascotas y códigos QR</CardTitle>
-              <CardDescription>Solo se muestran mascotas relacionadas con tus turnos o historias clínicas.</CardDescription>
+              <CardDescription>
+                Solo se muestran mascotas vinculadas por sus dueños, turnos o historias clínicas.
+              </CardDescription>
             </CardHeader>
             <CardContent className="overflow-x-auto">
               <table className="w-full min-w-[600px] text-sm">
@@ -360,7 +363,7 @@ export default function VeterinarianDashboard({ user }: VeterinarianDashboardPro
                   ))}
                   {data.pets.length === 0 && (
                     <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">
-                      Las mascotas aparecerán al crear un turno o una historia clínica.
+                      Las mascotas aparecerán cuando las vincule su dueño o tengan un turno o historia clínica.
                     </td></tr>
                   )}
                 </tbody>

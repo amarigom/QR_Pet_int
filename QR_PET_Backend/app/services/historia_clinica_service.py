@@ -18,7 +18,6 @@ class HistoriaClinicaService:
     def __init__(
         self, db: AsyncSession, vector_service: Optional[VectorStoreService] = None
     ):
-        self.db = db
         self.repository = HistoriaClinicaRepository(db)
         self.turno_repository = TurnoRepository(db)
         self.vector_service = vector_service
@@ -98,8 +97,7 @@ class HistoriaClinicaService:
             pet_id=record.mascota_id,
             source_type="medical_record",
         )
-        record.vectorizada = success
-        await self.db.commit()
+        await self.repository.set_vectorized(record, success)
         if not success:
             logger.error("Falló la vectorización de la historia clínica %s.", record.id)
         return success
@@ -115,6 +113,10 @@ class HistoriaClinicaService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Mascota no asignada a este veterinario.",
             )
+        if await self.turno_repository.has_direct_veterinarian_link(
+            veterinario.id, mascota_id
+        ):
+            return await self.repository.get_all_by_pet(mascota_id)
         return await self.repository.get_by_veterinarian_and_pet(
             veterinario.id, mascota_id
         )
@@ -130,7 +132,12 @@ class HistoriaClinicaService:
         y ejecuta la exportación del registro médico.
         """
         historia = await self.repository.get_by_id(historia_id)
-        if not historia or historia.veterinario_id != veterinario.id:
+        if not historia or (
+            historia.veterinario_id != veterinario.id
+            and not await self.turno_repository.has_direct_veterinarian_link(
+                veterinario.id, historia.mascota_id
+            )
+        ):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Historia clínica no encontrada."

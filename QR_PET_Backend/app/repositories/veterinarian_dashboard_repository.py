@@ -3,7 +3,7 @@ from typing import Any
 
 from sqlalchemy import select, union
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import joinedload
 
 from app.core.constants import UserRole
 from app.models.historia_clinica import HistoriaClinica
@@ -14,6 +14,7 @@ from app.models.turno import Turno
 from app.models.user import User
 from app.models.veterinario import PerfilVeterinario
 from app.models.veterinario_cliente import veterinario_clientes
+from app.models.veterinario_mascota import veterinario_mascotas
 
 
 class VeterinarianDashboardRepository:
@@ -25,6 +26,9 @@ class VeterinarianDashboardRepository:
             select(Turno.mascota_id).where(Turno.veterinario_id == veterinarian_id),
             select(HistoriaClinica.mascota_id).where(
                 HistoriaClinica.veterinario_id == veterinarian_id
+            ),
+            select(veterinario_mascotas.c.mascota_id).where(
+                veterinario_mascotas.c.veterinario_id == veterinarian_id
             ),
         ).subquery()
 
@@ -55,20 +59,22 @@ class VeterinarianDashboardRepository:
         )
         registered_clients = list(registered_clients_result.scalars().unique().all())
 
-        available_clients_result = await self.db.execute(
-            select(User)
-            .where(User.rol == UserRole.USER, User.pets.any())
-            .options(selectinload(User.pets).joinedload(Pet.qr_code))
-            .order_by(User.nombre.asc())
-        )
-        available_clients = list(available_clients_result.scalars().unique().all())
-
         linked_clients_by_id: dict[uuid.UUID, User] = {
             client.id: client for client in registered_clients
         }
         for pet in linked_pets:
             if pet.owner:
                 linked_clients_by_id[pet.owner.id] = pet.owner
+        linked_pet_counts = {
+            user_id: sum(pet.usuario_id == user_id for pet in linked_pets)
+            for user_id in linked_clients_by_id
+        }
+        available_client_ids = {pet.usuario_id for pet in linked_pets}
+        available_clients = [
+            client
+            for client in linked_clients_by_id.values()
+            if client.id in available_client_ids
+        ]
 
         client_data = {
             "clinic": (
@@ -81,10 +87,11 @@ class VeterinarianDashboardRepository:
             ),
             "clients": self._serialize_clients(
                 linked_clients_by_id.values(),
-                {user_id: sum(pet.usuario_id == user_id for pet in linked_pets)
-                 for user_id in linked_clients_by_id},
+                linked_pet_counts,
             ),
-            "available_clients": self._serialize_clients(available_clients),
+            "available_clients": self._serialize_clients(
+                available_clients, linked_pet_counts
+            ),
             "pets": [
                 {
                     "id": pet.id,
@@ -105,8 +112,7 @@ class VeterinarianDashboardRepository:
                     "estado": pet.estado,
                     "qr": pet.qr_code,
                 }
-                for client in available_clients
-                for pet in client.pets
+                for pet in linked_pets
             ],
             "qrs": [
                 {
@@ -145,7 +151,14 @@ class VeterinarianDashboardRepository:
 
         medical_records_result = await self.db.execute(
             select(HistoriaClinica)
-            .where(HistoriaClinica.veterinario_id == veterinarian_id)
+            .where(
+                (HistoriaClinica.veterinario_id == veterinarian_id)
+                | HistoriaClinica.mascota_id.in_(
+                    select(veterinario_mascotas.c.mascota_id).where(
+                        veterinario_mascotas.c.veterinario_id == veterinarian_id
+                    )
+                )
+            )
             .order_by(HistoriaClinica.fecha_consulta.desc())
             .limit(100)
         )

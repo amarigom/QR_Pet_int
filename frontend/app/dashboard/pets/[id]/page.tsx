@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import imageCompression from 'browser-image-compression';
@@ -38,6 +38,7 @@ import {
 // Iconos y librerías externas
 import {
   ArrowLeft,
+  Building2,
   PawPrint,
   QrCode,
   Calendar,
@@ -50,11 +51,18 @@ import {
   Save,
   X,
   Camera,
+  Search,
+  Unlink2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { petsApi } from '@/lib/api/pets'
+import { getApiAssetUrl } from '@/lib/api/client'
 import { formatDateTime } from '@/lib/utils'
 import type { Pet, PetFormData, QRCode as QRCodeType, Scan } from '@/lib/types'
+import type {
+  PetVeterinarianLink,
+  VeterinarianClinicSearchResult,
+} from '@/lib/types/pets'
 
 export default function PetDetailPage() {
   const params = useParams()
@@ -67,6 +75,12 @@ export default function PetDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isUploadingFoto, setIsUploadingFoto] = useState(false)
+  const [petVeterinarians, setPetVeterinarians] = useState<PetVeterinarianLink[]>([])
+  const [clinicSearch, setClinicSearch] = useState('')
+  const [clinicResults, setClinicResults] = useState<VeterinarianClinicSearchResult[]>([])
+  const [hasSearchedClinics, setHasSearchedClinics] = useState(false)
+  const [isSearchingClinics, setIsSearchingClinics] = useState(false)
+  const [isUpdatingClinicLink, setIsUpdatingClinicLink] = useState(false)
 
   // Estados locales para la gestión de cambios y formularios
   const [isEditingData, setIsEditingData] = useState(false)
@@ -88,8 +102,12 @@ export default function PetDetailPage() {
   
   setIsLoading(true)
   try {
-    const data = await petsApi.getById(petId)
+    const [data, linkedVeterinarians] = await Promise.all([
+      petsApi.getById(petId),
+      petsApi.getVeterinarians(petId),
+    ])
     setPet(data)
+    setPetVeterinarians(linkedVeterinarians)
     console.log("📡 1. LO QUE LLEGA DE LA API DIRECTO:", data)
     setFormData({
       color: data.color || '',
@@ -242,6 +260,55 @@ async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const url = `${window.location.origin}/scan/${code}`
     navigator.clipboard.writeText(url)
     toast.success('Enlace copiado al portapapeles')
+  }
+
+  async function handleSearchVeterinarians(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const query = clinicSearch.trim()
+    if (query.length < 2) {
+      toast.error('Ingresá al menos dos caracteres para buscar.')
+      return
+    }
+
+    setIsSearchingClinics(true)
+    try {
+      setClinicResults(await petsApi.searchVeterinarians(query))
+      setHasSearchedClinics(true)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'No se pudo buscar veterinarias.')
+    } finally {
+      setIsSearchingClinics(false)
+    }
+  }
+
+  async function handleLinkVeterinarian(veterinarianId: string) {
+    setIsUpdatingClinicLink(true)
+    try {
+      setPetVeterinarians(await petsApi.linkVeterinarian(petId, veterinarianId))
+      setClinicResults([])
+      setHasSearchedClinics(false)
+      setClinicSearch('')
+      toast.success('La mascota quedó vinculada a la veterinaria.')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'No se pudo vincular la veterinaria.')
+    } finally {
+      setIsUpdatingClinicLink(false)
+    }
+  }
+
+  async function handleUnlinkVeterinarian(veterinarianId: string) {
+    setIsUpdatingClinicLink(true)
+    try {
+      await petsApi.unlinkVeterinarian(petId, veterinarianId)
+      setPetVeterinarians((current) =>
+        current.filter((clinic) => clinic.veterinario_id !== veterinarianId),
+      )
+      toast.success('Se quitó el vínculo con la veterinaria.')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'No se pudo quitar el vínculo.')
+    } finally {
+      setIsUpdatingClinicLink(false)
+    }
   }
 
   if (isLoading) {
@@ -522,6 +589,114 @@ async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
                     Esta mascota no cuenta con un identificador homologado en el sistema.
                   </p>
                 </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-primary" />
+                Veterinaria vinculada
+              </CardTitle>
+              <CardDescription>
+                Asociá esta mascota y su medallita existente con una veterinaria. No necesitás cambiar el QR.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {petVeterinarians.length > 0 && (
+                <ul className="space-y-3">
+                  {petVeterinarians.map((clinic) => (
+                    <li
+                      key={clinic.veterinario_id}
+                      className="flex items-center justify-between gap-3 rounded-lg border p-3"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        {clinic.logo_url ? (
+                          <img
+                            src={getApiAssetUrl(clinic.logo_url)}
+                            alt=""
+                            className="h-10 w-10 shrink-0 object-contain"
+                          />
+                        ) : (
+                          <Building2 className="h-8 w-8 shrink-0 text-muted-foreground" />
+                        )}
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">{clinic.nombre_clinica}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Matrícula {clinic.matricula}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        aria-label={`Desvincular ${clinic.nombre_clinica}`}
+                        disabled={isUpdatingClinicLink}
+                        onClick={() => void handleUnlinkVeterinarian(clinic.veterinario_id)}
+                      >
+                        <Unlink2 className="h-4 w-4" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <form className="space-y-3" onSubmit={handleSearchVeterinarians}>
+                <Input
+                  aria-label="Buscar veterinaria por nombre o matrícula"
+                  placeholder="Nombre de veterinaria o matrícula"
+                  value={clinicSearch}
+                  onChange={(event) => {
+                    setClinicSearch(event.target.value)
+                    setHasSearchedClinics(false)
+                    setClinicResults([])
+                  }}
+                  disabled={isUpdatingClinicLink}
+                />
+                <Button
+                  type="submit"
+                  variant="outline"
+                  className="w-full"
+                  disabled={isSearchingClinics || isUpdatingClinicLink}
+                >
+                  <Search className="mr-2 h-4 w-4" />
+                  {isSearchingClinics ? 'Buscando...' : 'Buscar veterinaria'}
+                </Button>
+              </form>
+              {clinicResults.length > 0 && (
+                <ul className="space-y-2">
+                  {clinicResults
+                    .filter((result) => !petVeterinarians.some(
+                      (clinic) => clinic.veterinario_id === result.veterinario_id,
+                    ))
+                    .map((clinic) => (
+                      <li
+                        key={clinic.veterinario_id}
+                        className="flex items-center justify-between gap-3 rounded-lg bg-muted/40 p-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">{clinic.nombre_clinica}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Matrícula {clinic.matricula}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          disabled={isUpdatingClinicLink}
+                          onClick={() => void handleLinkVeterinarian(clinic.veterinario_id)}
+                        >
+                          Vincular
+                        </Button>
+                      </li>
+                    ))}
+                </ul>
+              )}
+              {hasSearchedClinics && clinicResults.length === 0 && !isSearchingClinics && (
+                <p className="text-sm text-muted-foreground">
+                  No encontramos veterinarias para esa búsqueda.
+                </p>
               )}
             </CardContent>
           </Card>

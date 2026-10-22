@@ -1,5 +1,10 @@
 from app.models.user import User
-from app.core.exceptions import ForbiddenException, ResourceNotFoundException
+from app.core.exceptions import (
+    ConflictException,
+    ForbiddenException,
+    ResourceNotFoundException,
+)
+from app.core.constants import UserRole
 import uuid
 import asyncio
 from typing import List, Optional, Dict, Any
@@ -26,7 +31,70 @@ class PetService:
         self.db = db
         self.pet_repo = PetRepository(db)
         self.qr_repo = QRRepository(db)
-    
+
+    @staticmethod
+    def _require_pet_owner_role(user: User) -> None:
+        if user.rol != UserRole.USER:
+            raise ForbiddenException("Solo el dueño de la mascota puede vincular una veterinaria.")
+
+    async def search_veterinarians(
+        self, current_user: User, search: str
+    ) -> list[dict]:
+        self._require_pet_owner_role(current_user)
+        return await self.pet_repo.search_active_veterinarians(search)
+
+    async def get_pet_veterinarians(
+        self, current_user: User, pet_id: uuid.UUID
+    ) -> list[dict]:
+        self._require_pet_owner_role(current_user)
+        pet = await self.pet_repo.get_by_id(pet_id)
+        if pet is None or pet.usuario_id != current_user.id:
+            raise ResourceNotFoundException("Mascota")
+        return await self.pet_repo.get_veterinarians_for_pet(pet_id)
+
+    async def link_veterinarian(
+        self,
+        current_user: User,
+        pet_id: uuid.UUID,
+        veterinarian_id: uuid.UUID,
+    ) -> list[dict]:
+        self._require_pet_owner_role(current_user)
+        pet = await self.pet_repo.get_by_id(pet_id)
+        if pet is None or pet.usuario_id != current_user.id:
+            raise ResourceNotFoundException("Mascota")
+        clinic = await self.pet_repo.get_active_veterinarian(veterinarian_id)
+        if clinic is None:
+            raise ResourceNotFoundException(
+                "Veterinaria",
+                detail="No se encontró una veterinaria activa con ese identificador.",
+            )
+        await self.pet_repo.link_veterinarian_to_pet(pet_id, veterinarian_id)
+        linked_clinics = await self.pet_repo.get_veterinarians_for_pet(pet_id)
+        if not linked_clinics or linked_clinics[0]["veterinario_id"] != veterinarian_id:
+            raise ConflictException(
+                "Esta mascota ya está vinculada a otra veterinaria. "
+                "Desvinculala antes de elegir una distinta."
+            )
+        return linked_clinics
+
+    async def unlink_veterinarian(
+        self,
+        current_user: User,
+        pet_id: uuid.UUID,
+        veterinarian_id: uuid.UUID,
+    ) -> None:
+        self._require_pet_owner_role(current_user)
+        pet = await self.pet_repo.get_by_id(pet_id)
+        if pet is None or pet.usuario_id != current_user.id:
+            raise ResourceNotFoundException("Mascota")
+        if not await self.pet_repo.unlink_veterinarian_from_pet(
+            pet_id, veterinarian_id
+        ):
+            raise ResourceNotFoundException(
+                "Vínculo veterinario",
+                detail="La mascota no está vinculada a esa veterinaria.",
+            )
+
     
     
     def _build_semantic_text(self, pet: Any) -> str:
