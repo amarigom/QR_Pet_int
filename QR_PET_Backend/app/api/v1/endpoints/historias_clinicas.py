@@ -7,7 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.api.v1.dependencies import get_vector_store_service, require_veterinarian
 from app.models.user import User
-from app.schemas.historia_clinica import HistoriaClinicaCreate, HistoriaClinicaResponse
+from app.schemas.historia_clinica import (
+    HistoriaClinicaCreate,
+    HistoriaClinicaResponse,
+    HistoriaClinicaUpdate,
+)
 from app.services.historia_clinica_service import HistoriaClinicaService
 from app.factories.historia_clinica_factory import ExportFormat
 from app.services.pgvector_service import VectorStoreService
@@ -23,6 +27,18 @@ async def crear_historia_clinica(
 ):
     service = HistoriaClinicaService(db, vector_service)
     return await service.registrar_consulta(data, current_user)
+
+
+@router.patch("/{historia_id}", response_model=HistoriaClinicaResponse)
+async def actualizar_historia_clinica(
+    historia_id: uuid.UUID,
+    data: HistoriaClinicaUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_veterinarian),
+    vector_service: VectorStoreService = Depends(get_vector_store_service),
+):
+    service = HistoriaClinicaService(db, vector_service)
+    return await service.actualizar_consulta(historia_id, data, current_user)
 
 
 @router.post("/vectorizar")

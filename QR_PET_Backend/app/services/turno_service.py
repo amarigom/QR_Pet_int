@@ -32,9 +32,9 @@ class TurnoService:
                 detail="La mascota todavía no está vinculada a tu veterinaria.",
             )
 
-        # 1. Eliminar tzinfo para convertirlos a offset-naive (compatibles con TIMESTAMP WITHOUT TIME ZONE)
-        inicio_naive = data.fecha_hora_inicio.replace(tzinfo=None) if data.fecha_hora_inicio.tzinfo else data.fecha_hora_inicio
-        fin_naive = data.fecha_hora_fin.replace(tzinfo=None) if data.fecha_hora_fin.tzinfo else data.fecha_hora_fin
+        # Persist datetimes as UTC-naive values for TIMESTAMP WITHOUT TIME ZONE.
+        inicio_naive = self._as_utc_naive(data.fecha_hora_inicio)
+        fin_naive = self._as_utc_naive(data.fecha_hora_fin)
 
         # 2. Validar que la hora de fin sea posterior al inicio
         if fin_naive <= inicio_naive:

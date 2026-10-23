@@ -62,6 +62,9 @@ function mondayOf(date: Date) {
 
 export default function VeterinarianDashboard({ user }: VeterinarianDashboardProps) {
   const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()))
+  const [mobileAgendaDayIndex, setMobileAgendaDayIndex] = useState(
+    () => (new Date().getDay() + 6) % 7,
+  )
   const [qrSearch, setQrSearch] = useState('')
   const [qrPage, setQrPage] = useState(1)
   const qrPageSize = 10
@@ -94,13 +97,27 @@ export default function VeterinarianDashboard({ user }: VeterinarianDashboardPro
     [weekStart],
   )
   const weekEnd = weekDays[6]
-  const mobileAgendaDay = weekDays.find((day) => day.getDay() === new Date().getDay()) ?? weekDays[0]
+  const mobileAgendaDay = weekDays[mobileAgendaDayIndex] ?? weekDays[0]
 
   useEffect(() => {
     const nextWeekStart = new Date(weekEnd)
     nextWeekStart.setDate(nextWeekStart.getDate() + 1)
     void loadWeeklyAppointments(weekStart.toISOString(), nextWeekStart.toISOString())
   }, [weekStart, weekEnd, appointmentsRefreshVersion, loadWeeklyAppointments])
+
+  useEffect(() => {
+    const showConfirmedAppointment = (event: Event) => {
+      const dateValue = (event as CustomEvent<{ fecha_hora_inicio?: string | null }>).detail
+        ?.fecha_hora_inicio
+      if (!dateValue) return
+      const appointmentDate = parseAppointmentDate(dateValue)
+      if (Number.isNaN(appointmentDate.getTime())) return
+      setWeekStart(mondayOf(appointmentDate))
+      setMobileAgendaDayIndex((appointmentDate.getDay() + 6) % 7)
+    }
+    window.addEventListener('veterinarian-data-refresh', showConfirmedAppointment)
+    return () => window.removeEventListener('veterinarian-data-refresh', showConfirmedAppointment)
+  }, [])
 
   const linkedClientName = useMemo(
     () => new Map((data?.clients ?? []).map((client) => [client.id, client.nombre])),

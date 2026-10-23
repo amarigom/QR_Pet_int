@@ -44,6 +44,80 @@ describe('knowledgeApi', () => {
     expect(response.fuentes[0].titulo).toBe('Guía PetQR')
   })
 
+  it('requests a veterinarian action proposal without executing it', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({
+      estado: 'propuesta',
+      mensaje: 'Revisá los datos antes de guardar.',
+      accion: {
+        tipo: 'turno',
+        mascota_nombre: 'Luna',
+        datos: {
+          mascota_id: 'pet-id',
+          dueno_id: 'owner-id',
+          fecha_hora_inicio: '2026-11-02T13:00:00Z',
+          fecha_hora_fin: '2026-11-02T13:30:00Z',
+          tipo_servicio: 'Vacunación',
+        },
+      },
+    }))
+
+    const result = await knowledgeApi.proposeAction('Agendá un turno para Luna', [])
+    const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit]
+
+    expect(url).toMatch(/\/api\/v1\/conocimiento\/acciones\/proponer$/)
+    expect(options.method).toBe('POST')
+    expect(JSON.parse(String(options.body))).toMatchObject({
+      pregunta: 'Agendá un turno para Luna',
+      historial: [],
+      continuar_accion: false,
+    })
+    expect(result.estado).toBe('propuesta')
+  })
+
+  it('continues a pending action when the user supplies missing details', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({
+      estado: 'aclaracion',
+      mensaje: 'Indicame la hora de fin.',
+    }))
+
+    await knowledgeApi.proposeAction(
+      'de 12 a 13',
+      [{ role: 'assistant', content: 'Indicame la hora de fin.' }],
+      true,
+    )
+    const [, options] = fetchMock.mock.calls[0] as [string, RequestInit]
+
+    expect(JSON.parse(String(options.body))).toMatchObject({
+      pregunta: 'de 12 a 13',
+      continuar_accion: true,
+    })
+  })
+
+  it('sends an explicit confirmation only after the user approves a proposal', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({
+      respuesta: 'Turno agendado.',
+      fuentes: [],
+    }))
+    const action = {
+      tipo: 'turno' as const,
+      mascota_nombre: 'Luna',
+      datos: {
+        mascota_id: 'pet-id',
+        dueno_id: 'owner-id',
+        fecha_hora_inicio: '2026-11-02T13:00:00Z',
+        fecha_hora_fin: '2026-11-02T13:30:00Z',
+        tipo_servicio: 'Vacunación',
+      },
+    }
+
+    await knowledgeApi.confirmAction(action)
+    const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit]
+
+    expect(url).toMatch(/\/api\/v1\/conocimiento\/acciones\/confirmar$/)
+    expect(options.method).toBe('POST')
+    expect(JSON.parse(String(options.body))).toEqual({ accion: action })
+  })
+
   it('uploads documents as multipart form data', async () => {
     vi.stubGlobal('crypto', { randomUUID: () => 'document-id' })
     fetchMock.mockResolvedValueOnce(jsonResponse({

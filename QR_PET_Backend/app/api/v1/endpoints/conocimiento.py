@@ -6,7 +6,12 @@ from typing import Any
 import docx
 import pypdf
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from app.api.v1.dependencies import get_current_user, get_vector_store_service
+from app.api.v1.dependencies import (
+    get_current_user,
+    get_db,
+    get_vector_store_service,
+    require_veterinarian,
+)
 from app.core.constants import UserRole
 from app.models.user import User
 from app.schemas.conocimiento import (
@@ -15,7 +20,16 @@ from app.schemas.conocimiento import (
     IngestaTextoInput,
     PreguntaInput,
 )
+from app.schemas.assistant_actions import (
+    AssistantActionConfirmRequest,
+    AssistantActionConfirmResponse,
+    AssistantActionProposalResponse,
+)
 from app.services.pgvector_service import VectorStoreService
+from app.services.veterinarian_assistant_action_service import (
+    VeterinarianAssistantActionService,
+)
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(tags=["Base de Conocimiento"])
 logger = logging.getLogger("uvicorn.error")
@@ -29,9 +43,10 @@ splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=150)
 def _knowledge_scope(user: User) -> tuple[str, uuid.UUID | None]:
     if user.rol == UserRole.ADMIN:
         return "admin", None
-    if user.rol == UserRole.VETERINARIO:
-        return "veterinarian", user.id
-    raise HTTPException(status_code=403, detail="No tenés permisos para gestionar conocimiento.")
+    raise HTTPException(
+        status_code=403,
+        detail="Solo administración puede cargar documentos de conocimiento.",
+    )
 
 async def _ingest_text(
     *,
@@ -189,3 +204,42 @@ async def responder_pregunta(
     except Exception as e:
         logger.exception("Error al responder la pregunta del asistente.")
         raise HTTPException(status_code=503, detail="No se pudo consultar el asistente en este momento.") from e
+
+
+@router.post("/acciones/proponer", response_model=AssistantActionProposalResponse)
+async def proponer_accion_veterinaria(
+    data: PreguntaInput,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_veterinarian),
+    v_service: VectorStoreService = Depends(get_vector_store_service),
+):
+    try:
+        service = VeterinarianAssistantActionService(db, v_service, current_user)
+        return await service.propose(
+            data.pregunta,
+            data.historial,
+            continue_action=data.continuar_accion,
+        )
+    except HTTPException:
+        raise
+    except Exception as error:
+        logger.exception("Error al interpretar una acción solicitada al asistente.")
+        raise HTTPException(
+            status_code=503,
+            detail="No se pudo interpretar la acción solicitada. Podés intentarlo nuevamente o usar el formulario.",
+        ) from error
+
+
+@router.post(
+    "/acciones/confirmar",
+    response_model=AssistantActionConfirmResponse,
+)
+async def confirmar_accion_veterinaria(
+    data: AssistantActionConfirmRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_veterinarian),
+    v_service: VectorStoreService = Depends(get_vector_store_service),
+):
+    service = VeterinarianAssistantActionService(db, v_service, current_user)
+    result = await service.confirm(data)
+    return result

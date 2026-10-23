@@ -1,18 +1,25 @@
 'use client'
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { Bot, Loader2, MessageCircle, Mic, Send, Square } from 'lucide-react'
-import { knowledgeApi, type AssistantMessage, type AssistantSource } from '@/lib/api/knowledge'
+import { Bot, Check, Loader2, MessageCircle, Mic, Send, Square, X } from 'lucide-react'
+import {
+  knowledgeApi,
+  type AssistantAction,
+  type AssistantMessage,
+  type AssistantSource,
+} from '@/lib/api/knowledge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 
 interface PetAssistantChatProps {
-  audience: 'usuario' | 'veterinario'
+  audience: 'admin' | 'usuario' | 'veterinario'
 }
 
 interface ChatEntry extends AssistantMessage {
   sources?: AssistantSource[]
+  action?: AssistantAction
+  actionStatus?: 'pending' | 'confirmed' | 'cancelled'
 }
 
 interface SpeechResultLike {
@@ -52,8 +59,55 @@ function introduction(audience: PetAssistantChatProps['audience']): ChatEntry {
     role: 'assistant',
     content: audience === 'veterinario'
       ? 'Hola, soy el asistente de PetQR. Estoy disponible para ayudarte con el uso de la plataforma y consultar información vectorizada de tus pacientes vinculados e historias clínicas.'
+      : audience === 'admin'
+        ? 'Hola, soy el asistente de PetQR. Estoy disponible para ayudarte con el uso y la administración de la plataforma.'
       : '¡Hola! Soy el asistente de PetQR y estoy disponible para resolver tus dudas sobre la aplicación, cómo usarla y la información compartida por el equipo.',
   }
+}
+
+function formatActionDate(value: string) {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })
+}
+
+function actionDetails(action: AssistantAction) {
+  if (action.tipo === 'turno') {
+    return [
+      `Mascota: ${action.mascota_nombre}`,
+      `Inicio: ${formatActionDate(action.datos.fecha_hora_inicio)}`,
+      `Fin: ${formatActionDate(action.datos.fecha_hora_fin)}`,
+      `Motivo: ${action.datos.tipo_servicio}`,
+      ...(action.datos.observaciones ? [`Observaciones: ${action.datos.observaciones}`] : []),
+    ]
+  }
+
+  if (action.tipo === 'historia_clinica_nueva') {
+    return [
+      `Mascota: ${action.mascota_nombre}`,
+      `Motivo: ${action.datos.motivo_consulta}`,
+      ...(action.datos.diagnostico ? [`Diagnóstico: ${action.datos.diagnostico}`] : []),
+      ...(action.datos.tratamiento ? [`Tratamiento: ${action.datos.tratamiento}`] : []),
+      ...(action.datos.peso_kg != null ? [`Peso: ${action.datos.peso_kg} kg`] : []),
+      ...(action.datos.temperatura_c != null ? [`Temperatura: ${action.datos.temperatura_c} °C`] : []),
+    ]
+  }
+
+  const labels: Record<string, string> = {
+    motivo_consulta: 'Motivo',
+    diagnostico: 'Diagnóstico',
+    tratamiento: 'Tratamiento',
+    peso_kg: 'Peso (kg)',
+    temperatura_c: 'Temperatura (°C)',
+  }
+  return [
+    `Registro: ${action.mascota_nombre} · ${formatActionDate(action.fecha_consulta)}`,
+    `Motivo actual: ${action.motivo_actual}`,
+    ...Object.entries(action.datos_actualizados)
+      .filter(([, value]) => value != null)
+      .map(([key, value]) => `${labels[key] || key}: ${value}`),
+  ]
 }
 
 export function PetAssistantChat({ audience }: PetAssistantChatProps) {
@@ -63,8 +117,10 @@ export function PetAssistantChat({ audience }: PetAssistantChatProps) {
   const [isSending, setIsSending] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [voiceStatus, setVoiceStatus] = useState('')
+  const [isConfirmingAction, setIsConfirmingAction] = useState(false)
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
   const voiceBaseQuestionRef = useRef('')
+  const pendingActionRef = useRef(false)
 
   useEffect(() => () => {
     const recognition = recognitionRef.current
@@ -143,6 +199,29 @@ export function PetAssistantChat({ audience }: PetAssistantChatProps) {
     setQuestion('')
     setIsSending(true)
     try {
+      if (audience === 'veterinario') {
+        const actionResult = await knowledgeApi.proposeAction(
+          currentQuestion,
+          history,
+          pendingActionRef.current,
+        )
+        if (actionResult.estado !== 'sin_accion') {
+          pendingActionRef.current = actionResult.estado === 'aclaracion'
+          setMessages([
+            ...nextMessages,
+            {
+              role: 'assistant',
+              content: actionResult.mensaje || 'Necesito algunos datos más para continuar.',
+              ...(actionResult.accion
+                ? { action: actionResult.accion, actionStatus: 'pending' as const }
+                : {}),
+            },
+          ])
+          return
+        }
+        pendingActionRef.current = false
+      }
+
       const reply = await knowledgeApi.ask(
         currentQuestion,
         history,
@@ -162,6 +241,53 @@ export function PetAssistantChat({ audience }: PetAssistantChatProps) {
     } finally {
       setIsSending(false)
     }
+  }
+
+  async function confirmAction(messageIndex: number, action: AssistantAction) {
+    if (isConfirmingAction) return
+    setIsConfirmingAction(true)
+    try {
+      const result = await knowledgeApi.confirmAction(action)
+      if (action.tipo === 'turno' && (!result.turno_id || !result.fecha_hora_inicio)) {
+        throw new Error(
+          'El servidor no devolvió la confirmación de persistencia del turno. '
+          + 'Reiniciá el backend actualizado y volvé a intentarlo.',
+        )
+      }
+      setMessages((current) => [
+        ...current.map((message, index) => index === messageIndex
+          ? { ...message, actionStatus: 'confirmed' as const }
+          : message),
+        {
+          role: 'assistant',
+          content: result.turno_id
+            ? `${result.respuesta} (ID del turno: ${result.turno_id})`
+            : result.respuesta,
+          sources: result.fuentes,
+        },
+      ])
+      window.dispatchEvent(new CustomEvent('veterinarian-data-refresh', {
+        detail: { fecha_hora_inicio: result.fecha_hora_inicio },
+      }))
+    } catch (error) {
+      setMessages((current) => [
+        ...current,
+        {
+          role: 'assistant',
+          content: error instanceof Error
+            ? `No se pudo confirmar la acción: ${error.message}`
+            : 'No se pudo confirmar la acción. Revisá los datos e intentá nuevamente.',
+        },
+      ])
+    } finally {
+      setIsConfirmingAction(false)
+    }
+  }
+
+  function cancelAction(messageIndex: number) {
+    setMessages((current) => current.map((message, index) => index === messageIndex
+      ? { ...message, actionStatus: 'cancelled' }
+      : message))
   }
 
   return (
@@ -197,7 +323,9 @@ export function PetAssistantChat({ audience }: PetAssistantChatProps) {
           <DialogDescription>
             {audience === 'veterinario'
               ? 'Información de la aplicación, tus pacientes vinculados e historias clínicas.'
-              : 'Preguntame sobre la aplicación, sus funciones y la información compartida por tu veterinaria.'}
+              : audience === 'admin'
+                ? 'Consultas sobre el uso y la administración de PetQR.'
+                : 'Preguntame sobre la aplicación, sus funciones y la información compartida por tu veterinaria.'}
           </DialogDescription>
         </DialogHeader>
         <div className="flex-1 space-y-3 overflow-y-auto p-4" aria-live="polite">
@@ -215,6 +343,53 @@ export function PetAssistantChat({ audience }: PetAssistantChatProps) {
                 <p className="mt-2 border-t border-current/20 pt-1 text-xs opacity-75">
                   Fuentes: {message.sources.map((source) => source.titulo).join(', ')}
                 </p>
+              )}
+              {message.action && (
+                <div className="mt-3 rounded-md border border-current/20 bg-background/70 p-3">
+                  <p className="font-semibold">
+                    {message.action.tipo === 'turno'
+                      ? 'Turno propuesto'
+                      : message.action.tipo === 'historia_clinica_nueva'
+                        ? 'Nueva historia clínica propuesta'
+                        : 'Actualización de historia clínica propuesta'}
+                  </p>
+                  <ul className="mt-2 space-y-1">
+                    {actionDetails(message.action).map((detail) => (
+                      <li key={detail}>{detail}</li>
+                    ))}
+                  </ul>
+                  {message.actionStatus === 'pending' ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        disabled={isConfirmingAction}
+                        onClick={() => {
+                          if (message.action) void confirmAction(index, message.action)
+                        }}
+                      >
+                        {isConfirmingAction
+                          ? <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                          : <Check className="mr-1 h-4 w-4" />}
+                        Confirmar y guardar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={isConfirmingAction}
+                        onClick={() => cancelAction(index)}
+                      >
+                        <X className="mr-1 h-4 w-4" />
+                        Cancelar
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-xs font-medium">
+                      {message.actionStatus === 'confirmed'
+                        ? 'Acción confirmada.'
+                        : 'Acción cancelada; no se guardaron cambios.'}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           ))}
@@ -236,28 +411,24 @@ export function PetAssistantChat({ audience }: PetAssistantChatProps) {
             disabled={isSending}
             className="min-h-11 resize-none"
           />
-          {audience === 'veterinario' && (
-            <Button
-              type="button"
-              variant={isListening ? 'destructive' : 'outline'}
-              size="icon"
-              aria-label={isListening ? 'Detener dictado por voz' : 'Dictar pregunta por voz'}
-              title={isListening ? 'Detener dictado' : 'Dictar pregunta por voz'}
-              disabled={isSending}
-              onClick={isListening ? stopVoiceInput : startVoiceInput}
-            >
-              {isListening ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-            </Button>
-          )}
+          <Button
+            type="button"
+            variant={isListening ? 'destructive' : 'outline'}
+            size="icon"
+            aria-label={isListening ? 'Detener dictado por voz' : 'Dictar pregunta por voz'}
+            title={isListening ? 'Detener dictado' : 'Dictar pregunta por voz'}
+            disabled={isSending}
+            onClick={isListening ? stopVoiceInput : startVoiceInput}
+          >
+            {isListening ? <Square className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </Button>
           <Button type="submit" size="icon" aria-label="Enviar pregunta" disabled={isSending || !question.trim()}>
             {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </form>
-        {audience === 'veterinario' && (
-          <p className="px-3 pb-3 text-xs text-muted-foreground" aria-live="polite">
-            {voiceStatus || 'Podés dictar tu pregunta con el micrófono; se transcribirá antes de enviarla.'}
-          </p>
-        )}
+        <p className="px-3 pb-3 text-xs text-muted-foreground" aria-live="polite">
+          {voiceStatus || 'Podés dictar tu pregunta con el micrófono; se transcribirá antes de enviarla.'}
+        </p>
       </DialogContent>
     </Dialog>
   )

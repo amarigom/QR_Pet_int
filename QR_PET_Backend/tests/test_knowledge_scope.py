@@ -19,10 +19,7 @@ class QueryResult:
 
 @pytest.mark.parametrize(
     ("role", "expected_scope", "expected_owner"),
-    [
-        ("admin", "admin", None),
-        ("veterinario", "veterinarian", "owner"),
-    ],
+    [("admin", "admin", None)],
 )
 def test_knowledge_ingestion_scope_is_derived_from_authenticated_role(
     role, expected_scope, expected_owner
@@ -34,11 +31,13 @@ def test_knowledge_ingestion_scope_is_derived_from_authenticated_role(
     assert owner_id == (user_id if expected_owner else None)
 
 
-def test_knowledge_ingestion_rejects_regular_users():
+@pytest.mark.parametrize("role", ["usuario", "veterinario"])
+def test_knowledge_ingestion_rejects_non_admin_users(role):
     with pytest.raises(HTTPException) as error:
-        _knowledge_scope(SimpleNamespace(rol="usuario", id=uuid4()))
+        _knowledge_scope(SimpleNamespace(rol=role, id=uuid4()))
 
     assert error.value.status_code == 403
+    assert "Solo administración" in error.value.detail
 
 
 @pytest.mark.asyncio

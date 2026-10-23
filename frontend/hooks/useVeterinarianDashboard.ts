@@ -55,6 +55,16 @@ export function useVeterinarianDashboard() {
     void reload()
   }, [reload])
 
+  useEffect(() => {
+    const refreshFromAssistant = () => {
+      void reload().then(() => {
+        setAppointmentsRefreshVersion((version) => version + 1)
+      })
+    }
+    window.addEventListener('veterinarian-data-refresh', refreshFromAssistant)
+    return () => window.removeEventListener('veterinarian-data-refresh', refreshFromAssistant)
+  }, [reload])
+
   const createAppointment = useCallback(async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!data) return

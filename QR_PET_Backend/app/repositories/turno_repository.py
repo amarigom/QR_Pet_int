@@ -4,7 +4,7 @@ from datetime import datetime, date
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import lazyload
-from sqlalchemy import select, extract, and_, or_
+from sqlalchemy import select, extract, and_, or_, union
 from app.models.turno import Turno, EstadoTurno
 from app.models.pet import Pet
 from app.models.user import User
@@ -58,6 +58,23 @@ class TurnoRepository:
         ).limit(1)
         result = await self.db.execute(query)
         return result.scalar_one_or_none() is not None
+
+    async def get_veterinarian_patients(self, veterinarian_id: uuid.UUID) -> List[Pet]:
+        linked_pet_ids = union(
+            select(Turno.mascota_id).where(Turno.veterinario_id == veterinarian_id),
+            select(HistoriaClinica.mascota_id).where(
+                HistoriaClinica.veterinario_id == veterinarian_id
+            ),
+            select(veterinario_mascotas.c.mascota_id).where(
+                veterinario_mascotas.c.veterinario_id == veterinarian_id
+            ),
+        )
+        result = await self.db.execute(
+            select(Pet)
+            .where(Pet.id.in_(linked_pet_ids))
+            .order_by(Pet.nombre.asc())
+        )
+        return list(result.scalars().unique().all())
 
     async def has_direct_veterinarian_link(
         self, veterinarian_id: uuid.UUID, pet_id: uuid.UUID

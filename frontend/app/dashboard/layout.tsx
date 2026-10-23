@@ -269,9 +269,7 @@ export default function DashboardLayout({
       </main>
 
       <QrScannerModal />
-      {(user.rol === 'usuario' || user.rol === 'veterinario') && (
-        <PetAssistantChat audience={user.rol} />
-      )}
+      <PetAssistantChat audience={user.rol} />
     </div>
   )
 }

@@ -67,11 +67,12 @@ globales del administrador.
 
 En **Dashboard Admin → Conocimiento IA**, administración puede cargar PDF, Word `.docx` o TXT
 (máximo 10 MB; texto extraído hasta 300.000 caracteres). Los archivos se dividen en fragmentos,
-se vectorizan con Gemini y quedan disponibles para usuarios y veterinarios. En la pestaña
-**Conocimiento IA** del panel veterinario, el profesional puede cargar su propia documentación y
-vectorizar historias clínicas pendientes.
+se vectorizan con Gemini y quedan disponibles para usuarios y veterinarios. Solo administración
+puede cargar documentos; la API rechaza las cargas de otros roles aunque se invoquen directamente.
+En la pestaña **Conocimiento IA** del panel veterinario, el profesional puede consultar los
+documentos compartidos por administración y vectorizar sus historias clínicas pendientes.
 
-El asistente aparece en los paneles de usuario y veterinario. Las respuestas de usuario consultan el conocimiento global del administrador y los documentos
+El asistente aparece en los paneles de administración, usuario y veterinario. Las respuestas de usuario consultan el conocimiento global del administrador y los documentos
 generales de las veterinarias vinculadas a sus mascotas; nunca recuperan historias clínicas. Las
 respuestas veterinarias combinan ese contenido compartido con documentos del veterinario
 autenticado, mascotas de sus clientes vinculados e historias clínicas creadas por ese veterinario;
@@ -80,6 +81,17 @@ registrarse. `POST
 /api/v1/historias-clinicas/vectorizar` permite reintentar historias propias que quedaron pendientes,
 con un máximo de 200 por llamada.
 
+El chat veterinario también puede proponer turnos y altas o modificaciones de historias clínicas.
+`POST /api/v1/conocimiento/acciones/proponer` interpreta la solicitud, pero no escribe datos;
+el profesional revisa la propuesta y confirma explícitamente mediante
+`POST /api/v1/conocimiento/acciones/confirmar`. Para modificar una historia se identifica primero
+un registro propio del veterinario y se pide confirmación sobre ese registro. Las escrituras se
+delegan a los servicios de turnos e historias clínicas, que vuelven a validar permisos y vínculo
+con la mascota. El chat usa el dictado de voz del navegador: el servidor recibe la transcripción,
+no un archivo de audio. La edición de historias también está disponible mediante
+`PATCH /api/v1/historias-clinicas/{historia_id}`.
+
 Las rutas de carga, listado y consulta de conocimiento requieren autenticación. Solo administración
-y veterinarios pueden cargar documentos; el alcance se determina por el rol y el usuario autenticado,
-nunca por un identificador de propietario enviado por el cliente.
+puede cargar documentos; el alcance se determina por el rol autenticado y nunca por un identificador
+de propietario enviado por el cliente. La vectorización de historias clínicas continúa restringida
+al veterinario autenticado y a sus propios registros.

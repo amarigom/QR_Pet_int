@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.historia_clinica import HistoriaClinica
 from app.models.user import User
-from app.schemas.historia_clinica import HistoriaClinicaCreate
+from app.schemas.historia_clinica import HistoriaClinicaCreate, HistoriaClinicaUpdate
 from app.repositories.historia_clinica_repository import HistoriaClinicaRepository
 from app.repositories.turno_repository import TurnoRepository
 from app.factories.historia_clinica_factory import HistoriaClinicaExportFactory, ExportFormat
@@ -51,6 +51,40 @@ class HistoriaClinicaService:
         nueva_historia = await self.repository.create(nueva_historia)
         await self._vectorize_record(nueva_historia)
         return nueva_historia
+
+    async def actualizar_consulta(
+        self,
+        historia_id: uuid.UUID,
+        data: HistoriaClinicaUpdate,
+        veterinario: User,
+    ) -> HistoriaClinica:
+        historia = await self.repository.get_by_id(historia_id)
+        if (
+            not historia
+            or historia.veterinario_id != veterinario.id
+            or not await self.turno_repository.has_veterinarian_patient(
+                veterinario.id, historia.mascota_id
+            )
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Historia clínica no encontrada.",
+            )
+
+        changes = {
+            field: value
+            for field, value in data.model_dump(exclude_unset=True).items()
+            if value is not None
+        }
+        if not changes:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Indicá al menos un dato para actualizar.",
+            )
+
+        historia = await self.repository.update(historia, changes)
+        await self._vectorize_record(historia)
+        return historia
 
     async def vectorizar_historias_pendientes(
         self, veterinario: User, limit: int = 100
