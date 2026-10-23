@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Compass, Smartphone } from 'lucide-react'
+import { Compass, Minimize, Smartphone } from 'lucide-react'
 import {
   Bodies,
   Body,
@@ -92,12 +92,33 @@ function drawMedal(
 export function TiltMedalScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  
+  const fullscreenRef = useRef<HTMLDivElement>(null)
   const isSensorActiveRef = useRef(false)
   const [isSensorActive, setIsSensorActive] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const [statusMessage, setStatusMessage] = useState(
     'Las medallitas caen y rebotan por gravedad. Mové el cursor o incliná el celular para guiarlas.',
   )
+
+  useEffect(() => {
+    const syncFullscreenState = () => {
+      setIsFullscreen(document.fullscreenElement === fullscreenRef.current)
+    }
+
+    document.addEventListener('fullscreenchange', syncFullscreenState)
+    return () => document.removeEventListener('fullscreenchange', syncFullscreenState)
+  }, [])
+
+  async function exitFullscreen() {
+    if (document.fullscreenElement !== fullscreenRef.current) return true
+
+    try {
+      await document.exitFullscreen()
+      return true
+    } catch {
+      return false
+    }
+  }
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -262,33 +283,71 @@ export function TiltMedalScene() {
   }, [])
 
   async function enableTilt() {
-    const deviceOrientationEvent = window.DeviceOrientationEvent as any
+    const deviceOrientationEvent =
+      window.DeviceOrientationEvent as DeviceOrientationWithPermission | undefined
     if (!deviceOrientationEvent) {
       setStatusMessage('Tu dispositivo no ofrece giroscopio; probá moviendo el cursor.')
       return
     }
 
-    const orientationEvent = deviceOrientationEvent as DeviceOrientationWithPermission
-    if (typeof orientationEvent.requestPermission === 'function') {
-      try {
-        const permission = await orientationEvent.requestPermission()
-        if (permission !== 'granted') {
-          setStatusMessage('No se otorgó permiso para el sensor.')
-          return
-        }
-      } catch {
-        setStatusMessage('Error al solicitar acceso al sensor.')
-        return
-      }
+    const fullscreenElement = fullscreenRef.current
+    const fullscreenRequest =
+      fullscreenElement &&
+      document.fullscreenEnabled &&
+      typeof fullscreenElement.requestFullscreen === 'function'
+        ? fullscreenElement.requestFullscreen().then(
+            () => true,
+            () => false,
+          )
+        : Promise.resolve(false)
+
+    let permission: 'granted' | 'denied'
+    try {
+      permission =
+        typeof deviceOrientationEvent.requestPermission === 'function'
+          ? await deviceOrientationEvent.requestPermission()
+          : 'granted'
+    } catch {
+      await fullscreenRequest
+      const exitedFullscreen = await exitFullscreen()
+      setStatusMessage(
+        exitedFullscreen
+          ? 'Error al solicitar acceso al sensor.'
+          : 'Error al solicitar acceso al sensor. Presioná Esc para salir de pantalla completa.',
+      )
+      return
     }
 
+    if (permission !== 'granted') {
+      await fullscreenRequest
+      const exitedFullscreen = await exitFullscreen()
+      setStatusMessage(
+        exitedFullscreen
+          ? 'No se otorgó permiso para el sensor.'
+          : 'No se otorgó permiso para el sensor. Presioná Esc para salir de pantalla completa.',
+      )
+      return
+    }
+
+    const enteredFullscreen = await fullscreenRequest
     isSensorActiveRef.current = true
     setIsSensorActive(true)
-    setStatusMessage('¡Giroscopio activado! Incliná el celular.')
+    setStatusMessage(
+      enteredFullscreen
+        ? '¡Giroscopio activado en pantalla completa! Incliná el celular.'
+        : 'Giroscopio activado. Este navegador no permite pantalla completa; agregá PetQR a la pantalla de inicio para ocultar la barra.',
+    )
   }
 
   return (
-    <div className="mx-auto mt-12 w-full max-w-2xl overflow-hidden rounded-3xl border border-border/70 bg-card/80 p-4 shadow-xl backdrop-blur sm:p-6">
+    <div
+      ref={fullscreenRef}
+      className={
+        isFullscreen
+          ? 'fixed inset-0 z-[100] m-0 flex h-[100dvh] w-full max-w-none flex-col justify-center overflow-y-auto rounded-none border-0 bg-background p-4 shadow-none sm:p-8'
+          : 'mx-auto mt-12 w-full max-w-2xl overflow-hidden rounded-3xl border border-border/70 bg-card/80 p-4 shadow-xl backdrop-blur sm:p-6'
+      }
+    >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -301,20 +360,40 @@ export function TiltMedalScene() {
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => void enableTilt()}
-          disabled={isSensorActive}
-          className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
-        >
-          <Compass className="h-4 w-4" aria-hidden="true" />
-          {isSensorActive ? 'Giroscopio activo' : 'Activar giroscopio'}
-        </button>
+        <div className="flex shrink-0 gap-2">
+          <button
+            type="button"
+            onClick={() => void enableTilt()}
+            disabled={isSensorActive}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
+          >
+            <Compass className="h-4 w-4" aria-hidden="true" />
+            {isSensorActive ? 'Giroscopio activo' : 'Activar giroscopio'}
+          </button>
+          {isFullscreen && (
+            <button
+              type="button"
+              onClick={() => {
+                void exitFullscreen().then((exited) => {
+                  if (!exited) {
+                    setStatusMessage('No se pudo salir de pantalla completa. Presioná Esc.')
+                  }
+                })
+              }}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-muted"
+            >
+              <Minimize className="h-4 w-4" aria-hidden="true" />
+              Salir
+            </button>
+          )}
+        </div>
       </div>
 
       <div
         ref={containerRef}
-        className="relative mt-4 h-64 w-full touch-none overflow-hidden rounded-2xl border border-white/15 bg-[radial-gradient(ellipse_at_top,#233b59_0%,#101827_65%,#090e17_100%)] shadow-inner"
+        className={`relative mt-4 w-full touch-none overflow-hidden rounded-2xl border border-white/15 bg-[radial-gradient(ellipse_at_top,#233b59_0%,#101827_65%,#090e17_100%)] shadow-inner ${
+          isFullscreen ? 'h-[min(65dvh,520px)]' : 'h-64'
+        }`}
       >
         <canvas
           ref={canvasRef}
