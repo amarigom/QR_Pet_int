@@ -85,13 +85,15 @@ function drawMedal(
   context.font = '800 19px system-ui, sans-serif'
   context.textAlign = 'center'
   context.textBaseline = 'middle'
-  context.fillText('QR', 9, 0)
+  context.fillText('PetQR', 9, 0)
   context.restore()
 }
 
 export function TiltMedalScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  
+  const isSensorActiveRef = useRef(false)
   const [isSensorActive, setIsSensorActive] = useState(false)
   const [statusMessage, setStatusMessage] = useState(
     'Las medallitas caen y rebotan por gravedad. Mové el cursor o incliná el celular para guiarlas.',
@@ -124,7 +126,6 @@ export function TiltMedalScene() {
       [initialWidth * 0.66, 82],
     ]
 
-    // 2. Las medallas parten separadas y con un impulso suave para hacer visible la caída.
     const medals = MEDAL_COLORS.map((_, index) => {
       const [x, y] = initialPositions[index]
       const body = Bodies.rectangle(
@@ -162,7 +163,6 @@ export function TiltMedalScene() {
 
     const updateBounds = () => {
       const rect = container.getBoundingClientRect()
-      // Forzar dimensiones fallback si aún no se calculó el layout
       const w = rect.width || 600
       const h = rect.height || initialHeight
 
@@ -170,10 +170,8 @@ export function TiltMedalScene() {
       canvas.width = Math.round(w * pixelRatio)
       canvas.height = Math.round(h * pixelRatio)
 
-      // Reconstruir paredes
       Composite.remove(engine.world, walls)
       walls = [
-        // Suelo
         Bodies.rectangle(
           w / 2,
           h + WALL_THICKNESS / 2,
@@ -181,7 +179,6 @@ export function TiltMedalScene() {
           WALL_THICKNESS,
           { isStatic: true },
         ),
-        // Pared Izquierda
         Bodies.rectangle(
           -WALL_THICKNESS / 2,
           h / 2,
@@ -189,7 +186,6 @@ export function TiltMedalScene() {
           h * 4,
           { isStatic: true },
         ),
-        // Pared Derecha
         Bodies.rectangle(
           w + WALL_THICKNESS / 2,
           h / 2,
@@ -202,7 +198,6 @@ export function TiltMedalScene() {
       draw(w, h)
     }
 
-    // Loop de animación independiente
     const animate = (time: number) => {
       const rect = container.getBoundingClientRect()
       const w = rect.width || 600
@@ -216,6 +211,7 @@ export function TiltMedalScene() {
     }
 
     const updateGravityFromTilt = (event: DeviceOrientationEvent) => {
+      if (!isSensorActiveRef.current) return
       if (event.gamma === null || event.beta === null) return
       const gamma = (event.gamma * Math.PI) / 180
       const beta = (event.beta * Math.PI) / 180
@@ -224,7 +220,7 @@ export function TiltMedalScene() {
     }
 
     const handlePointerMove = (event: PointerEvent) => {
-      if (isSensorActive) return
+      if (isSensorActiveRef.current) return
       const rect = container.getBoundingClientRect()
       if (!rect.width || !rect.height) return
       const horizontalPosition = (event.clientX - rect.left) / rect.width
@@ -233,29 +229,40 @@ export function TiltMedalScene() {
       engine.gravity.y = limit(1.1 + verticalPosition * 1.8, 0.9, 2.8)
     }
 
+    // 2. Tarea programada: Impulso/Salto cada 15 segundos
+    const jumpInterval = setInterval(() => {
+      medals.forEach((medal, index) => {
+        // Velocidad vertical hacia arriba (-6 a -9) y ligera variación horizontal
+        const randomX = (Math.random() - 0.5) * 5
+        const randomY = -6.5 - Math.random() * 2.5
+        const randomAngularVelocity = (Math.random() - 0.5) * 0.15
+
+        Body.setVelocity(medal, { x: randomX, y: randomY })
+        Body.setAngularVelocity(medal, randomAngularVelocity)
+      })
+    }, 15000)
+
     updateBounds()
     animationFrame = window.requestAnimationFrame(animate)
 
     const resizeObserver = new ResizeObserver(() => updateBounds())
     resizeObserver.observe(container)
 
-    if (isSensorActive) {
-      window.addEventListener('deviceorientation', updateGravityFromTilt)
-    }
-
+    window.addEventListener('deviceorientation', updateGravityFromTilt)
     container.addEventListener('pointermove', handlePointerMove)
 
     return () => {
       if (animationFrame) window.cancelAnimationFrame(animationFrame)
+      clearInterval(jumpInterval) // Limpieza del timer al desmontar
       window.removeEventListener('deviceorientation', updateGravityFromTilt)
       container.removeEventListener('pointermove', handlePointerMove)
       resizeObserver.disconnect()
       Engine.clear(engine)
     }
-  }, [isSensorActive])
+  }, [])
 
   async function enableTilt() {
-    const deviceOrientationEvent = window.DeviceOrientationEvent
+    const deviceOrientationEvent = window.DeviceOrientationEvent as any
     if (!deviceOrientationEvent) {
       setStatusMessage('Tu dispositivo no ofrece giroscopio; probá moviendo el cursor.')
       return
@@ -275,6 +282,7 @@ export function TiltMedalScene() {
       }
     }
 
+    isSensorActiveRef.current = true
     setIsSensorActive(true)
     setStatusMessage('¡Giroscopio activado! Incliná el celular.')
   }
@@ -304,7 +312,6 @@ export function TiltMedalScene() {
         </button>
       </div>
 
-      {/* Contenedor del Canvas con ref y dimensiones físicas estrictas */}
       <div
         ref={containerRef}
         className="relative mt-4 h-64 w-full touch-none overflow-hidden rounded-2xl border border-white/15 bg-[radial-gradient(ellipse_at_top,#233b59_0%,#101827_65%,#090e17_100%)] shadow-inner"
@@ -314,7 +321,7 @@ export function TiltMedalScene() {
           className="absolute inset-0 block h-full w-full"
         />
         <span className="pointer-events-none absolute bottom-3 left-3 rounded-full border border-white/20 bg-slate-950/75 px-3 py-1 text-xs font-semibold text-white shadow backdrop-blur">
-          Matter.js · gravedad activa
+          
         </span>
       </div>
 

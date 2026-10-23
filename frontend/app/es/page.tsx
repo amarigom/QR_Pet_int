@@ -41,7 +41,7 @@ export default function HomePage() {
 
         <section className="bg-background px-4 py-8">
           <div className="container mx-auto">
-            <TiltMedalScene />
+            
           </div>
         </section>
       
@@ -334,8 +334,10 @@ export default function HomePage() {
               <Button size="lg" variant="secondary" className="text-lg px-8 shadow-lg hover:shadow-xl transition-all">
                 Crear Cuenta Gratis
               </Button>
-            </Link>
+              </Link>
+              
           </motion.div>
+          <TiltMedalScene />
         </section>
       </main>      
       {/* NUEVA SECCIÓN DE CONTACTO CON DESTELLOS AZULES */}

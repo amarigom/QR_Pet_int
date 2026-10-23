@@ -60,7 +60,7 @@ export default function HomePage() {
                 </Button>
               </Link>
             </div>
-            <TiltMedalScene />
+            
           </div>
         </div>
       </section>
@@ -194,6 +194,7 @@ export default function HomePage() {
             <Button size="lg" variant="secondary" className="text-lg px-8">
               Crear Cuenta Gratis
             </Button>
+            <TiltMedalScene />
           </Link>
         </div>
       </section>
