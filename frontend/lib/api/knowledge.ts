@@ -80,6 +80,20 @@ export interface AssistantActionConfirmation {
   fecha_hora_inicio?: string | null
 }
 
+export interface AssistantAppointmentQueryResult {
+  estado: 'sin_consulta' | 'resultado' | 'aclaracion'
+  respuesta?: string | null
+  turnos: Array<{
+    id: string
+    mascota_nombre: string
+    fecha_hora_inicio: string
+    fecha_hora_fin: string
+    tipo_servicio: string
+    estado: 'PROGRAMADO' | 'ATENDIDO' | 'CANCELADO'
+  }>
+  resumen?: Record<string, number> | null
+}
+
 export interface AssistantMessage {
   role: 'user' | 'assistant'
   content: string
@@ -119,6 +133,12 @@ export const knowledgeApi = {
         limit: 5,
         continuar_accion: continuarAccion,
       }),
+    }),
+
+  queryAppointments: (pregunta: string, historial: AssistantMessage[]) =>
+    fetchAPI<AssistantAppointmentQueryResult>('/conocimiento/turnos/consultar', {
+      method: 'POST',
+      body: JSON.stringify({ pregunta, historial, limit: 5 }),
     }),
 
   confirmAction: (accion: AssistantAction) =>

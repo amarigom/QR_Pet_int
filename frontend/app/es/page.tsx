@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { QrCode, Shield, MapPin, Bell, Heart, Smartphone, PawPrint } from 'lucide-react'
 import * as motion from 'framer-motion/client'
 import ContactSection from '@/components/contactSection'
+import { TiltMedalScene } from '@/components/tilt-medal-scene'
 
 export default function HomePage() {
   return (
@@ -37,6 +38,12 @@ export default function HomePage() {
       {/* Contenido Principal */}
       <main className="flex-1">
         <HeroSection />
+
+        <section className="bg-background px-4 py-8">
+          <div className="container mx-auto">
+            <TiltMedalScene />
+          </div>
+        </section>
       
         {/* 2. Sección de Pasos */}
         <section id="como-funciona" className="py-20 bg-muted/30 scroll-mt-24">

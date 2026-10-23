@@ -58,7 +58,7 @@ function introduction(audience: PetAssistantChatProps['audience']): ChatEntry {
   return {
     role: 'assistant',
     content: audience === 'veterinario'
-      ? 'Hola, soy el asistente de PetQR. Estoy disponible para ayudarte con el uso de la plataforma y consultar información vectorizada de tus pacientes vinculados e historias clínicas.'
+      ? 'Hola, soy el asistente de PetQR. Estoy disponible para ayudarte con la plataforma, consultar turnos de tu agenda y buscar información de pacientes vinculados e historias clínicas.'
       : audience === 'admin'
         ? 'Hola, soy el asistente de PetQR. Estoy disponible para ayudarte con el uso y la administración de la plataforma.'
       : '¡Hola! Soy el asistente de PetQR y estoy disponible para resolver tus dudas sobre la aplicación, cómo usarla y la información compartida por el equipo.',
@@ -200,6 +200,29 @@ export function PetAssistantChat({ audience }: PetAssistantChatProps) {
     setIsSending(true)
     try {
       if (audience === 'veterinario') {
+        if (!pendingActionRef.current) {
+          const appointmentQuery = await knowledgeApi.queryAppointments(
+            currentQuestion,
+            history,
+          )
+          if (appointmentQuery.estado !== 'sin_consulta') {
+            const appointmentDetails = appointmentQuery.turnos.map((appointment) => (
+              `${formatActionDate(appointment.fecha_hora_inicio)} · ${appointment.mascota_nombre}`
+              + ` · ${appointment.tipo_servicio} · ${appointment.estado}`
+            ))
+            setMessages([
+              ...nextMessages,
+              {
+                role: 'assistant',
+                content: [
+                  appointmentQuery.respuesta || 'Consulta de agenda completada.',
+                  ...appointmentDetails,
+                ].join('\n'),
+              },
+            ])
+            return
+          }
+        }
         const actionResult = await knowledgeApi.proposeAction(
           currentQuestion,
           history,

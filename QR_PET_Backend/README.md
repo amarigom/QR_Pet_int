@@ -81,6 +81,12 @@ registrarse. `POST
 /api/v1/historias-clinicas/vectorizar` permite reintentar historias propias que quedaron pendientes,
 con un máximo de 200 por llamada.
 
+El chatbot veterinario también puede consultar la agenda en modo de solo lectura. Los filtros
+por fecha, mascota y estado se interpretan como datos estructurados y se consultan directamente
+en PostgreSQL, limitando siempre los resultados al veterinario autenticado. Los turnos no se
+vectorizan; los resúmenes agregan los estados en la base de datos y las listas se limitan a 50
+resultados por consulta (se informa si hay más resultados).
+
 El chat veterinario también puede proponer turnos y altas o modificaciones de historias clínicas.
 `POST /api/v1/conocimiento/acciones/proponer` interpreta la solicitud, pero no escribe datos;
 el profesional revisa la propuesta y confirma explícitamente mediante

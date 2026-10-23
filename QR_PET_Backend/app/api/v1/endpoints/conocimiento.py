@@ -29,6 +29,10 @@ from app.services.pgvector_service import VectorStoreService
 from app.services.veterinarian_assistant_action_service import (
     VeterinarianAssistantActionService,
 )
+from app.services.veterinarian_appointment_query_service import (
+    VeterinarianAppointmentQueryService,
+)
+from app.schemas.assistant_appointment_query import AssistantAppointmentQueryResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(tags=["Base de Conocimiento"])
@@ -227,6 +231,29 @@ async def proponer_accion_veterinaria(
         raise HTTPException(
             status_code=503,
             detail="No se pudo interpretar la acción solicitada. Podés intentarlo nuevamente o usar el formulario.",
+        ) from error
+
+
+@router.post(
+    "/turnos/consultar",
+    response_model=AssistantAppointmentQueryResponse,
+)
+async def consultar_turnos_asistente(
+    data: PreguntaInput,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_veterinarian),
+    v_service: VectorStoreService = Depends(get_vector_store_service),
+):
+    try:
+        service = VeterinarianAppointmentQueryService(
+            db, v_service.ai_client, current_user
+        )
+        return await service.query(data.pregunta, data.historial)
+    except Exception as error:
+        logger.exception("Error al consultar turnos desde el asistente.")
+        raise HTTPException(
+            status_code=503,
+            detail="No se pudo consultar la agenda. Intentá nuevamente.",
         ) from error
 
 

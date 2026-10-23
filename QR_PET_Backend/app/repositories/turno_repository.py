@@ -4,7 +4,7 @@ from datetime import datetime, date
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import lazyload
-from sqlalchemy import select, extract, and_, or_, union
+from sqlalchemy import select, extract, and_, or_, union, func
 from app.models.turno import Turno, EstadoTurno
 from app.models.pet import Pet
 from app.models.user import User
@@ -126,6 +126,72 @@ class TurnoRepository:
         )
         result = await self.db.execute(query)
         return list(result.scalars().all())
+
+    def _assistant_query_filters(
+        self,
+        veterinarian_id: uuid.UUID,
+        start: datetime,
+        end: datetime,
+        pet_name: Optional[str],
+        state: Optional[EstadoTurno],
+        include_cancelled: bool = False,
+    ):
+        filters = [
+            Turno.veterinario_id == veterinarian_id,
+            Turno.fecha_hora_inicio >= start,
+            Turno.fecha_hora_inicio < end,
+        ]
+        if state is not None:
+            filters.append(Turno.estado == state)
+        elif not include_cancelled:
+            filters.append(Turno.estado != EstadoTurno.CANCELADO)
+        if pet_name:
+            filters.append(Pet.nombre.ilike(f"%{pet_name.strip()}%"))
+        return filters
+
+    async def list_for_assistant(
+        self,
+        veterinarian_id: uuid.UUID,
+        start: datetime,
+        end: datetime,
+        pet_name: Optional[str] = None,
+        state: Optional[EstadoTurno] = None,
+        limit: int = 50,
+        include_cancelled: bool = False,
+    ) -> list[tuple[Turno, str]]:
+        query = (
+            select(Turno, Pet.nombre)
+            .join(Pet, Pet.id == Turno.mascota_id)
+            .where(*self._assistant_query_filters(
+                veterinarian_id, start, end, pet_name, state, include_cancelled
+            ))
+            .order_by(Turno.fecha_hora_inicio.asc())
+            .limit(limit)
+        )
+        result = await self.db.execute(query)
+        return list(result.all())
+
+    async def count_for_assistant(
+        self,
+        veterinarian_id: uuid.UUID,
+        start: datetime,
+        end: datetime,
+        pet_name: Optional[str] = None,
+        state: Optional[EstadoTurno] = None,
+        include_cancelled: bool = False,
+    ) -> dict[str, int]:
+        query = (
+            select(Turno.estado, func.count(Turno.id))
+            .join(Pet, Pet.id == Turno.mascota_id)
+            .where(*self._assistant_query_filters(
+                veterinarian_id, start, end, pet_name, state, include_cancelled
+            ))
+            .group_by(Turno.estado)
+        )
+        result = await self.db.execute(query)
+        counts = {status.value: 0 for status in EstadoTurno}
+        counts.update({status.value: count for status, count in result.all()})
+        return counts
 
     async def get_due_reminders(
         self,
