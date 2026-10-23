@@ -162,9 +162,9 @@ export default function ContactSection() {
             <h3 className="tracking-wide uppercase text-lg font-bold text-foreground mb-2">
               Instagram
             </h3>
-            <p className="text-muted-foreground mb-6 font-medium">@petqr.ok</p>
+            <p className="text-muted-foreground mb-6 font-medium">@petqrmascotas.tandil.leplop</p>
             <a 
-              href="https://instagram.com/" 
+              href="https://www.instagram.com/petqrmascotas.tandil.leplop/" 
               target="_blank"
               rel="noopener noreferrer"
               className="inline-block px-8 py-3 border border-border text-foreground hover:bg-muted text-xs font-semibold uppercase tracking-wider rounded-xl transition-all duration-300 hover:shadow-sm active:scale-95"
