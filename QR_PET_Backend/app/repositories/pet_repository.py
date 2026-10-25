@@ -34,6 +34,12 @@ class PetRepository(BaseRepository[Pet]):
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
+    async def get_by_id_for_update(self, pet_id: uuid.UUID) -> Optional[Pet]:
+        result = await self.session.execute(
+            select(Pet).where(Pet.id == pet_id).with_for_update()
+        )
+        return result.scalar_one_or_none()
+
     async def search_active_veterinarians(self, search: str) -> list[dict]:
         term = f"%{search.strip()}%"
         query = (

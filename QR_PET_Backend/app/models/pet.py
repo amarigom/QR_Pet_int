@@ -1,7 +1,7 @@
 # app/models/pet.py
-from sqlalchemy import String, DateTime, ForeignKey, Text, Enum, func
+from sqlalchemy import String, DateTime, ForeignKey, Text, Enum, func, and_
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, foreign, mapped_column, relationship
 from app.models.base import Base
 from app.core.constants import PetStatus, AnimalSpecies
 from datetime import datetime
@@ -54,7 +54,13 @@ class Pet(Base):
     )
     
     owner: Mapped["User"] = relationship("User", back_populates="pets",lazy="joined")
-    qr_code: Mapped[Optional["QRCode"]] = relationship("QRCode", back_populates="mascota", uselist=False, lazy="joined")
+    qr_code: Mapped[Optional["QRCode"]] = relationship(
+        "QRCode",
+        primaryjoin="and_(Pet.id == foreign(QRCode.mascota_id), QRCode.activo.is_(True))",
+        uselist=False,
+        viewonly=True,
+        lazy="joined",
+    )
     
 
     def __repr__(self) -> str:

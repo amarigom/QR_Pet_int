@@ -81,6 +81,9 @@ export default function PetDetailPage() {
   const [hasSearchedClinics, setHasSearchedClinics] = useState(false)
   const [isSearchingClinics, setIsSearchingClinics] = useState(false)
   const [isUpdatingClinicLink, setIsUpdatingClinicLink] = useState(false)
+  const [replacementQrCode, setReplacementQrCode] = useState('')
+  const [isReplacingQr, setIsReplacingQr] = useState(false)
+  const [isQrReplacementDialogOpen, setIsQrReplacementDialogOpen] = useState(false)
 
   // Estados locales para la gestión de cambios y formularios
   const [isEditingData, setIsEditingData] = useState(false)
@@ -224,6 +227,23 @@ async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
       toast.error(error instanceof Error ? error.message : 'Error al guardar los cambios')
     } finally {
       setIsSavingData(false)
+    }
+  }
+
+  async function handleReplaceQr() {
+    if (!petId || !replacementQrCode.trim()) return
+
+    setIsReplacingQr(true)
+    try {
+      const updatedQr = await petsApi.replaceQr(petId, replacementQrCode.trim())
+      setQr(updatedQr)
+      setReplacementQrCode('')
+      setIsQrReplacementDialogOpen(false)
+      toast.success('Medalla QR reemplazada correctamente')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'No se pudo reemplazar el QR')
+    } finally {
+      setIsReplacingQr(false)
     }
   }
 
@@ -590,6 +610,56 @@ async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
                   </p>
                 </div>
               )}
+              <div className="space-y-2 border-t pt-4">
+                <label htmlFor="replacement-qr-code" className="text-sm font-medium">
+                  {qr ? 'Reemplazar medalla' : 'Vincular medalla'}
+                </label>
+                <Input
+                  id="replacement-qr-code"
+                  value={replacementQrCode}
+                  onChange={(event) => setReplacementQrCode(event.target.value)}
+                  placeholder="Ingresá el código de la nueva medalla"
+                  maxLength={50}
+                  disabled={isReplacingQr}
+                />
+                <AlertDialog
+                  open={isQrReplacementDialogOpen}
+                  onOpenChange={setIsQrReplacementDialogOpen}
+                >
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    disabled={isReplacingQr || !replacementQrCode.trim()}
+                    onClick={() => setIsQrReplacementDialogOpen(true)}
+                  >
+                    {qr ? 'Reemplazar QR' : 'Vincular QR'}
+                  </Button>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        {qr ? '¿Reemplazar la medalla QR?' : '¿Vincular esta medalla QR?'}
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {qr
+                          ? `La medalla actual dejará de funcionar y ${replacementQrCode.trim()} quedará asociada a ${pet.nombre}. Se conservarán su ficha y sus antecedentes.`
+                          : `${replacementQrCode.trim()} quedará asociada a ${pet.nombre}.`}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={isReplacingQr}>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={(event) => {
+                          event.preventDefault()
+                          void handleReplaceQr()
+                        }}
+                        disabled={isReplacingQr}
+                      >
+                        {isReplacingQr ? 'Actualizando...' : 'Confirmar'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </CardContent>
           </Card>
 

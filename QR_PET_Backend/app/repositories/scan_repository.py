@@ -41,6 +41,16 @@ class ScanRepository(BaseRepository[Scan]):
         query = select(func.count()).select_from(Scan).where(Scan.qr_id == qr_id)
         result = await self.session.execute(query)
         return result.scalar() or 0
+
+    async def count_by_mascota(self, mascota_id: uuid.UUID) -> int:
+        query = (
+            select(func.count())
+            .select_from(Scan)
+            .join(QRCode, Scan.qr_id == QRCode.id)
+            .where(QRCode.mascota_id == mascota_id)
+        )
+        result = await self.session.execute(query)
+        return result.scalar() or 0
     
     async def get_all_with_details(self, limit: int = 100, offset: int = 0) -> List[Scan]:
         """Obtiene únicamente el ÚLTIMO escaneo de cada mascota con carga profunda (QR -> Mascota -> Dueño)"""

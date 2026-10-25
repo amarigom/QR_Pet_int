@@ -13,9 +13,11 @@ from app.core.mail import send_scan_notification_email
 from app.models.pet import Pet
 from app.models.qr import QRCode
 from app.models.scan import Scan
+from app.models.user import User
 
 from app.repositories.qr_repository import QRRepository
 from app.repositories.scan_repository import ScanRepository
+from app.repositories.turno_repository import TurnoRepository
 from app.schemas.scan import (
     ScanCreate,
     ScanLocationUpdate,
@@ -32,6 +34,33 @@ class ScanService:
         self.db = db
         self.scan_repo = ScanRepository(db)
         self.qr_repo = QRRepository(db)
+        self.turno_repo = TurnoRepository(db)
+
+    async def get_veterinarian_pet_from_qr(
+        self, codigo_qr: str, veterinarian: User
+    ) -> Pet:
+        stmt = (
+            select(QRCode)
+            .options(joinedload(QRCode.mascota))
+            .where(
+                QRCode.codigo == codigo_qr.strip().upper(),
+                QRCode.activo.is_(True),
+            )
+        )
+        result = await self.db.execute(stmt)
+        qr = result.scalar_one_or_none()
+        if (
+            qr is None
+            or qr.mascota is None
+            or not await self.turno_repo.has_veterinarian_patient(
+                veterinarian.id, qr.mascota.id
+            )
+        ):
+            raise ResourceNotFoundException(
+                "Ficha veterinaria",
+                detail="Mascota no asignada a este veterinario.",
+            )
+        return qr.mascota
 
     async def create_scan(self, scan_data: ScanCreate) -> Dict[str, Any]:
         """Registra un nuevo escaneo a partir del código de un QR."""
@@ -39,6 +68,10 @@ class ScanService:
         if not qr:
             raise ResourceNotFoundException(
                 "Código QR", "El código escaneado no existe"
+            )
+        if not qr.activo:
+            raise ResourceNotFoundException(
+                "Código QR", "Este código QR está inactivo"
             )
 
         scan = await self.scan_repo.create(
@@ -77,6 +110,11 @@ class ScanService:
 
         if not qr:
             raise ResourceNotFoundException("Código QR", "QR no encontrado")
+
+        if not qr.activo:
+            raise ResourceNotFoundException(
+                "Código QR", "Este código QR está inactivo"
+            )
 
         if not qr.mascota:
             raise ResourceNotFoundException(
@@ -142,9 +180,7 @@ class ScanService:
         """Obtiene el historial de escaneos de una mascota específica"""
         offset = (page - 1) * limit
         scans = await self.scan_repo.get_by_mascota(pet_id, limit, offset)
-
-        qr = await self.qr_repo.get_by_mascota(pet_id)
-        total = await self.scan_repo.count_by_qr(qr.id) if qr else 0
+        total = await self.scan_repo.count_by_mascota(pet_id)
 
         return {
             "items": [ScanResponse.model_validate(s) for s in scans],

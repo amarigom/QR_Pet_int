@@ -176,6 +176,45 @@ describe('veterinarianApi', () => {
     expect(updated.estado).toBe('ATENDIDO')
   })
 
+  it('abre la ficha desde un QR y pagina sus historias clínicas', async () => {
+    const scannedPet = {
+      id: petId,
+      nombre: 'Luna',
+      especie: 'perro',
+      estado: 'en_casa',
+      raza: null,
+      color: null,
+      edad_aproximada: null,
+      foto_url: null,
+      notas: null,
+    }
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ pet: scannedPet }))
+      .mockResolvedValueOnce(jsonResponse({
+        items: [exampleDashboard.medical_records[0]],
+        total: 21,
+        page: 2,
+        limit: 10,
+        pages: 3,
+      }))
+
+    const scanned = await veterinarianApi.getPetFromQr('QR demo/1')
+    const history = await veterinarianApi.getPetMedicalRecords(petId, 2, 10)
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      expect.stringMatching(/\/api\/v1\/scans\/veterinario\/qr\/QR%20demo%2F1$/),
+      expect.objectContaining({ method: 'GET' }),
+    )
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      expect.stringMatching(/\/api\/v1\/historias-clinicas\/mascota\/50000000-0000-4000-8000-000000000003\/pagina\?page=2&limit=10$/),
+      expect.objectContaining({ method: 'GET' }),
+    )
+    expect(scanned.pet.nombre).toBe('Luna')
+    expect(history.pages).toBe(3)
+  })
+
   it('consulta una semana y elimina el turno cancelándolo desde la API', async () => {
     fetchMock
       .mockResolvedValueOnce(jsonResponse([exampleDashboard.appointments[0]]))

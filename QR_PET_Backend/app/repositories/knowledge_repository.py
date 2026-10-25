@@ -87,14 +87,6 @@ class KnowledgeRepository:
                 (KnowledgeVector.owner_type == "veterinarian")
                 & (KnowledgeVector.owner_id == user_id)
             )
-            linked_pet_ids = select(veterinario_mascotas.c.mascota_id).where(
-                veterinario_mascotas.c.veterinario_id == user_id
-            )
-            allowed_scopes.append(
-                (KnowledgeVector.owner_type == "veterinarian")
-                & (KnowledgeVector.source_type == "medical_record")
-                & KnowledgeVector.pet_id.in_(linked_pet_ids)
-            )
         elif user_role == "usuario":
             linked_veterinarians = union(
                 select(veterinario_clientes.c.veterinario_id).where(

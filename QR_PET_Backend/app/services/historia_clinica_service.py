@@ -139,7 +139,7 @@ class HistoriaClinicaService:
     async def obtener_por_mascota(
         self, mascota_id: uuid.UUID, veterinario: User
     ) -> List[HistoriaClinica]:
-        """Obtiene el historial de la mascota para el veterinario asignado."""
+        """Obtiene las historias clínicas registradas por el veterinario actual."""
         if not await self.turno_repository.has_veterinarian_patient(
             veterinario.id, mascota_id
         ):
@@ -147,13 +147,38 @@ class HistoriaClinicaService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Mascota no asignada a este veterinario.",
             )
-        if await self.turno_repository.has_direct_veterinarian_link(
-            veterinario.id, mascota_id
-        ):
-            return await self.repository.get_all_by_pet(mascota_id)
         return await self.repository.get_by_veterinarian_and_pet(
             veterinario.id, mascota_id
         )
+
+    async def obtener_paginadas_por_mascota(
+        self,
+        mascota_id: uuid.UUID,
+        veterinario: User,
+        page: int = 1,
+        limit: int = 20,
+    ) -> Dict[str, Any]:
+        if not await self.turno_repository.has_veterinarian_patient(
+            veterinario.id, mascota_id
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Mascota no asignada a este veterinario.",
+            )
+        offset = (page - 1) * limit
+        records = await self.repository.get_by_veterinarian_and_pet(
+            veterinario.id, mascota_id, limit=limit, offset=offset
+        )
+        total = await self.repository.count_by_veterinarian_and_pet(
+            veterinario.id, mascota_id
+        )
+        return {
+            "items": records,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "pages": (total + limit - 1) // limit,
+        }
 
     async def exportar_historia_clinica(
         self, 
@@ -166,12 +191,7 @@ class HistoriaClinicaService:
         y ejecuta la exportación del registro médico.
         """
         historia = await self.repository.get_by_id(historia_id)
-        if not historia or (
-            historia.veterinario_id != veterinario.id
-            and not await self.turno_repository.has_direct_veterinarian_link(
-                veterinario.id, historia.mascota_id
-            )
-        ):
+        if not historia or historia.veterinario_id != veterinario.id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Historia clínica no encontrada."

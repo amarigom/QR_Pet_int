@@ -6,6 +6,7 @@ import type {
   PaginatedResponse,
   PetVeterinarianLink,
   VeterinarianClinicSearchResult,
+  QRCode,
 } from '../types';
 import { UserDashboardStats } from '../types/user';
 
@@ -44,6 +45,12 @@ export const petsApi = {
       `/pets/${petId}/veterinarias/${veterinarianId}`,
       { method: 'DELETE' },
     ),
+
+  replaceQr: (petId: string, codigo: string) =>
+    fetchAPI<QRCode>(`/pets/${petId}/qr`, {
+      method: 'POST',
+      body: JSON.stringify({ codigo }),
+    }),
   
   create: (data: PetFormData) => fetchAPI<Pet>('/pets', {
     method: 'POST',

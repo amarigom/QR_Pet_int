@@ -8,6 +8,26 @@ puede ser `all`, `assigned` o `available`. El panel consume el total y permite c
 El listado de mascotas del usuario `GET /api/v1/pets` también admite `search`, además de `page`
 y `limit`, buscando por nombre, especie, raza o código QR.
 
+## Reemplazo de medalla QR
+
+Desde la ficha de una mascota, el dueño puede vincular una medalla disponible o reemplazar la
+actual con `POST /api/v1/pets/{pet_id}/qr`, enviando `{"codigo":"..."}`. La operación comprueba
+que la mascota pertenezca al usuario autenticado y que el nuevo QR exista, esté activo y no se
+haya asignado previamente. En una única transacción se desactiva la medalla anterior y se vincula
+la nueva; no se crea otra mascota ni se modifican sus turnos, historias clínicas o clínica
+asociada. El QR anterior queda inactivo para conservar los escaneos históricos, pero ya no abre
+la ficha pública ni aparece como medalla activa.
+
+## Ficha clínica desde el escaneo
+
+Al escanear un QR vinculado, una veterinaria autenticada puede abrir la ficha clínica solo si la
+mascota tiene un vínculo explícito con esa clínica, un turno o una historia clínica previa. Para
+habilitar el acceso inicial antes del primer turno, el dueño debe vincular la mascota con la
+veterinaria. La ruta autenticada de escaneo no registra una ubicación de encontrador ni devuelve
+datos del dueño. La ficha pagina únicamente las historias creadas por la veterinaria actual y
+permite registrar consultas y editar sus propios registros. Para otros roles se mantiene la
+experiencia pública de contacto y reporte.
+
 ## Turnos y recordatorios por WhatsApp
 
 Los turnos se muestran en una agenda semanal. El endpoint `GET /api/v1/turnos/agenda/semanal`
@@ -76,8 +96,9 @@ El asistente aparece en los paneles de administración, usuario y veterinario. L
 generales de las veterinarias vinculadas a sus mascotas; nunca recuperan historias clínicas. Las
 respuestas veterinarias combinan ese contenido compartido con documentos del veterinario
 autenticado, mascotas de sus clientes vinculados e historias clínicas creadas por ese veterinario;
-el backend filtra esos alcances antes de recuperar contexto. Las nuevas historias se vectorizan al
-registrarse. `POST
+el vínculo con una mascota no habilita a leer historias de otras clínicas. El mismo alcance se
+aplica al historial, al dashboard y a la exportación clínica. El backend filtra esos alcances antes
+de recuperar contexto. Las nuevas historias se vectorizan al registrarse. `POST
 /api/v1/historias-clinicas/vectorizar` permite reintentar historias propias que quedaron pendientes,
 con un máximo de 200 por llamada.
 

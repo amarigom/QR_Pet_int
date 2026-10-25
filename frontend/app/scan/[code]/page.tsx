@@ -20,6 +20,7 @@ import {
   AlertCircle, Heart, Send, Loader2
 } from 'lucide-react'
 import { qrApi } from '@/lib/api/qr'
+import { authApi } from '@/lib/api/auth'
 import { toast } from 'sonner'
 import type { Pet } from '@/lib/types'
 
@@ -109,6 +110,14 @@ export default function ScanPage() {
           setIsAvailable(false)
           
           try {
+            if (localStorage.getItem('token')) {
+              const currentUser = await authApi.getCurrentUser()
+              if (currentUser?.rol === 'veterinario') {
+                router.replace(`/scan/${encodeURIComponent(code)}/clinical`)
+                return
+              }
+            }
+
             const response = await qrApi.scan(code) 
             setData(response)
             setScanId(response.scan_id)

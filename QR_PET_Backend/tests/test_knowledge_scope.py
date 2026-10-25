@@ -97,7 +97,7 @@ async def test_veterinarian_pet_search_is_limited_to_assigned_patients():
 
 
 @pytest.mark.asyncio
-async def test_veterinarian_history_search_is_limited_to_explicitly_linked_pets():
+async def test_veterinarian_history_search_is_limited_to_its_own_records():
     db = SimpleNamespace(execute=AsyncMock(return_value=QueryResult()))
 
     await KnowledgeRepository(db).buscar_similares(
@@ -107,8 +107,9 @@ async def test_veterinarian_history_search_is_limited_to_explicitly_linked_pets(
     )
 
     sql = str(db.execute.await_args.args[0].compile(dialect=postgresql.dialect()))
-    assert "knowledge_vectors.source_type = " in sql
-    assert "knowledge_vectors.pet_id IN (SELECT veterinario_mascotas.mascota_id" in sql
+    assert "knowledge_vectors.owner_id = " in sql
+    assert "knowledge_vectors.pet_id IN (SELECT veterinario_mascotas.mascota_id" not in sql
+    assert "knowledge_vectors.source_type = " not in sql
 
 
 @pytest.mark.asyncio

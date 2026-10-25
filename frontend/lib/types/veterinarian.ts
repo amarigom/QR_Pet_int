@@ -57,6 +57,26 @@ export interface MedicalRecord {
   vectorizada: boolean
 }
 
+export interface VeterinarianScannedPet {
+  id: string
+  nombre: string
+  especie: string
+  estado: string
+  raza: string | null
+  color: string | null
+  edad_aproximada: string | null
+  foto_url: string | null
+  notas: string | null
+}
+
+export interface PaginatedMedicalRecords {
+  items: MedicalRecord[]
+  total: number
+  page: number
+  limit: number
+  pages: number
+}
+
 export type AppointmentStatus = 'PROGRAMADO' | 'ATENDIDO' | 'CANCELADO'
 
 export interface Appointment {

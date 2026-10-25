@@ -55,13 +55,35 @@ class QRRepository(BaseRepository[QRCode]):
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
+    async def get_by_code_for_update(self, codigo: str) -> Optional[QRCode]:
+        query = (
+            select(QRCode)
+            .where(QRCode.codigo == codigo.upper())
+            .with_for_update()
+        )
+        result = await self.session.execute(query)
+        return result.scalar_one_or_none()
+
+    async def get_active_by_pet_for_update(
+        self, mascota_id: uuid.UUID
+    ) -> List[QRCode]:
+        result = await self.session.execute(
+            select(QRCode)
+            .where(QRCode.mascota_id == mascota_id, QRCode.activo.is_(True))
+            .with_for_update()
+        )
+        return list(result.scalars().all())
+
     async def get_by_mascota(self, mascota_id: Union[str, uuid.UUID]) -> Optional[QRCode]:
         """
-        Obtiene el QR vinculado a una mascota específica.
+        Obtiene el QR activo de una mascota.
         Corregido para evitar error de tipos uuid = character varying
         """
         m_id = self._force_uuid(mascota_id)
-        query = select(QRCode).where(QRCode.mascota_id == m_id)
+        query = select(QRCode).where(
+            QRCode.mascota_id == m_id,
+            QRCode.activo.is_(True),
+        )
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
     

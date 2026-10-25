@@ -55,6 +55,10 @@ class QRActivateData(BaseModel):
     notas: Optional[str] = None
 
 
+class QRReplaceRequest(BaseModel):
+    codigo: str = Field(..., min_length=1, max_length=50)
+
+
 class QRCheckResponse(BaseModel):
     """Response para verificar disponibilidad de QR"""
     available: bool

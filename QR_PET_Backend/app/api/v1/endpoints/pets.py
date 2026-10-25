@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.pet import PetCreate, PetUpdate, PetResponse
 from app.schemas.composite import PetDetailResponse  # <--- La "Vista" con relaciones
 from app.schemas.common import SuccessResponse, PaginatedResponse
+from app.schemas.qr import QRReplaceRequest, QRResponse
 from app.schemas.user import UserDashboardStats
 from app.schemas.veterinario import (
     PetVeterinarianLinkCreate,
@@ -21,6 +22,19 @@ from app.services.pet_service import PetService
 from app.services.admin_service import AdminService
 
 router = APIRouter(prefix="/pets", tags=["Mascotas"])
+
+@router.post(
+    "/{pet_id}/qr",
+    response_model=QRResponse,
+)
+async def replace_pet_qr(
+    pet_id: uuid.UUID,
+    data: QRReplaceRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await PetService(db).replace_pet_qr(user, pet_id, data.codigo)
+
 
 @router.post("", response_model=PetDetailResponse, status_code=status.HTTP_201_CREATED)
 async def create_pet(

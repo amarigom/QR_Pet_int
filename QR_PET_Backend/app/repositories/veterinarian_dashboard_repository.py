@@ -152,12 +152,7 @@ class VeterinarianDashboardRepository:
         medical_records_result = await self.db.execute(
             select(HistoriaClinica)
             .where(
-                (HistoriaClinica.veterinario_id == veterinarian_id)
-                | HistoriaClinica.mascota_id.in_(
-                    select(veterinario_mascotas.c.mascota_id).where(
-                        veterinario_mascotas.c.veterinario_id == veterinarian_id
-                    )
-                )
+                HistoriaClinica.veterinario_id == veterinarian_id
             )
             .order_by(HistoriaClinica.fecha_consulta.desc())
             .limit(100)

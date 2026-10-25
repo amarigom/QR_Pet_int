@@ -14,6 +14,7 @@ from sqlalchemy import text
 
 from app.repositories.pet_repository import PetRepository
 from app.repositories.qr_repository import QRRepository
+from app.models.qr import QRCode
 from app.core.exceptions import ResourceNotFoundException
 from app.schemas.pet import PetCreate, PetUpdate, PetResponse
 from app.schemas.composite import PetDetailResponse
@@ -46,7 +47,6 @@ class PetService:
     async def get_pet_veterinarians(
         self, current_user: User, pet_id: uuid.UUID
     ) -> list[dict]:
-        self._require_pet_owner_role(current_user)
         pet = await self.pet_repo.get_by_id(pet_id)
         if pet is None or pet.usuario_id != current_user.id:
             raise ResourceNotFoundException("Mascota")
@@ -94,6 +94,42 @@ class PetService:
                 "Vínculo veterinario",
                 detail="La mascota no está vinculada a esa veterinaria.",
             )
+
+    async def replace_pet_qr(
+        self,
+        current_user: User,
+        pet_id: uuid.UUID,
+        new_code: str,
+    ) -> QRCode:
+        pet = await self.pet_repo.get_by_id_for_update(pet_id)
+        if pet is None or pet.usuario_id != current_user.id:
+            raise ResourceNotFoundException("Mascota")
+
+        qr = await self.qr_repo.get_by_code_for_update(new_code.strip())
+        if qr is None:
+            raise ResourceNotFoundException(
+                "Código QR",
+                detail="No se encontró una medalla con ese código.",
+            )
+        if not qr.activo:
+            raise ConflictException("La medalla nueva está inactiva.")
+        if qr.mascota_id is not None:
+            raise ConflictException(
+                "La medalla ya está vinculada a una mascota."
+            )
+
+        current_qrs = await self.qr_repo.get_active_by_pet_for_update(pet_id)
+        for current_qr in current_qrs:
+            current_qr.activo = False
+
+        qr.mascota_id = pet_id
+        try:
+            await self.db.commit()
+            await self.db.refresh(qr)
+        except Exception:
+            await self.db.rollback()
+            raise
+        return qr
 
     
     

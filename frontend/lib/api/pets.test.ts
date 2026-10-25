@@ -53,4 +53,23 @@ describe('pet veterinarian linking API', () => {
       expect.objectContaining({ method: 'DELETE' }),
     )
   })
+
+  it('replaces a pet QR without creating a new pet', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({
+      id: 'qr-123',
+      codigo: 'NEW-QR',
+      mascota_id: 'pet-123',
+      activo: true,
+    }))
+
+    await petsApi.replaceQr('pet-123', 'NEW-QR')
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/v1\/pets\/pet-123\/qr$/),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ codigo: 'NEW-QR' }),
+      }),
+    )
+  })
 })
