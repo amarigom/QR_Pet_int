@@ -11,7 +11,7 @@ const IMAGENES_HERO = [
   '/hero-1.jpg',
   '/gato4.jpg',
   '/qr-1.jpg',
-  '/qr2-.jpg',
+  '/qr2.jpg',
   '/familia1.jpg'
 ]
 

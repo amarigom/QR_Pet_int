@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { QrCode, Shield, MapPin, Bell, Heart, Smartphone, PawPrint } from 'lucide-react'
 import * as motion from 'framer-motion/client'
 import ContactSection from '@/components/contactSection'
+import VetSection from '@/components/vet-section'
 import { TiltMedalScene } from '@/components/tilt-medal-scene'
 
 export default function HomePage() {
@@ -28,6 +29,9 @@ export default function HomePage() {
               <Button>Registrarse</Button>
             </Link>
             {/* BOTÓN DE CONTACTO */}
+            <Link href="#veterinarias">
+              <Button variant="ghost">Veterinarias</Button>
+            </Link>
             <Link href="#contact">
               <Button variant="ghost">Contactanos</Button>
             </Link>
@@ -314,6 +318,8 @@ export default function HomePage() {
     </div>
   </div>
 </section>
+
+        <VetSection />
 
         {/* 3. Sección CTA */}
         <section className="py-20 bg-primary overflow-hidden">
