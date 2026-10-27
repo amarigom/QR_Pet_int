@@ -12,8 +12,26 @@ import { Toaster } from '@/components/ui/sonner'
 const nunito = Nunito({ subsets: ['latin'] })
 
 // Definición de la URL base para convertir rutas relativas en absolutas para los bots
-const rawSiteUrl = process.env.APP_URL || 'https://qr-pet-int.vercel.app'
-const siteUrl = rawSiteUrl.startsWith('http') ? rawSiteUrl : `https://${rawSiteUrl}`
+const DEFAULT_SITE_URL = 'https://qr-pet-int-8ki3.vercel.app'
+
+function resolveSiteUrl(): string {
+  // Vercel define VERCEL_PROJECT_PRODUCTION_URL con el dominio real de producción
+  const candidates = [process.env.VERCEL_PROJECT_PRODUCTION_URL, process.env.APP_URL]
+  for (const candidate of candidates) {
+    // Vercel puede guardar el valor con comillas o espacios; se limpian antes de validar
+    // También tolera el formato Markdown "[url](url)" pegado por error
+    const cleaned = candidate?.match(/https?:\/\/[^\s\]\)"']+/i)?.[0] ?? candidate?.trim().replace(/^["']|["']$/g, '').trim()
+    if (!cleaned) continue
+    try {
+      return new URL(/^https?:\/\//i.test(cleaned) ? cleaned : `https://${cleaned}`).origin
+    } catch {
+      continue
+    }
+  }
+  return DEFAULT_SITE_URL
+}
+
+const siteUrl = resolveSiteUrl()
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
