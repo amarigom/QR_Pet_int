@@ -9,24 +9,52 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
 //import 'leaflet/dist/leaflet.css'
 
-
-
-
 const nunito = Nunito({ subsets: ['latin'] })
 
+// Definición de la URL base para convertir rutas relativas en absolutas para los bots
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://petqr.vercel.app'
+
 export const metadata: Metadata = {
-  title: 'PetQR - Protege a tu mascota con tecnología QR',
-  description: 'Sistema de identificación QR para mascotas. Escanea el código y encuentra al dueño rápidamente.',
-  generator: ' Next.js',
+  metadataBase: new URL(siteUrl),
+  title: 'PetQR — Identificación Inteligente y Gestión Médica para Mascotas',
+  description: 'Plataforma SaaS B2B/B2C para la identificación de mascotas mediante QR/NFC y gestión clínica veterinaria asistida por IA.',
+  generator: 'Next.js',
   manifest: '/manifest.json',
-  keywords: ['mascotas', 'QR', 'identificación', 'perros', 'gatos', 'perdidos'],
+  keywords: ['mascotas', 'QR', 'identificación', 'perros', 'gatos', 'perdidos', 'veterinaria', 'PetQR'],
+  
   icons: {
     icon: [
       { url: '/favicon.ico', media: '(prefers-color-scheme: light)' },
       { url: '/icon.png', media: '(prefers-color-scheme: dark)' },
-      { url: '/PETQR_icono_solo_512.jpg', type: 'image/svg+xml' },
+      { url: '/PETQR_icono_solo_512.jpg', type: 'image/jpeg' },
     ],
     apple: '/icon.png',
+  },
+
+  // --- CONFIGURACIÓN PARA LINKEDIN, WHATSAPP Y FACEBOOK ---
+  openGraph: {
+    title: 'PetQR — Identificación Inteligente y Gestión Médica para Mascotas',
+    description: 'Plataforma SaaS B2B/B2C para la identificación de mascotas mediante QR/NFC y gestión clínica veterinaria asistida por IA.',
+    url: siteUrl,
+    siteName: 'PetQR',
+    locale: 'es_AR',
+    type: 'website',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'PetQR — Identificación Inteligente y Gestión Médica para Mascotas',
+      },
+    ],
+  },
+
+  // --- CONFIGURACIÓN PARA TWITTER / X ---
+  twitter: {
+    card: 'summary_large_image',
+    title: 'PetQR — Identificación Inteligente para Mascotas',
+    description: 'Plataforma SaaS B2B/B2C para la identificación de mascotas mediante QR/NFC y gestión clínica veterinaria asistida por IA.',
+    images: ['/og-image.png'],
   },
 }
 
