@@ -12,7 +12,8 @@ import { Toaster } from '@/components/ui/sonner'
 const nunito = Nunito({ subsets: ['latin'] })
 
 // Definición de la URL base para convertir rutas relativas en absolutas para los bots
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://petqr.vercel.app'
+const rawSiteUrl = process.env.APP_URL || 'https://qr-pet-int.vercel.app'
+const siteUrl = rawSiteUrl.startsWith('http') ? rawSiteUrl : `https://${rawSiteUrl}`
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
