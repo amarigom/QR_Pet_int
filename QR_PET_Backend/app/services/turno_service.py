@@ -4,12 +4,9 @@ from datetime import date, datetime, timedelta, timezone
 from typing import List
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
 from app.models.turno import Turno, EstadoTurno
 from app.models.user import User
-from app.models.pet import Pet
-from app.core.constants import UserRole
 from app.repositories.turno_repository import TurnoRepository
 from app.schemas.turno import TurnoCreate, TurnoUpdateEstado
 from app.strategies.turno_state_strategy import EstadoTurnoFactory
@@ -19,12 +16,7 @@ class TurnoService:
         self.repository = TurnoRepository(db)
 
     async def agendar_turno(self, data: TurnoCreate, current_user: User) -> Turno:
-        pet_result = await self.repository.db.execute(
-            select(Pet)
-            .join(User, User.id == Pet.usuario_id)
-            .where(Pet.id == data.mascota_id, User.rol == UserRole.USER)
-        )
-        pet = pet_result.scalar_one_or_none()
+        pet = await self.repository.get_bookable_pet(data.mascota_id)
         if not pet:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Mascota no encontrada.")
         if data.dueno_id is not None and data.dueno_id != pet.usuario_id:
@@ -32,10 +24,17 @@ class TurnoService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="El cliente seleccionado no es dueño de la mascota.",
             )
+        if not await self.repository.has_veterinarian_patient(
+            current_user.id, pet.id
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="La mascota todavía no está vinculada a tu veterinaria.",
+            )
 
-        # 1. Eliminar tzinfo para convertirlos a offset-naive (compatibles con TIMESTAMP WITHOUT TIME ZONE)
-        inicio_naive = data.fecha_hora_inicio.replace(tzinfo=None) if data.fecha_hora_inicio.tzinfo else data.fecha_hora_inicio
-        fin_naive = data.fecha_hora_fin.replace(tzinfo=None) if data.fecha_hora_fin.tzinfo else data.fecha_hora_fin
+        # Persist datetimes as UTC-naive values for TIMESTAMP WITHOUT TIME ZONE.
+        inicio_naive = self._as_utc_naive(data.fecha_hora_inicio)
+        fin_naive = self._as_utc_naive(data.fecha_hora_fin)
 
         # 2. Validar que la hora de fin sea posterior al inicio
         if fin_naive <= inicio_naive:

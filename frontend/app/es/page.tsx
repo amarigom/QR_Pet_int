@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { QrCode, Shield, MapPin, Bell, Heart, Smartphone, PawPrint } from 'lucide-react'
 import * as motion from 'framer-motion/client'
 import ContactSection from '@/components/contactSection'
+import VetSection from '@/components/vet-section'
+import { TiltMedalScene } from '@/components/tilt-medal-scene'
 
 export default function HomePage() {
   return (
@@ -27,6 +29,9 @@ export default function HomePage() {
               <Button>Registrarse</Button>
             </Link>
             {/* BOTÓN DE CONTACTO */}
+            <Link href="#veterinarias">
+              <Button variant="ghost">Veterinarias</Button>
+            </Link>
             <Link href="#contact">
               <Button variant="ghost">Contactanos</Button>
             </Link>
@@ -37,6 +42,12 @@ export default function HomePage() {
       {/* Contenido Principal */}
       <main className="flex-1">
         <HeroSection />
+
+        <section className="bg-background px-4 py-8">
+          <div className="container mx-auto">
+            
+          </div>
+        </section>
       
         {/* 2. Sección de Pasos */}
         <section id="como-funciona" className="py-20 bg-muted/30 scroll-mt-24">
@@ -308,6 +319,8 @@ export default function HomePage() {
   </div>
 </section>
 
+        <VetSection />
+
         {/* 3. Sección CTA */}
         <section className="py-20 bg-primary overflow-hidden">
           <motion.div 
@@ -327,8 +340,10 @@ export default function HomePage() {
               <Button size="lg" variant="secondary" className="text-lg px-8 shadow-lg hover:shadow-xl transition-all">
                 Crear Cuenta Gratis
               </Button>
-            </Link>
+              </Link>
+              
           </motion.div>
+          <TiltMedalScene />
         </section>
       </main>      
       {/* NUEVA SECCIÓN DE CONTACTO CON DESTELLOS AZULES */}

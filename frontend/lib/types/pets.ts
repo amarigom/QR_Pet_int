@@ -45,6 +45,22 @@ export interface PetFormData {
   notas?: string | null;
   estado: string;
 }
+
+export interface PetVeterinarianLink {
+  veterinario_id: string
+  nombre_clinica: string
+  matricula: string
+  logo_url: string | null
+  created_at: string
+}
+
+export interface VeterinarianClinicSearchResult {
+  veterinario_id: string
+  nombre_clinica: string
+  matricula: string
+  logo_url: string | null
+}
+
 export interface PetOwner {
   id: number;
   nombre: string;

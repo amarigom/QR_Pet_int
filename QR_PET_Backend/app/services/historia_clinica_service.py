@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.historia_clinica import HistoriaClinica
 from app.models.user import User
-from app.schemas.historia_clinica import HistoriaClinicaCreate
+from app.schemas.historia_clinica import HistoriaClinicaCreate, HistoriaClinicaUpdate
 from app.repositories.historia_clinica_repository import HistoriaClinicaRepository
 from app.repositories.turno_repository import TurnoRepository
 from app.factories.historia_clinica_factory import HistoriaClinicaExportFactory, ExportFormat
@@ -18,7 +18,6 @@ class HistoriaClinicaService:
     def __init__(
         self, db: AsyncSession, vector_service: Optional[VectorStoreService] = None
     ):
-        self.db = db
         self.repository = HistoriaClinicaRepository(db)
         self.turno_repository = TurnoRepository(db)
         self.vector_service = vector_service
@@ -52,6 +51,40 @@ class HistoriaClinicaService:
         nueva_historia = await self.repository.create(nueva_historia)
         await self._vectorize_record(nueva_historia)
         return nueva_historia
+
+    async def actualizar_consulta(
+        self,
+        historia_id: uuid.UUID,
+        data: HistoriaClinicaUpdate,
+        veterinario: User,
+    ) -> HistoriaClinica:
+        historia = await self.repository.get_by_id(historia_id)
+        if (
+            not historia
+            or historia.veterinario_id != veterinario.id
+            or not await self.turno_repository.has_veterinarian_patient(
+                veterinario.id, historia.mascota_id
+            )
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Historia clínica no encontrada.",
+            )
+
+        changes = {
+            field: value
+            for field, value in data.model_dump(exclude_unset=True).items()
+            if value is not None
+        }
+        if not changes:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Indicá al menos un dato para actualizar.",
+            )
+
+        historia = await self.repository.update(historia, changes)
+        await self._vectorize_record(historia)
+        return historia
 
     async def vectorizar_historias_pendientes(
         self, veterinario: User, limit: int = 100
@@ -98,8 +131,7 @@ class HistoriaClinicaService:
             pet_id=record.mascota_id,
             source_type="medical_record",
         )
-        record.vectorizada = success
-        await self.db.commit()
+        await self.repository.set_vectorized(record, success)
         if not success:
             logger.error("Falló la vectorización de la historia clínica %s.", record.id)
         return success
@@ -107,7 +139,7 @@ class HistoriaClinicaService:
     async def obtener_por_mascota(
         self, mascota_id: uuid.UUID, veterinario: User
     ) -> List[HistoriaClinica]:
-        """Obtiene el historial de la mascota para el veterinario asignado."""
+        """Obtiene las historias clínicas registradas por el veterinario actual."""
         if not await self.turno_repository.has_veterinarian_patient(
             veterinario.id, mascota_id
         ):
@@ -118,6 +150,35 @@ class HistoriaClinicaService:
         return await self.repository.get_by_veterinarian_and_pet(
             veterinario.id, mascota_id
         )
+
+    async def obtener_paginadas_por_mascota(
+        self,
+        mascota_id: uuid.UUID,
+        veterinario: User,
+        page: int = 1,
+        limit: int = 20,
+    ) -> Dict[str, Any]:
+        if not await self.turno_repository.has_veterinarian_patient(
+            veterinario.id, mascota_id
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Mascota no asignada a este veterinario.",
+            )
+        offset = (page - 1) * limit
+        records = await self.repository.get_by_veterinarian_and_pet(
+            veterinario.id, mascota_id, limit=limit, offset=offset
+        )
+        total = await self.repository.count_by_veterinarian_and_pet(
+            veterinario.id, mascota_id
+        )
+        return {
+            "items": records,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "pages": (total + limit - 1) // limit,
+        }
 
     async def exportar_historia_clinica(
         self, 

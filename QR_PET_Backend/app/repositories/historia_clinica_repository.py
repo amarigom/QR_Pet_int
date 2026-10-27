@@ -1,7 +1,7 @@
 import uuid
-from typing import List, Optional
+from typing import Any, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import func, select
 from app.models.historia_clinica import HistoriaClinica
 
 class HistoriaClinicaRepository:
@@ -50,6 +50,53 @@ class HistoriaClinicaRepository:
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
+    async def count_by_veterinarian_and_pet(
+        self, veterinarian_id: uuid.UUID, pet_id: uuid.UUID
+    ) -> int:
+        result = await self.db.execute(
+            select(func.count())
+            .select_from(HistoriaClinica)
+            .where(
+                HistoriaClinica.veterinario_id == veterinarian_id,
+                HistoriaClinica.mascota_id == pet_id,
+            )
+        )
+        return result.scalar_one()
+
+    async def get_recent_by_veterinarian(
+        self, veterinarian_id: uuid.UUID, limit: int = 50
+    ) -> List[HistoriaClinica]:
+        query = (
+            select(HistoriaClinica)
+            .where(HistoriaClinica.veterinario_id == veterinarian_id)
+            .order_by(HistoriaClinica.fecha_consulta.desc())
+            .limit(limit)
+        )
+        result = await self.db.execute(query)
+        return list(result.scalars().all())
+
+    async def update(
+        self, historia: HistoriaClinica, changes: dict[str, Any]
+    ) -> HistoriaClinica:
+        for field, value in changes.items():
+            setattr(historia, field, value)
+        await self.db.commit()
+        await self.db.refresh(historia)
+        return historia
+
+    async def get_all_by_pet(
+        self, pet_id: uuid.UUID, limit: int = 50, offset: int = 0
+    ) -> List[HistoriaClinica]:
+        query = (
+            select(HistoriaClinica)
+            .where(HistoriaClinica.mascota_id == pet_id)
+            .order_by(HistoriaClinica.fecha_consulta.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        result = await self.db.execute(query)
+        return list(result.scalars().all())
+
     async def get_by_veterinario(self, veterinario_id: uuid.UUID, limit: int = 50, offset: int = 0) -> List[HistoriaClinica]:
         query = (
             select(HistoriaClinica)
@@ -75,3 +122,11 @@ class HistoriaClinicaRepository:
         )
         result = await self.db.execute(query)
         return list(result.scalars().all())
+
+    async def set_vectorized(
+        self, historia: HistoriaClinica, vectorizada: bool
+    ) -> HistoriaClinica:
+        historia.vectorizada = vectorizada
+        await self.db.commit()
+        await self.db.refresh(historia)
+        return historia

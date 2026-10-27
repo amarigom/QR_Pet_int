@@ -45,8 +45,7 @@ class QRCode(Base):
     
     # RELACIÓN: Un QR pertenece a una mascota
     mascota: Mapped[Optional["Pet"]] = relationship(
-        "Pet", 
-        back_populates="qr_code"
+        "Pet"
     )
 
     def __repr__(self) -> str:

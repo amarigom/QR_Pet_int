@@ -33,6 +33,7 @@ async def get_user_scans_locations(
         .join(QRCode, Scan.qr_id == QRCode.id)
         .join(Pet, QRCode.mascota_id == Pet.id) 
         .filter(Pet.usuario_id == current_user.id) 
+        .filter(QRCode.activo.is_(True))
         .filter(Scan.latitud.isnot(None))
     )
     

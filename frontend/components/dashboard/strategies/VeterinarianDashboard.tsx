@@ -26,7 +26,7 @@ import { ScanMapProvider } from '@/components/map/map-provider'
 import { PaginationControls } from '@/components/dashboard/pagination-controls'
 import { KnowledgeManager } from '@/components/dashboard/knowledge-manager'
 import { useVeterinarianDashboard } from '@/hooks/useVeterinarianDashboard'
-import { getApiOrigin } from '@/lib/api/client'
+import { getApiAssetUrl } from '@/lib/api/client'
 import type { User } from '@/lib/types/auth'
 import type { VeterinarianPet } from '@/lib/types/veterinarian'
 
@@ -62,6 +62,9 @@ function mondayOf(date: Date) {
 
 export default function VeterinarianDashboard({ user }: VeterinarianDashboardProps) {
   const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()))
+  const [mobileAgendaDayIndex, setMobileAgendaDayIndex] = useState(
+    () => (new Date().getDay() + 6) % 7,
+  )
   const [qrSearch, setQrSearch] = useState('')
   const [qrPage, setQrPage] = useState(1)
   const qrPageSize = 10
@@ -94,12 +97,27 @@ export default function VeterinarianDashboard({ user }: VeterinarianDashboardPro
     [weekStart],
   )
   const weekEnd = weekDays[6]
+  const mobileAgendaDay = weekDays[mobileAgendaDayIndex] ?? weekDays[0]
 
   useEffect(() => {
     const nextWeekStart = new Date(weekEnd)
     nextWeekStart.setDate(nextWeekStart.getDate() + 1)
     void loadWeeklyAppointments(weekStart.toISOString(), nextWeekStart.toISOString())
   }, [weekStart, weekEnd, appointmentsRefreshVersion, loadWeeklyAppointments])
+
+  useEffect(() => {
+    const showConfirmedAppointment = (event: Event) => {
+      const dateValue = (event as CustomEvent<{ fecha_hora_inicio?: string | null }>).detail
+        ?.fecha_hora_inicio
+      if (!dateValue) return
+      const appointmentDate = parseAppointmentDate(dateValue)
+      if (Number.isNaN(appointmentDate.getTime())) return
+      setWeekStart(mondayOf(appointmentDate))
+      setMobileAgendaDayIndex((appointmentDate.getDay() + 6) % 7)
+    }
+    window.addEventListener('veterinarian-data-refresh', showConfirmedAppointment)
+    return () => window.removeEventListener('veterinarian-data-refresh', showConfirmedAppointment)
+  }, [])
 
   const linkedClientName = useMemo(
     () => new Map((data?.clients ?? []).map((client) => [client.id, client.nombre])),
@@ -143,39 +161,20 @@ export default function VeterinarianDashboard({ user }: VeterinarianDashboardPro
   )
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <header>
         <h1 className="text-2xl font-bold tracking-tight">Panel veterinario</h1>
         <p className="text-muted-foreground">Hola, {user.nombre}. Gestioná tus pacientes y consultas.</p>
       </header>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          { label: 'Clientes vinculados', value: data.clients.length, icon: Users },
-          { label: 'Mascotas atendidas', value: data.pets.length, icon: PawPrint },
-          { label: 'Códigos QR', value: data.qrs.length, icon: QrCode },
-          { label: 'Escaneos', value: data.scans.length, icon: Activity },
-        ].map(({ label, value, icon: Icon }) => (
-          <Card key={label}>
-            <CardContent className="flex items-center justify-between p-5">
-              <div>
-                <p className="text-sm text-muted-foreground">{label}</p>
-                <p className="text-2xl font-bold">{value}</p>
-              </div>
-              <Icon className="h-6 w-6 text-primary" />
-            </CardContent>
-          </Card>
-        ))}
-      </section>
-
-      <Tabs defaultValue="clients" className="space-y-4">
-        <TabsList className="h-auto flex-wrap justify-start">
-          <TabsTrigger value="clients">Clientes</TabsTrigger>
-          <TabsTrigger value="pets">Mascotas y QR</TabsTrigger>
-          <TabsTrigger value="scans">Escaneos</TabsTrigger>
-          <TabsTrigger value="appointments">Turnos</TabsTrigger>
-          <TabsTrigger value="medical">Historias clínicas</TabsTrigger>
-          <TabsTrigger value="knowledge">Conocimiento IA</TabsTrigger>
+      <Tabs defaultValue="appointments" className="order-1 space-y-4 lg:order-2">
+        <TabsList className="h-auto w-full flex-nowrap justify-start gap-1 overflow-x-auto sm:flex-wrap">
+          <TabsTrigger className="min-h-11 shrink-0 px-4 text-base" value="clients">Clientes</TabsTrigger>
+          <TabsTrigger className="min-h-11 shrink-0 px-4 text-base" value="pets">Mascotas y QR</TabsTrigger>
+          <TabsTrigger className="min-h-11 shrink-0 px-4 text-base" value="scans">Escaneos</TabsTrigger>
+          <TabsTrigger className="min-h-11 shrink-0 px-4 text-base" value="appointments">Turnos</TabsTrigger>
+          <TabsTrigger className="min-h-11 shrink-0 px-4 text-base" value="medical">Historias clínicas</TabsTrigger>
+          <TabsTrigger className="min-h-11 shrink-0 px-4 text-base" value="knowledge">Conocimiento IA</TabsTrigger>
         </TabsList>
 
         <TabsContent value="clients">
@@ -191,7 +190,8 @@ export default function VeterinarianDashboard({ user }: VeterinarianDashboardPro
               <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 {data.clinic?.logo_url ? (
                   <img
-                    src={`${getApiOrigin()}${data.clinic.logo_url}`}
+                    key={data.clinic.logo_url}
+                    src={getApiAssetUrl(data.clinic.logo_url)}
                     alt={`Logo de ${data.clinic.nombre_clinica}`}
                     className="h-20 w-20 rounded-lg border object-contain p-1"
                   />
@@ -335,7 +335,9 @@ export default function VeterinarianDashboard({ user }: VeterinarianDashboardPro
           <Card>
             <CardHeader>
               <CardTitle>Mascotas y códigos QR</CardTitle>
-              <CardDescription>Solo se muestran mascotas relacionadas con tus turnos o historias clínicas.</CardDescription>
+              <CardDescription>
+                Solo se muestran mascotas vinculadas por sus dueños, turnos o historias clínicas.
+              </CardDescription>
             </CardHeader>
             <CardContent className="overflow-x-auto">
               <table className="w-full min-w-[600px] text-sm">
@@ -360,7 +362,7 @@ export default function VeterinarianDashboard({ user }: VeterinarianDashboardPro
                   ))}
                   {data.pets.length === 0 && (
                     <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">
-                      Las mascotas aparecerán al crear un turno o una historia clínica.
+                      Las mascotas aparecerán cuando las vincule su dueño o tengan un turno o historia clínica.
                     </td></tr>
                   )}
                 </tbody>
@@ -477,8 +479,8 @@ export default function VeterinarianDashboard({ user }: VeterinarianDashboardPro
           </div>
         </TabsContent>
 
-        <TabsContent value="appointments" className="space-y-4">
-          <Card>
+        <TabsContent value="appointments" className="flex flex-col gap-4">
+          <Card className="order-2 lg:order-1">
             <CardHeader>
               <CardTitle>Agendar turno</CardTitle>
               <CardDescription>Elegí un cliente del catálogo y una de sus mascotas para iniciar el vínculo.</CardDescription>
@@ -523,11 +525,22 @@ export default function VeterinarianDashboard({ user }: VeterinarianDashboardPro
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="order-1 lg:order-2">
             <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <CardTitle>Agenda semanal</CardTitle>
-                <CardDescription>
+                <CardTitle>
+                  <span className="sm:hidden">Turnos del día</span>
+                  <span className="hidden sm:inline">Agenda semanal</span>
+                </CardTitle>
+                <CardDescription className="sm:hidden">
+                  {mobileAgendaDay.toLocaleDateString('es-AR', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </CardDescription>
+                <CardDescription className="hidden sm:block">
                   {weekStart.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}
                   {' – '}
                   {weekEnd.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -568,14 +581,18 @@ export default function VeterinarianDashboard({ user }: VeterinarianDashboardPro
                 <p role="alert" className="py-4 text-sm text-destructive">{appointmentsError}</p>
               ) : (
                 <div className="overflow-x-auto">
-                  <div className="grid min-w-[980px] grid-cols-7 divide-x rounded-md border">
+                  <div className="grid min-w-0 grid-cols-1 divide-x rounded-md border sm:min-w-[980px] sm:grid-cols-7">
                     {weekDays.map((day) => {
                       const dayKey = dateOnly(day)
                       const dayAppointments = weeklyAppointments.filter(
                         (appointment) => dateOnly(parseAppointmentDate(appointment.fecha_hora_inicio)) === dayKey,
                       )
+                      const isMobileAgendaDay = day.getDay() === mobileAgendaDay.getDay()
                       return (
-                        <section key={dayKey} className="min-h-56">
+                        <section
+                          key={dayKey}
+                          className={isMobileAgendaDay ? 'min-h-56' : 'hidden min-h-56 sm:block'}
+                        >
                           <h3 className="border-b bg-muted/40 p-3 text-center text-sm font-semibold capitalize">
                             {day.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })}
                           </h3>
@@ -724,7 +741,26 @@ export default function VeterinarianDashboard({ user }: VeterinarianDashboardPro
         </TabsContent>
       </Tabs>
 
-      <Card className="border-dashed">
+      <section className="order-2 grid gap-4 sm:grid-cols-2 xl:grid-cols-4 lg:order-1">
+        {[
+          { label: 'Clientes vinculados', value: data.clients.length, icon: Users },
+          { label: 'Mascotas atendidas', value: data.pets.length, icon: PawPrint },
+          { label: 'Códigos QR', value: data.qrs.length, icon: QrCode },
+          { label: 'Escaneos', value: data.scans.length, icon: Activity },
+        ].map(({ label, value, icon: Icon }) => (
+          <Card key={label}>
+            <CardContent className="flex items-center justify-between p-5">
+              <div>
+                <p className="text-sm text-muted-foreground">{label}</p>
+                <p className="text-2xl font-bold">{value}</p>
+              </div>
+              <Icon className="h-6 w-6 text-primary" />
+            </CardContent>
+          </Card>
+        ))}
+      </section>
+
+      <Card className="order-3 border-dashed">
         <CardContent className="flex items-center gap-3 py-5 text-sm text-muted-foreground">
           <Stethoscope className="h-5 w-5 shrink-0 text-primary" />
           Los clientes se vinculan al veterinario mediante sus turnos; los registros médicos solo son visibles para el profesional que los creó.

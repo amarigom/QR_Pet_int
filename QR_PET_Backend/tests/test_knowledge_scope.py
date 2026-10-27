@@ -19,10 +19,7 @@ class QueryResult:
 
 @pytest.mark.parametrize(
     ("role", "expected_scope", "expected_owner"),
-    [
-        ("admin", "admin", None),
-        ("veterinario", "veterinarian", "owner"),
-    ],
+    [("admin", "admin", None)],
 )
 def test_knowledge_ingestion_scope_is_derived_from_authenticated_role(
     role, expected_scope, expected_owner
@@ -34,11 +31,13 @@ def test_knowledge_ingestion_scope_is_derived_from_authenticated_role(
     assert owner_id == (user_id if expected_owner else None)
 
 
-def test_knowledge_ingestion_rejects_regular_users():
+@pytest.mark.parametrize("role", ["usuario", "veterinario"])
+def test_knowledge_ingestion_rejects_non_admin_users(role):
     with pytest.raises(HTTPException) as error:
-        _knowledge_scope(SimpleNamespace(rol="usuario", id=uuid4()))
+        _knowledge_scope(SimpleNamespace(rol=role, id=uuid4()))
 
     assert error.value.status_code == 403
+    assert "Solo administración" in error.value.detail
 
 
 @pytest.mark.asyncio
@@ -71,14 +70,16 @@ async def test_user_search_includes_only_documents_from_linked_veterinarians():
     sql = str(db.execute.await_args.args[0].compile(dialect=postgresql.dialect()))
     where_clause = sql.split("WHERE", 1)[1]
     assert "owner_type" in where_clause
-    assert "owner_id IN (SELECT veterinario_clientes.veterinario_id" in where_clause
+    assert "owner_id IN (SELECT" in where_clause
     assert "veterinario_clientes.cliente_id" in where_clause
+    assert "veterinario_mascotas.veterinario_id" in where_clause
+    assert "UNION" in where_clause
     assert "source_type" in where_clause
     assert " OR " in where_clause
 
 
 @pytest.mark.asyncio
-async def test_veterinarian_pet_search_is_limited_to_linked_clients():
+async def test_veterinarian_pet_search_is_limited_to_assigned_patients():
     db = SimpleNamespace(execute=AsyncMock(return_value=QueryResult()))
     veterinarian_id = uuid4()
 
@@ -89,8 +90,26 @@ async def test_veterinarian_pet_search_is_limited_to_linked_clients():
     )
 
     sql = str(db.execute.await_args.args[0].compile(dialect=postgresql.dialect()))
-    assert "veterinario_clientes" in sql
-    assert "mascotas.usuario_id IN" in sql
+    assert "veterinario_mascotas" in sql
+    assert "turnos.mascota_id" in sql
+    assert "historias_clinicas.mascota_id" in sql
+    assert "mascotas.id IN" in sql
+
+
+@pytest.mark.asyncio
+async def test_veterinarian_history_search_is_limited_to_its_own_records():
+    db = SimpleNamespace(execute=AsyncMock(return_value=QueryResult()))
+
+    await KnowledgeRepository(db).buscar_similares(
+        query_vector=[0.1, 0.2],
+        user_id=uuid4(),
+        user_role="veterinario",
+    )
+
+    sql = str(db.execute.await_args.args[0].compile(dialect=postgresql.dialect()))
+    assert "knowledge_vectors.owner_id = " in sql
+    assert "knowledge_vectors.pet_id IN (SELECT veterinario_mascotas.mascota_id" not in sql
+    assert "knowledge_vectors.source_type = " not in sql
 
 
 @pytest.mark.asyncio
@@ -109,7 +128,7 @@ async def test_clinical_record_vector_uses_veterinarian_and_pet_scope():
         temperatura_c=38.5,
         vectorizada=False,
     )
-    db = SimpleNamespace(commit=AsyncMock())
+    db = SimpleNamespace(commit=AsyncMock(), refresh=AsyncMock())
     vector_service = SimpleNamespace(ingestar_documento=AsyncMock(return_value=True))
 
     indexed = await HistoriaClinicaService(db, vector_service)._vectorize_record(record)

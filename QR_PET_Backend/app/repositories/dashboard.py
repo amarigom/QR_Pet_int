@@ -1,6 +1,6 @@
 # 📂 app/crud/crud_dashboard.py o app/repository/dashboard.py
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, union
 from app.models.pet import Pet
 from app.models.qr import QRCode
 from app.schemas.scan import ScanResponse
@@ -17,6 +17,7 @@ from app.models.qr import QRCode
 from app.models.scan import Scan
 from app.models.veterinario import PerfilVeterinario
 from app.models.veterinario_cliente import veterinario_clientes
+from app.models.veterinario_mascota import veterinario_mascotas
 from typing import Dict, Any
 
 class DashboardRepository:
@@ -70,13 +71,17 @@ class DashboardRepository:
         )
         total_scans = (await self.session.execute(total_scans_query)).scalar() or 0
         scans_last_30_days = len(recent_scans_list)
+        linked_veterinarians = union(
+            select(veterinario_clientes.c.veterinario_id).where(
+                veterinario_clientes.c.cliente_id == usuario_id
+            ),
+            select(veterinario_mascotas.c.veterinario_id)
+            .join(Pet, Pet.id == veterinario_mascotas.c.mascota_id)
+            .where(Pet.usuario_id == usuario_id),
+        ).subquery()
         brands_result = await self.session.execute(
             select(PerfilVeterinario)
-            .join(
-                veterinario_clientes,
-                veterinario_clientes.c.veterinario_id == PerfilVeterinario.user_id,
-            )
-            .where(veterinario_clientes.c.cliente_id == usuario_id)
+            .where(PerfilVeterinario.user_id.in_(select(linked_veterinarians.c.veterinario_id)))
             .order_by(PerfilVeterinario.nombre_clinica.asc())
         )
 

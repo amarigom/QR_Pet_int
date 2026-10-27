@@ -3,9 +3,11 @@ import type {
   Appointment,
   AppointmentStatus,
   MedicalRecord,
+  PaginatedMedicalRecords,
   VeterinarianDashboardData,
   VeterinarianClientCreated,
   VeterinarianClinicProfile,
+  VeterinarianScannedPet,
 } from '@/lib/types/veterinarian'
 
 export interface CreateAppointment {
@@ -20,10 +22,18 @@ export interface CreateAppointment {
 export interface CreateMedicalRecord {
   mascota_id: string
   motivo_consulta: string
-  diagnostico?: string
-  tratamiento?: string
-  peso_kg?: number
-  temperatura_c?: number
+  diagnostico?: string | null
+  tratamiento?: string | null
+  peso_kg?: number | null
+  temperatura_c?: number | null
+}
+
+export interface UpdateMedicalRecord {
+  motivo_consulta: string
+  diagnostico?: string | null
+  tratamiento?: string | null
+  peso_kg?: number | null
+  temperatura_c?: number | null
 }
 
 export interface CreateVeterinarianClient {
@@ -63,6 +73,16 @@ export const veterinarianApi = {
       { method: 'POST' },
     ),
 
+  getPetFromQr: (code: string) =>
+    fetchAPI<{ pet: VeterinarianScannedPet }>(
+      `/scans/veterinario/qr/${encodeURIComponent(code)}`,
+    ),
+
+  getPetMedicalRecords: (petId: string, page = 1, limit = 10) =>
+    fetchAPI<PaginatedMedicalRecords>(
+      `/historias-clinicas/mascota/${petId}/pagina?page=${page}&limit=${limit}`,
+    ),
+
   createAppointment: (data: CreateAppointment) =>
     fetchAPI<Appointment>('/turnos/', {
       method: 'POST',
@@ -86,6 +106,12 @@ export const veterinarianApi = {
   createMedicalRecord: (data: CreateMedicalRecord) =>
     fetchAPI<MedicalRecord>('/historias-clinicas/', {
       method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateMedicalRecord: (id: string, data: UpdateMedicalRecord) =>
+    fetchAPI<MedicalRecord>(`/historias-clinicas/${id}`, {
+      method: 'PATCH',
       body: JSON.stringify(data),
     }),
 }

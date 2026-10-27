@@ -7,7 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.api.v1.dependencies import get_vector_store_service, require_veterinarian
 from app.models.user import User
-from app.schemas.historia_clinica import HistoriaClinicaCreate, HistoriaClinicaResponse
+from app.schemas.common import PaginatedResponse
+from app.schemas.historia_clinica import (
+    HistoriaClinicaCreate,
+    HistoriaClinicaResponse,
+    HistoriaClinicaUpdate,
+)
 from app.services.historia_clinica_service import HistoriaClinicaService
 from app.factories.historia_clinica_factory import ExportFormat
 from app.services.pgvector_service import VectorStoreService
@@ -23,6 +28,18 @@ async def crear_historia_clinica(
 ):
     service = HistoriaClinicaService(db, vector_service)
     return await service.registrar_consulta(data, current_user)
+
+
+@router.patch("/{historia_id}", response_model=HistoriaClinicaResponse)
+async def actualizar_historia_clinica(
+    historia_id: uuid.UUID,
+    data: HistoriaClinicaUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_veterinarian),
+    vector_service: VectorStoreService = Depends(get_vector_store_service),
+):
+    service = HistoriaClinicaService(db, vector_service)
+    return await service.actualizar_consulta(historia_id, data, current_user)
 
 
 @router.post("/vectorizar")
@@ -43,6 +60,24 @@ async def obtener_historias_por_mascota(
 ):
     service = HistoriaClinicaService(db)
     return await service.obtener_por_mascota(mascota_id, current_user)
+
+
+@router.get(
+    "/mascota/{mascota_id}/pagina",
+    response_model=PaginatedResponse[HistoriaClinicaResponse],
+)
+async def obtener_historias_paginadas_por_mascota(
+    mascota_id: uuid.UUID,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_veterinarian),
+):
+    service = HistoriaClinicaService(db)
+    return await service.obtener_paginadas_por_mascota(
+        mascota_id, current_user, page, limit
+    )
+
 
 @router.get("/{historia_id}/exportar")
 async def exportar_historia_clinica(

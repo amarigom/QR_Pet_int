@@ -5,12 +5,14 @@
 import uuid
 import logging
 from typing import Optional
-from sqlalchemy import select, text
+from sqlalchemy import select, text, union
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Any, Dict, List, Optional
 from app.models.pet import Pet
 from app.models.pet_vector import PetVector  # <--- Importa el modelo aquí
-from app.models.veterinario_cliente import veterinario_clientes
+from app.models.veterinario_mascota import veterinario_mascotas
+from app.models.historia_clinica import HistoriaClinica
+from app.models.turno import Turno
 
 
 logger = logging.getLogger(__name__)
@@ -27,13 +29,19 @@ class PetVectorRepository:
         limit: int,
     ) -> list[tuple[uuid.UUID, str, dict[str, Any], float]]:
         distance = PetVector.embedding.cosine_distance(query_vector).label("distance")
-        linked_clients = select(veterinario_clientes.c.cliente_id).where(
-            veterinario_clientes.c.veterinario_id == veterinarian_id
+        linked_pet_ids = union(
+            select(veterinario_mascotas.c.mascota_id).where(
+                veterinario_mascotas.c.veterinario_id == veterinarian_id
+            ),
+            select(Turno.mascota_id).where(Turno.veterinario_id == veterinarian_id),
+            select(HistoriaClinica.mascota_id).where(
+                HistoriaClinica.veterinario_id == veterinarian_id
+            ),
         )
         stmt = (
             select(PetVector.pet_id, PetVector.document, PetVector.metadata_, distance)
             .join(Pet, Pet.id == PetVector.pet_id)
-            .where(Pet.usuario_id.in_(linked_clients))
+            .where(Pet.id.in_(linked_pet_ids))
             .order_by(distance)
             .limit(limit)
         )

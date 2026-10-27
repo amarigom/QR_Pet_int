@@ -1,5 +1,13 @@
 import { fetchAPI } from './client';
-import type { Pet, PetFormData, PetDetailResponse, PaginatedResponse } from '../types';
+import type {
+  Pet,
+  PetFormData,
+  PetDetailResponse,
+  PaginatedResponse,
+  PetVeterinarianLink,
+  VeterinarianClinicSearchResult,
+  QRCode,
+} from '../types';
 import { UserDashboardStats } from '../types/user';
 
 export const petsApi = {
@@ -17,6 +25,32 @@ export const petsApi = {
   
   // api/pets.ts
   getById: (id: string) => fetchAPI<Pet>(`/pets/${id}`),
+
+  searchVeterinarians: (query: string) =>
+    fetchAPI<VeterinarianClinicSearchResult[]>(
+      `/pets/veterinarias/buscar?q=${encodeURIComponent(query)}`,
+    ),
+
+  getVeterinarians: (petId: string) =>
+    fetchAPI<PetVeterinarianLink[]>(`/pets/${petId}/veterinarias`),
+
+  linkVeterinarian: (petId: string, veterinarianId: string) =>
+    fetchAPI<PetVeterinarianLink[]>(`/pets/${petId}/veterinarias`, {
+      method: 'POST',
+      body: JSON.stringify({ veterinario_id: veterinarianId }),
+    }),
+
+  unlinkVeterinarian: (petId: string, veterinarianId: string) =>
+    fetchAPI<{ message: string }>(
+      `/pets/${petId}/veterinarias/${veterinarianId}`,
+      { method: 'DELETE' },
+    ),
+
+  replaceQr: (petId: string, codigo: string) =>
+    fetchAPI<QRCode>(`/pets/${petId}/qr`, {
+      method: 'POST',
+      body: JSON.stringify({ codigo }),
+    }),
   
   create: (data: PetFormData) => fetchAPI<Pet>('/pets', {
     method: 'POST',

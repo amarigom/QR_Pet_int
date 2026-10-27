@@ -6,7 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.pet import PetCreate, PetUpdate, PetResponse
 from app.schemas.composite import PetDetailResponse  # <--- La "Vista" con relaciones
 from app.schemas.common import SuccessResponse, PaginatedResponse
+from app.schemas.qr import QRReplaceRequest, QRResponse
 from app.schemas.user import UserDashboardStats
+from app.schemas.veterinario import (
+    PetVeterinarianLinkCreate,
+    PetVeterinarianLinkResponse,
+    VeterinarianClinicSearchResult,
+)
 
 # 2. Core, Seguridad y Modelos
 from app.core.database import get_db
@@ -16,6 +22,19 @@ from app.services.pet_service import PetService
 from app.services.admin_service import AdminService
 
 router = APIRouter(prefix="/pets", tags=["Mascotas"])
+
+@router.post(
+    "/{pet_id}/qr",
+    response_model=QRResponse,
+)
+async def replace_pet_qr(
+    pet_id: uuid.UUID,
+    data: QRReplaceRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await PetService(db).replace_pet_qr(user, pet_id, data.codigo)
+
 
 @router.post("", response_model=PetDetailResponse, status_code=status.HTTP_201_CREATED)
 async def create_pet(
@@ -54,6 +73,57 @@ async def get_my_stats(
     pet_service = PetService(db)
     
     return await pet_service.get_user_stats(current_user.id)
+
+
+@router.get(
+    "/veterinarias/buscar",
+    response_model=list[VeterinarianClinicSearchResult],
+)
+async def search_veterinarians(
+    q: str = Query(..., min_length=2, max_length=100),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await PetService(db).search_veterinarians(user, q)
+
+
+@router.get(
+    "/{pet_id}/veterinarias",
+    response_model=list[PetVeterinarianLinkResponse],
+)
+async def get_pet_veterinarians(
+    pet_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await PetService(db).get_pet_veterinarians(user, pet_id)
+
+
+@router.post(
+    "/{pet_id}/veterinarias",
+    response_model=list[PetVeterinarianLinkResponse],
+)
+async def link_pet_veterinarian(
+    pet_id: uuid.UUID,
+    data: PetVeterinarianLinkCreate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await PetService(db).link_veterinarian(
+        user, pet_id, data.veterinario_id
+    )
+
+
+@router.delete("/{pet_id}/veterinarias/{veterinario_id}", response_model=SuccessResponse)
+async def unlink_pet_veterinarian(
+    pet_id: uuid.UUID,
+    veterinario_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await PetService(db).unlink_veterinarian(user, pet_id, veterinario_id)
+    return SuccessResponse(message="Vínculo con la veterinaria eliminado.")
+
 
 
 @router.get("/{pet_id}", response_model=PetDetailResponse) # Quitamos el response_model fijo si las respuestas son muy distintas

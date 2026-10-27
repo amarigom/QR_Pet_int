@@ -12,11 +12,32 @@ from app.repositories.scan_repository import ScanRepository
 
 # 2. Core y Seguridad
 from app.core.database import get_db
-from app.api.v1.dependencies import get_current_user, require_admin
+from app.api.v1.dependencies import (
+    get_current_user,
+    require_admin,
+    require_veterinarian,
+)
+from app.models.user import User
+from app.schemas.scan import VeterinarianScanResponse
 from app.services.scan_service import ScanService
 from uuid import UUID
 
 router = APIRouter(prefix="/scans", tags=["Escaneos (Scans)"])
+
+@router.get(
+    "/veterinario/qr/{codigo_qr}",
+    response_model=VeterinarianScanResponse,
+)
+async def get_veterinarian_pet_from_qr(
+    codigo_qr: str,
+    veterinarian: User = Depends(require_veterinarian),
+    db: AsyncSession = Depends(get_db),
+):
+    pet = await ScanService(db).get_veterinarian_pet_from_qr(
+        codigo_qr, veterinarian
+    )
+    return {"pet": pet}
+
 
 @router.post("", response_model=Dict[str, Any], status_code=status.HTTP_201_CREATED)
 async def create_scan(

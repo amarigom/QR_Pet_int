@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Optional
+from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 from app.schemas.base import UserMinimal
 
@@ -89,3 +90,21 @@ class ScanLocation(BaseModel):
     direccion_aproximada: str 
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class VeterinarianPetSummary(BaseModel):
+    id: UUID
+    nombre: str
+    especie: str
+    estado: str
+    raza: Optional[str] = None
+    color: Optional[str] = None
+    edad_aproximada: Optional[str] = None
+    foto_url: Optional[str] = None
+    notas: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class VeterinarianScanResponse(BaseModel):
+    pet: VeterinarianPetSummary

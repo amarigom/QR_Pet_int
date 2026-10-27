@@ -55,6 +55,16 @@ export function useVeterinarianDashboard() {
     void reload()
   }, [reload])
 
+  useEffect(() => {
+    const refreshFromAssistant = () => {
+      void reload().then(() => {
+        setAppointmentsRefreshVersion((version) => version + 1)
+      })
+    }
+    window.addEventListener('veterinarian-data-refresh', refreshFromAssistant)
+    return () => window.removeEventListener('veterinarian-data-refresh', refreshFromAssistant)
+  }, [reload])
+
   const createAppointment = useCallback(async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!data) return
@@ -199,7 +209,16 @@ export function useVeterinarianDashboard() {
   const uploadClinicLogo = useCallback(async (file: File) => {
     setIsSubmitting(true)
     try {
-      await veterinarianApi.uploadClinicLogo(file)
+      const profile = await veterinarianApi.uploadClinicLogo(file)
+      setData((current) => current
+        ? {
+            ...current,
+            clinic: {
+              nombre_clinica: profile.nombre_clinica,
+              logo_url: profile.logo_url,
+            },
+          }
+        : current)
       toast.success('Logo institucional actualizado.')
       await reload()
     } catch (submitError) {

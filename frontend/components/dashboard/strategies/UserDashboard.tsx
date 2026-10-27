@@ -17,7 +17,7 @@ import { useContactProfile } from '@/hooks/useContactProfile'
 
 // Importación del nuevo mapa unificado y optimizado
 import { ScanMapProvider } from '@/components/map/map-provider'
-import { getApiOrigin } from '@/lib/api/client'
+import { getApiAssetUrl } from '@/lib/api/client'
 import { PaginationControls } from '@/components/dashboard/pagination-controls'
 
 interface UserDashboardProps {
@@ -74,15 +74,18 @@ export default function UserDashboard({ data, user }: UserDashboardProps) {
             <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Veterinarias vinculadas
             </span>
-            {data.veterinary_brands.filter((brand) => brand.logo_url).map((brand) => (
-              <img
-                key={brand.nombre_clinica}
-                src={`${getApiOrigin()}${brand.logo_url}`}
-                alt={`Logo de ${brand.nombre_clinica}`}
-                title={brand.nombre_clinica}
-                className="h-12 max-w-36 object-contain"
-              />
-            ))}
+            {data.veterinary_brands.filter((brand) => brand.logo_url).map((brand) => {
+              if (!brand.logo_url) return null
+              return (
+                <img
+                  key={brand.nombre_clinica}
+                  src={getApiAssetUrl(brand.logo_url)}
+                  alt={`Logo de ${brand.nombre_clinica}`}
+                  title={brand.nombre_clinica}
+                  className="h-20 max-w-48 object-contain"
+                />
+              )
+            })}
           </div>
         ) : <span />}
         <Link href="/dashboard/activate" passHref className="w-full shrink-0 sm:w-auto">

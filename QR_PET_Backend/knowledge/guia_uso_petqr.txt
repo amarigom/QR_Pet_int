@@ -1,0 +1,243 @@
+GUÍA DE USO DE PETQR PARA DUEÑOS Y VETERINARIAS (PREGUNTAS FRECUENTES)
+
+Qué es PetQR: una plataforma que identifica mascotas con una medalla con código QR. Quien encuentra a una mascota escanea la medalla y puede contactar a su dueño. Las veterinarias usan la misma plataforma para gestionar clientes, turnos e historias clínicas.
+
+Hay dos perfiles principales: DUEÑO (usuario) y VETERINARIA. Un tercer perfil, administración, gestiona códigos QR, usuarios y conocimiento de la IA.
+
+==================================================
+PARTE 1. GUÍA PARA EL DUEÑO (USUARIO)
+==================================================
+
+--- Cuenta y acceso ---
+
+P: ¿Cómo creo mi cuenta de dueño?
+R: Desde la página principal tocá "Registrarse" (o "Crear Cuenta Gratis"), completá tus datos y creá tu contraseña. Después iniciás sesión con "Iniciar sesión".
+
+P: Mi veterinaria me creó una cuenta, ¿cómo la uso?
+R: Si tu veterinaria te registró como cliente, recibís por WhatsApp un enlace único de activación. Abrilo, elegí tu contraseña privada y tu cuenta queda activa. Si el enlace venció o no te llegó, pedile a la veterinaria que use "Reenviar activación".
+
+P: ¿Qué veo cuando inicio sesión como dueño?
+R: Un panel con el menú "Inicio", "Mis Mascotas" y "Mapa de Escaneos". Desde ahí administrás tus mascotas y ves dónde se escaneó la medalla.
+
+--- Registrar una mascota ---
+
+P: ¿Cómo registro mi mascota?
+R: Entrá a "Mis Mascotas" y tocá el botón para activar un código QR (también está en /dashboard/activate). Ingresá el código de tu medalla (por ejemplo ABC123XYZ), el sistema lo verifica, y completás los datos de la mascota: nombre y especie (obligatorios), raza, color, edad aproximada, foto y notas. Al guardar, la mascota queda registrada y vinculada a esa medalla.
+
+P: ¿Dónde está el código de mi medalla?
+R: Es el código impreso en tu medalla o el final del enlace que aparece al escanear el QR. Si escaneás el QR de una medalla nueva estando con sesión iniciada, la página te ofrece registrarla directamente.
+
+P: Me dice "Código no encontrado". ¿Qué hago?
+R: Revisá que esté bien escrito, sin espacios. Si sigue fallando, la medalla puede no estar dada de alta: contactanos por WhatsApp o Instagram desde la sección de Contacto.
+
+P: Me dice "Este QR ya está vinculado a una mascota".
+R: Esa medalla ya fue activada. Si es tuya y la activó otra persona por error, contactanos. Si querés usar la medalla con otra mascota tuya, primero tenés que retirarla de la mascota anterior.
+
+P: ¿Qué datos conviene cargar en notas?
+R: Información útil para quien encuentre a tu mascota: alergias, medicamentos, miedos o condiciones especiales. Esas notas pueden ser visibles al escanear la medalla, así que no cargues datos que no quieras mostrar.
+
+--- Ver y editar mi mascota ---
+
+P: ¿Cómo edito los datos de mi mascota?
+R: En "Mis Mascotas" elegí la mascota, tocá "Editar", cambiá lo necesario y guardá. También podés subir o cambiar su foto.
+
+P: ¿Cómo elimino una mascota?
+R: En la ficha de la mascota tocá el botón rojo de eliminar y confirmá en el cuadro de diálogo. La mascota deja de mostrarse en tu lista.
+
+--- Reemplazar la medalla (cambiar de QR) ---
+
+P: Compré otra medalla o perdí la mía. ¿Tengo que borrar a mi mascota y cargarla de nuevo?
+R: No. En la ficha de la mascota usá la caja "Reemplazar medalla" (o "Vincular medalla" si no tenía), ingresá el código nuevo y confirmá. La mascota conserva sus datos, su historia clínica y sus vínculos con veterinarias. El código viejo queda inactivo y ya no sirve para identificarla.
+
+P: ¿Qué pasa si alguien escanea la medalla vieja?
+R: Un código retirado está inactivo: no muestra la mascota ni permite activarla de nuevo, así que sirve también si perdiste la medalla.
+
+P: ¿Puedo usar un QR que ya está en otra mascota?
+R: No. Solo se pueden asignar códigos libres y activos.
+
+--- Vincular mi mascota con una veterinaria ---
+
+P: ¿Para qué sirve vincular mi mascota a una veterinaria?
+R: Para que esa clínica pueda ver la ficha de tu mascota, abrirla al escanear la medalla y registrar su historia clínica. El vínculo lo decidís vos como dueño.
+
+P: ¿Cómo vinculo a mi mascota con una veterinaria?
+R: En la ficha de la mascota, sección de veterinarias: escribí al menos dos letras del nombre de la clínica, buscala y elegila. Verás el aviso "La mascota quedó vinculada a la veterinaria".
+
+P: ¿Cómo desvinculo una veterinaria?
+R: En la misma sección, quitá el vínculo con la veterinaria. Verás "Se quitó el vínculo con la veterinaria". Después podés vincular otra.
+
+P: ¿Puedo cambiar de veterinaria?
+R: Sí: quitá el vínculo con la anterior y vinculá la nueva. Las historias clínicas ya registradas siguen perteneciendo a la clínica que las creó.
+
+P: Me aparece "Solo el dueño de la mascota puede vincular una veterinaria".
+R: Solo la cuenta dueña de la mascota puede ver o cambiar esos vínculos. Verificá que estés con la cuenta con la que registraste a la mascota. Los administradores también deben usar la cuenta dueña para estas acciones.
+
+P: ¿La veterinaria ve todas mis mascotas?
+R: No. Solo ve las mascotas vinculadas por vos, las que tienen turno con ella o las que ya tienen una historia clínica suya. Que la clínica te haya registrado como cliente no alcanza para ver tus mascotas.
+
+--- Escaneos, mapa y mensajes ---
+
+P: ¿Qué pasa cuando alguien escanea la medalla de mi mascota?
+R: La persona ve una página con los datos de la mascota y opciones para contactarte (llamada, WhatsApp o mensaje). El escaneo queda registrado con su ubicación aproximada, si la persona la permite.
+
+P: ¿Cómo veo dónde escanearon la medalla?
+R: En el menú "Mapa de Escaneos" aparecen los escaneos de tus mascotas.
+
+P: ¿Puede alguien escribirme sin iniciar sesión?
+R: Para enviar un mensaje al dueño desde la página de escaneo, la persona debe iniciar sesión. Los botones de contacto directo siguen disponibles.
+
+P: Perdí a mi mascota, ¿qué hago?
+R: Mantené los datos de contacto actualizados en la ficha, revisá el mapa de escaneos y tu WhatsApp por mensajes de quien la encuentre. Si perdiste la medalla, reemplazala por otra desde la ficha.
+
+--- Historia clínica del dueño ---
+
+P: ¿Puedo ver la historia clínica de mi mascota?
+R: Las consultas las registra la veterinaria. Tu veterinaria puede mostrarte el diagnóstico y el tratamiento en la consulta. Cada clínica ve solo lo que ella misma registró.
+
+==================================================
+PARTE 2. GUÍA PARA LA VETERINARIA
+==================================================
+
+--- Acceso y panel ---
+
+P: ¿Cómo entro como veterinaria?
+R: Iniciá sesión con la cuenta de veterinaria que te dio PetQR. El perfil veterinario no se elige al registrarse desde la página pública: si querés sumar tu clínica, usá "Quiero sumar mi veterinaria" de la landing o contactanos por WhatsApp.
+
+P: ¿Qué secciones tiene el panel veterinario?
+R: Seis pestañas: "Clientes", "Mascotas y QR", "Escaneos", "Turnos", "Historias clínicas" y "Conocimiento IA". Arriba hay un bloque "Identidad de la veterinaria".
+
+P: ¿Cómo cargo el logo de mi veterinaria?
+R: En "Identidad de la veterinaria" subí un logo PNG, JPG o WebP de hasta 2 MB. Se usa como marca de tu clínica en la plataforma.
+
+--- Clientes ---
+
+P: ¿Cómo registro un cliente?
+R: Pestaña "Clientes", formulario "Registrar cliente": completá nombre, correo y WhatsApp en formato internacional (por ejemplo +5492494112233) y tocá "Crear cliente y enviar activación".
+
+P: ¿Qué recibe el cliente?
+R: Un enlace único por WhatsApp para activar su cuenta y elegir una contraseña privada. Si el envío falla, el sistema muestra el motivo y el enlace de activación para que puedas copiarlo con "Copiar enlace de activación" y mandarlo por otro medio.
+
+P: Mi cliente no activó la cuenta. ¿Qué hago?
+R: En la tabla "Clientes vinculados" aparece como "Pendiente de activar". Tocá "Reenviar activación".
+
+P: ¿Qué clientes aparecen en mi lista?
+R: Los que registraste vos o los que ya tienen un turno o una consulta clínica con tu clínica.
+
+--- Mascotas y QR ---
+
+P: ¿Cómo aparece una mascota en mi lista?
+R: Cuando el dueño la vincula con tu clínica, o cuando existe un turno o una historia clínica tuya sobre ella. Registrar al cliente solo no hace que sus mascotas aparezcan.
+
+P: ¿Cómo hago para que el dueño me vincule?
+R: Pedile que, en la ficha de su mascota, busque tu clínica y la vincule. Es la forma más clara para un primer turno.
+
+P: ¿Cómo busco un QR de un paciente?
+R: En "Mascotas y QR", en "QR vinculados a tus pacientes", buscá por código, nombre de mascota o cliente. La lista está paginada.
+
+P: ¿Puedo ver todas las mascotas del sistema?
+R: No. Cada clínica ve únicamente a sus pacientes.
+
+--- Escanear la medalla de un paciente ---
+
+P: ¿Cómo uso el escaneo siendo veterinaria?
+R: Con la sesión de veterinaria iniciada, escaneá la medalla con la cámara del celular o con el escáner de la app. En lugar de la vista pública, se abre la ficha clínica de la mascota.
+
+P: ¿Qué veo en la ficha clínica?
+R: Los datos de la mascota, tu historial clínico paginado (10 registros por página), un formulario para registrar una nueva consulta y la opción de editar consultas anteriores tuyas.
+
+P: Escaneé y me dice que no tengo acceso. ¿Por qué?
+R: La mascota no está relacionada con tu clínica. Para tener acceso tiene que existir un vínculo hecho por el dueño, un turno tuyo o una historia clínica tuya sobre esa mascota. Pedile al dueño que la vincule con tu clínica.
+
+P: ¿Puedo escanear medallas de otras clínicas?
+R: Si la mascota no tiene relación con tu clínica no se abre la ficha clínica. Tampoco se muestran datos privados del dueño.
+
+P: Escanean un QR inactivo. ¿Qué pasa?
+R: Si la medalla fue reemplazada, el código viejo está inactivo y no abre la ficha. Usá el código nuevo.
+
+P: ¿Escanear como veterinaria genera un escaneo en el mapa del dueño?
+R: No. El acceso clínico del veterinario no se registra como un escaneo público.
+
+--- Turnos ---
+
+P: ¿Cómo agendo un turno?
+R: Pestaña "Turnos", formulario "Agendar turno": elegí cliente y mascota, indicá inicio y fin, el servicio (por ejemplo "Consulta") y observaciones opcionales, y tocá "Agendar turno".
+
+P: Dice "No hay clientes con mascotas para agendar".
+R: Todavía no hay mascotas disponibles para tu clínica. El cliente debe tener una mascota registrada y estar vinculado a vos.
+
+P: ¿Cómo veo mi agenda?
+R: En "Turnos" aparece la "Agenda semanal" con los siete días. Usá las flechas para cambiar de semana y "Hoy" para volver a la actual. En el celular se muestra "Turnos del día".
+
+P: ¿Cómo cancelo o completo un turno?
+R: Los turnos en estado PROGRAMADO muestran botones de acción dentro de su tarjeta en la agenda.
+
+P: ¿El cliente recibe un recordatorio?
+R: Sí, PetQR envía recordatorios de turnos por WhatsApp al dueño.
+
+P: ¿Agendar un turno vincula la mascota?
+R: Sí. Un turno crea la relación con la mascota y permite registrar su consulta.
+
+--- Historias clínicas ---
+
+P: ¿Cómo registro una consulta?
+R: De dos formas. 1) Escaneando la medalla y usando el formulario de la ficha clínica. 2) Desde la pestaña "Historias clínicas", "Registrar consulta clínica": elegí la mascota y completá Motivo de consulta, Diagnóstico, Tratamiento, Peso (kg) y Temperatura (°C). El motivo es el dato principal.
+
+P: ¿Qué datos tiene una historia clínica?
+R: Motivo de consulta, diagnóstico, tratamiento, peso, temperatura, fecha y adjuntos. PetQR no tiene campos separados de alergias ni antecedentes: se pueden escribir dentro del diagnóstico o el tratamiento.
+
+P: ¿Cómo edito una consulta ya cargada?
+R: Desde la ficha clínica (al escanear) podés editar tus registros anteriores. Corregí los datos y guardá.
+
+P: ¿Quién ve las historias clínicas que cargo?
+R: Solo tu cuenta veterinaria. Cada clínica ve lo que ella registró y no el historial de otras clínicas.
+
+P: ¿Puedo ver el historial que cargó otra veterinaria?
+R: No. Por privacidad, cada clínica ve solo sus propias historias.
+
+P: ¿Puedo exportar una historia clínica?
+R: Sí, las historias clínicas se pueden exportar en documento desde el panel.
+
+P: El dueño cambió la medalla, ¿pierdo la historia?
+R: No. El reemplazo de QR conserva la mascota y toda su historia clínica.
+
+--- Asistente de IA (chatbot) ---
+
+P: ¿Qué puede hacer el asistente?
+R: Responde dudas sobre cómo usar PetQR. Si sos veterinaria, además puede consultar los turnos de tu agenda y buscar información de tus pacientes vinculados e historias clínicas.
+
+P: ¿Cómo dicto una pregunta o una instrucción por voz?
+R: Tocá el ícono del micrófono del asistente ("Dictar pregunta por voz"), hablá, y el texto aparece en el cuadro. Revisalo y tocá "Enviar pregunta". Para detener el dictado tocá de nuevo el micrófono. Funciona en navegadores que soportan reconocimiento de voz (por ejemplo Chrome); dar permiso al micrófono es necesario.
+
+P: ¿Cómo pido que agende un turno con el asistente?
+R: Escribilo o dictalo, por ejemplo: "Agendá un turno para Palito mañana a las 10 por vacunación". El asistente prepara el turno (mascota, inicio, fin y motivo) y te lo muestra. No se guarda hasta que lo confirmes; si algo está mal, cancelalo.
+
+P: ¿Puedo registrar una historia clínica dictando?
+R: Sí. Dictá por ejemplo: "Registrá una consulta para Palito: motivo vómitos, diagnóstico gastritis, tratamiento dieta blanda, peso 12 kilos". El asistente muestra los datos y los guarda solo si confirmás. También puede preparar la edición de una consulta existente, con confirmación.
+
+P: ¿El asistente guarda cosas sin avisarme?
+R: No. Toda acción (turno, nueva historia clínica o edición) se muestra primero y requiere tu confirmación.
+
+P: El asistente no encuentra a mi paciente.
+R: Solo conoce mascotas vinculadas a tu clínica. Verificá el vínculo, el turno o la historia previa, y usá el nombre exacto de la mascota.
+
+P: ¿Qué es la pestaña "Conocimiento IA"?
+R: Permite cargar documentos propios de tu clínica (PDF, Word o TXT, máx. 10 MB) para que el asistente los consulte cuando respondés. Ese conocimiento es de tu clínica; el conocimiento general de PetQR lo carga administración.
+
+==================================================
+PARTE 3. PROBLEMAS COMUNES
+==================================================
+
+P: No puedo iniciar sesión.
+R: Verificá correo y contraseña. Si tu veterinaria te creó la cuenta, primero tenés que activarla con el enlace de WhatsApp.
+
+P: El escaneo con la cámara no abre nada.
+R: Verificá que el QR esté completo y bien iluminado, y que tengas conexión a internet. Si la medalla es nueva y no fue activada, el escaneo ofrece el registro.
+
+P: No me aparece la ubicación en el mapa.
+R: La ubicación depende de que quien escanea la medalla permita el acceso a su ubicación. Sin permiso, el escaneo se registra sin ubicación precisa.
+
+P: ¿Cómo contacto a soporte?
+R: Desde la sección "Contacto" de la página principal: WhatsApp o Instagram @petqrmascotas.tandil.leplop.
+
+P: ¿PetQR muestra mi teléfono a cualquiera?
+R: Los datos de contacto se muestran para que puedan avisarte si encuentran a tu mascota. Los datos clínicos, en cambio, solo los ve la veterinaria que los registró.

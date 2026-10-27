@@ -1,12 +1,17 @@
 from typing import Optional, List
 import uuid
-from sqlalchemy import select, func, or_
+from sqlalchemy import delete, select, func, or_
 from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.dialects.postgresql import insert
 from app.repositories.base import BaseRepository
 from app.models.pet import Pet
 from app.models.qr import QRCode
 from app.models.scan import Scan
+from app.core.constants import UserRole
+from app.models.user import User
+from app.models.veterinario import PerfilVeterinario
+from app.models.veterinario_mascota import veterinario_mascotas
 
 class PetRepository(BaseRepository[Pet]):
     """Repository especializado en Mascotas con soporte para estadísticas"""
@@ -28,6 +33,93 @@ class PetRepository(BaseRepository[Pet]):
         )
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
+
+    async def get_by_id_for_update(self, pet_id: uuid.UUID) -> Optional[Pet]:
+        result = await self.session.execute(
+            select(Pet).where(Pet.id == pet_id).with_for_update()
+        )
+        return result.scalar_one_or_none()
+
+    async def search_active_veterinarians(self, search: str) -> list[dict]:
+        term = f"%{search.strip()}%"
+        query = (
+            select(
+                PerfilVeterinario.user_id.label("veterinario_id"),
+                PerfilVeterinario.nombre_clinica,
+                PerfilVeterinario.matricula,
+                PerfilVeterinario.logo_url,
+            )
+            .join(User, User.id == PerfilVeterinario.user_id)
+            .where(
+                PerfilVeterinario.activo.is_(True),
+                User.rol == UserRole.VETERINARIO,
+                or_(
+                    PerfilVeterinario.nombre_clinica.ilike(term),
+                    PerfilVeterinario.matricula.ilike(term),
+                ),
+            )
+            .order_by(PerfilVeterinario.nombre_clinica.asc())
+            .limit(20)
+        )
+        result = await self.session.execute(query)
+        return [dict(row._mapping) for row in result.all()]
+
+    async def get_active_veterinarian(self, veterinarian_id: uuid.UUID):
+        query = (
+            select(PerfilVeterinario)
+            .join(User, User.id == PerfilVeterinario.user_id)
+            .where(
+                PerfilVeterinario.user_id == veterinarian_id,
+                PerfilVeterinario.activo.is_(True),
+                User.rol == UserRole.VETERINARIO,
+            )
+        )
+        result = await self.session.execute(query)
+        return result.scalar_one_or_none()
+
+    async def get_veterinarians_for_pet(self, pet_id: uuid.UUID) -> list[dict]:
+        query = (
+            select(
+                PerfilVeterinario.user_id.label("veterinario_id"),
+                PerfilVeterinario.nombre_clinica,
+                PerfilVeterinario.matricula,
+                PerfilVeterinario.logo_url,
+                veterinario_mascotas.c.created_at,
+            )
+            .join(
+                veterinario_mascotas,
+                veterinario_mascotas.c.veterinario_id == PerfilVeterinario.user_id,
+            )
+            .where(veterinario_mascotas.c.mascota_id == pet_id)
+            .order_by(PerfilVeterinario.nombre_clinica.asc())
+        )
+        result = await self.session.execute(query)
+        return [dict(row._mapping) for row in result.all()]
+
+    async def link_veterinarian_to_pet(
+        self, pet_id: uuid.UUID, veterinarian_id: uuid.UUID
+    ) -> None:
+        statement = (
+            insert(veterinario_mascotas)
+            .values(veterinario_id=veterinarian_id, mascota_id=pet_id)
+            .on_conflict_do_nothing(
+                index_elements=[veterinario_mascotas.c.mascota_id]
+            )
+        )
+        await self.session.execute(statement)
+        await self.session.commit()
+
+    async def unlink_veterinarian_from_pet(
+        self, pet_id: uuid.UUID, veterinarian_id: uuid.UUID
+    ) -> bool:
+        result = await self.session.execute(
+            delete(veterinario_mascotas).where(
+                veterinario_mascotas.c.mascota_id == pet_id,
+                veterinario_mascotas.c.veterinario_id == veterinarian_id,
+            )
+        )
+        await self.session.commit()
+        return result.rowcount > 0
 
     async def get_by_user(
         self,

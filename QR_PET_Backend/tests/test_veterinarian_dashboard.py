@@ -48,6 +48,7 @@ async def test_appointment_links_customer_pet_and_authenticated_vet():
     veterinarian = SimpleNamespace(id=VETERINARIAN_ID)
     service = TurnoService(db)
     service.repository.create = AsyncMock(side_effect=lambda turno: turno)
+    service.repository.has_veterinarian_patient = AsyncMock(return_value=True)
 
     appointment = await service.agendar_turno(
         TurnoCreate.model_validate(APPOINTMENT),
@@ -58,6 +59,26 @@ async def test_appointment_links_customer_pet_and_authenticated_vet():
     assert appointment.mascota_id == PET_ID
     assert appointment.dueno_id == CLIENT_ID
     service.repository.create.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_appointment_requires_pet_link_or_existing_clinic_relationship():
+    db = AsyncMock()
+    db.execute.return_value = SimpleNamespace(
+        scalar_one_or_none=lambda: SimpleNamespace(id=PET_ID, usuario_id=CLIENT_ID)
+    )
+    service = TurnoService(db)
+    service.repository.create = AsyncMock()
+    service.repository.has_veterinarian_patient = AsyncMock(return_value=False)
+
+    with pytest.raises(HTTPException) as error:
+        await service.agendar_turno(
+            TurnoCreate.model_validate(APPOINTMENT),
+            SimpleNamespace(id=VETERINARIAN_ID),
+        )
+
+    assert error.value.status_code == 404
+    service.repository.create.assert_not_awaited()
 
 
 @pytest.mark.asyncio

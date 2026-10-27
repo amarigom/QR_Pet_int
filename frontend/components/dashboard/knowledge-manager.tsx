@@ -106,36 +106,42 @@ export function KnowledgeManager({
           <CardDescription>
             {audience === 'admin'
               ? 'Cargá guías de uso y documentos generales. El asistente los compartirá con usuarios y veterinarios.'
-              : 'Cargá protocolos y documentos clínicos propios. Solo vos podrás consultarlos junto con tus pacientes vinculados.'}
-            {' '}Los archivos se extraen, dividen en fragmentos y guardan vectorizados.
+              : 'Consultá los documentos compartidos por administración y el conocimiento de tus pacientes vinculados.'}
+            {audience === 'admin' && ' Los archivos se extraen, dividen en fragmentos y guardan vectorizados.'}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleUpload} className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="knowledge-title">Título</Label>
-              <Input id="knowledge-title" name="knowledge-title" required maxLength={255} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="knowledge-category">Categoría</Label>
-              <Input id="knowledge-category" name="knowledge-category" placeholder="general" maxLength={100} />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="knowledge-file">Archivo PDF, Word (.docx) o TXT (máx. 10 MB)</Label>
-              <Input
-                id="knowledge-file"
-                name="knowledge-file"
-                type="file"
-                accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
-                required
-              />
-            </div>
-            <div className="flex flex-wrap gap-2 md:col-span-2">
-              <Button type="submit" disabled={isUploading}>
-                {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                Vectorizar archivo
-              </Button>
-              {vectorizeMedicalHistories && (
+        {(audience === 'admin' || vectorizeMedicalHistories) && (
+          <CardContent>
+            {audience === 'admin' && (
+              <form onSubmit={handleUpload} className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="knowledge-title">Título</Label>
+                  <Input id="knowledge-title" name="knowledge-title" required maxLength={255} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="knowledge-category">Categoría</Label>
+                  <Input id="knowledge-category" name="knowledge-category" placeholder="general" maxLength={100} />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="knowledge-file">Archivo PDF, Word (.docx) o TXT (máx. 10 MB)</Label>
+                  <Input
+                    id="knowledge-file"
+                    name="knowledge-file"
+                    type="file"
+                    accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                    required
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2 md:col-span-2">
+                  <Button type="submit" disabled={isUploading}>
+                    {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                    Vectorizar archivo
+                  </Button>
+                </div>
+              </form>
+            )}
+            {vectorizeMedicalHistories && (
+              <div className={audience === 'admin' ? 'mt-4' : ''}>
                 <Button
                   type="button"
                   variant="outline"
@@ -145,10 +151,10 @@ export function KnowledgeManager({
                   {isVectorizing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Vectorizar historias clínicas pendientes
                 </Button>
-              )}
-            </div>
-          </form>
-        </CardContent>
+              </div>
+            )}
+          </CardContent>
+        )}
       </Card>
 
       <Card>
@@ -156,7 +162,7 @@ export function KnowledgeManager({
           <CardTitle>Documentos disponibles</CardTitle>
           <CardDescription>
             {audience === 'veterinarian'
-              ? 'Incluye documentos compartidos por administración y los cargados por tu veterinaria.'
+              ? 'Documentos compartidos por administración disponibles para tus consultas.'
               : 'Documentos que el asistente utiliza para responder.'}
           </CardDescription>
         </CardHeader>

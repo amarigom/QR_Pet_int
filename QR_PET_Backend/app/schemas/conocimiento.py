@@ -32,3 +32,4 @@ class PreguntaInput(BaseModel):
     categoria: Optional[str] = "general"
     limit: int = Field(default=3, ge=1, le=10)
     historial: Optional[List[Dict[str, Any]]] = Field(default=None, max_length=12)
+    continuar_accion: bool = False

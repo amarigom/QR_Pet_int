@@ -15,7 +15,11 @@ from reportlab.lib import colors
 from app.repositories.qr_repository import QRRepository
 from app.repositories.pet_repository import PetRepository
 from app.core.auth import generate_qr_code
-from app.core.exceptions import ResourceNotFoundException, InvalidDataException
+from app.core.exceptions import (
+    ConflictException,
+    ResourceNotFoundException,
+    InvalidDataException,
+)
 from app.core.constants import MESSAGE_QR_NOT_FOUND, MESSAGE_QR_ALREADY_LINKED
 from app.schemas.qr import QRResponse, QRActivateData
 from app.schemas.composite import QRDetailResponse
@@ -197,7 +201,13 @@ class QRService:
         
         if not qr:
             return {"available": False, "message": "Código no encontrado"}
-        
+
+        if not qr.activo:
+            return {
+                "available": False,
+                "message": "El código QR está inactivo",
+            }
+
         if qr.mascota_id:
             return {
                 "available": False, 
@@ -213,10 +223,13 @@ class QRService:
         Si algo falla, no se guarda nada.
         """
         # 1. Validar el código QR
-        qr = await self.qr_repo.get_by_code(activate_data.codigo)
+        qr = await self.qr_repo.get_by_code_for_update(activate_data.codigo)
         if not qr:
             raise ResourceNotFoundException("Código QR", MESSAGE_QR_NOT_FOUND)
-        
+
+        if not qr.activo:
+            raise InvalidDataException("El código QR está inactivo.")
+
         if qr.mascota_id:
             raise InvalidDataException(MESSAGE_QR_ALREADY_LINKED)
         
@@ -257,8 +270,20 @@ class QRService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"No se encontró la placa con código {codigo.upper()}"
             )
-                
+
+        if qr.mascota_id is not None:
+            await self.pet_repo.get_by_id_for_update(qr.mascota_id)
+        qr = await self.qr_repo.get_by_code_for_update(codigo)
+        if not qr:
+            raise ResourceNotFoundException("Código QR")
+
         nuevo_estado = not qr.activo
+        if nuevo_estado and qr.mascota_id is not None:
+            current_qr = await self.qr_repo.get_by_mascota(qr.mascota_id)
+            if current_qr is not None and current_qr.id != qr.id:
+                raise ConflictException(
+                    "La mascota ya tiene otra medalla activa vinculada."
+                )
         
         # 3. El Servicio le solicita formalmente al repositorio que guarde el nuevo estado
         resultado = await self.qr_repo.update_status(db_qr=qr, activo=nuevo_estado)

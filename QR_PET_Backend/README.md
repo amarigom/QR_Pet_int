@@ -8,6 +8,26 @@ puede ser `all`, `assigned` o `available`. El panel consume el total y permite c
 El listado de mascotas del usuario `GET /api/v1/pets` también admite `search`, además de `page`
 y `limit`, buscando por nombre, especie, raza o código QR.
 
+## Reemplazo de medalla QR
+
+Desde la ficha de una mascota, el dueño puede vincular una medalla disponible o reemplazar la
+actual con `POST /api/v1/pets/{pet_id}/qr`, enviando `{"codigo":"..."}`. La operación comprueba
+que la mascota pertenezca al usuario autenticado y que el nuevo QR exista, esté activo y no se
+haya asignado previamente. En una única transacción se desactiva la medalla anterior y se vincula
+la nueva; no se crea otra mascota ni se modifican sus turnos, historias clínicas o clínica
+asociada. El QR anterior queda inactivo para conservar los escaneos históricos, pero ya no abre
+la ficha pública ni aparece como medalla activa.
+
+## Ficha clínica desde el escaneo
+
+Al escanear un QR vinculado, una veterinaria autenticada puede abrir la ficha clínica solo si la
+mascota tiene un vínculo explícito con esa clínica, un turno o una historia clínica previa. Para
+habilitar el acceso inicial antes del primer turno, el dueño debe vincular la mascota con la
+veterinaria. La ruta autenticada de escaneo no registra una ubicación de encontrador ni devuelve
+datos del dueño. La ficha pagina únicamente las historias creadas por la veterinaria actual y
+permite registrar consultas y editar sus propios registros. Para otros roles se mantiene la
+experiencia pública de contacto y reporte.
+
 ## Turnos y recordatorios por WhatsApp
 
 Los turnos se muestran en una agenda semanal. El endpoint `GET /api/v1/turnos/agenda/semanal`
@@ -67,19 +87,38 @@ globales del administrador.
 
 En **Dashboard Admin → Conocimiento IA**, administración puede cargar PDF, Word `.docx` o TXT
 (máximo 10 MB; texto extraído hasta 300.000 caracteres). Los archivos se dividen en fragmentos,
-se vectorizan con Gemini y quedan disponibles para usuarios y veterinarios. En la pestaña
-**Conocimiento IA** del panel veterinario, el profesional puede cargar su propia documentación y
-vectorizar historias clínicas pendientes.
+se vectorizan con Gemini y quedan disponibles para usuarios y veterinarios. Solo administración
+puede cargar documentos; la API rechaza las cargas de otros roles aunque se invoquen directamente.
+En la pestaña **Conocimiento IA** del panel veterinario, el profesional puede consultar los
+documentos compartidos por administración y vectorizar sus historias clínicas pendientes.
 
-El asistente aparece en los paneles de usuario y veterinario. Las respuestas de usuario consultan el conocimiento global del administrador y los documentos
+El asistente aparece en los paneles de administración, usuario y veterinario. Las respuestas de usuario consultan el conocimiento global del administrador y los documentos
 generales de las veterinarias vinculadas a sus mascotas; nunca recuperan historias clínicas. Las
 respuestas veterinarias combinan ese contenido compartido con documentos del veterinario
 autenticado, mascotas de sus clientes vinculados e historias clínicas creadas por ese veterinario;
-el backend filtra esos alcances antes de recuperar contexto. Las nuevas historias se vectorizan al
-registrarse. `POST
+el vínculo con una mascota no habilita a leer historias de otras clínicas. El mismo alcance se
+aplica al historial, al dashboard y a la exportación clínica. El backend filtra esos alcances antes
+de recuperar contexto. Las nuevas historias se vectorizan al registrarse. `POST
 /api/v1/historias-clinicas/vectorizar` permite reintentar historias propias que quedaron pendientes,
 con un máximo de 200 por llamada.
 
+El chatbot veterinario también puede consultar la agenda en modo de solo lectura. Los filtros
+por fecha, mascota y estado se interpretan como datos estructurados y se consultan directamente
+en PostgreSQL, limitando siempre los resultados al veterinario autenticado. Los turnos no se
+vectorizan; los resúmenes agregan los estados en la base de datos y las listas se limitan a 50
+resultados por consulta (se informa si hay más resultados).
+
+El chat veterinario también puede proponer turnos y altas o modificaciones de historias clínicas.
+`POST /api/v1/conocimiento/acciones/proponer` interpreta la solicitud, pero no escribe datos;
+el profesional revisa la propuesta y confirma explícitamente mediante
+`POST /api/v1/conocimiento/acciones/confirmar`. Para modificar una historia se identifica primero
+un registro propio del veterinario y se pide confirmación sobre ese registro. Las escrituras se
+delegan a los servicios de turnos e historias clínicas, que vuelven a validar permisos y vínculo
+con la mascota. El chat usa el dictado de voz del navegador: el servidor recibe la transcripción,
+no un archivo de audio. La edición de historias también está disponible mediante
+`PATCH /api/v1/historias-clinicas/{historia_id}`.
+
 Las rutas de carga, listado y consulta de conocimiento requieren autenticación. Solo administración
-y veterinarios pueden cargar documentos; el alcance se determina por el rol y el usuario autenticado,
-nunca por un identificador de propietario enviado por el cliente.
+puede cargar documentos; el alcance se determina por el rol autenticado y nunca por un identificador
+de propietario enviado por el cliente. La vectorización de historias clínicas continúa restringida
+al veterinario autenticado y a sus propios registros.

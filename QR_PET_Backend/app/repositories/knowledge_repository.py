@@ -3,9 +3,11 @@ import logging
 import uuid
 from typing import Any, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, union
 from app.models.conocimiento import KnowledgeVector
+from app.models.pet import Pet
 from app.models.veterinario_cliente import veterinario_clientes
+from app.models.veterinario_mascota import veterinario_mascotas
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -86,8 +88,13 @@ class KnowledgeRepository:
                 & (KnowledgeVector.owner_id == user_id)
             )
         elif user_role == "usuario":
-            linked_veterinarians = select(veterinario_clientes.c.veterinario_id).where(
-                veterinario_clientes.c.cliente_id == user_id
+            linked_veterinarians = union(
+                select(veterinario_clientes.c.veterinario_id).where(
+                    veterinario_clientes.c.cliente_id == user_id
+                ),
+                select(veterinario_mascotas.c.veterinario_id)
+                .join(Pet, Pet.id == veterinario_mascotas.c.mascota_id)
+                .where(Pet.usuario_id == user_id),
             )
             allowed_scopes.append(
                 (KnowledgeVector.owner_type == "veterinarian")
