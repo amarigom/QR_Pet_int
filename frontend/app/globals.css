@@ -93,6 +93,57 @@
   --sidebar-ring: oklch(0.72 0.18 25);
 }
 
+/*
+ * Tema clínico (panel veterinario / centro de diagnóstico).
+ * Se aplica solo dentro de `.theme-clinical` para no alterar la identidad
+ * coral/turquesa del resto de PetQR (dueños, tienda, landing).
+ * Paleta: azul petróleo institucional + slate neutro + verde salvia para estados clínicos.
+ */
+.theme-clinical {
+  --background: oklch(0.985 0.004 230);
+  --foreground: oklch(0.24 0.03 240);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.24 0.03 240);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.24 0.03 240);
+  --primary: oklch(0.46 0.085 225);
+  --primary-foreground: oklch(0.99 0.004 230);
+  --secondary: oklch(0.955 0.018 225);
+  --secondary-foreground: oklch(0.36 0.07 225);
+  --muted: oklch(0.965 0.006 230);
+  --muted-foreground: oklch(0.52 0.02 240);
+  --accent: oklch(0.94 0.045 160);
+  --accent-foreground: oklch(0.38 0.08 160);
+  --destructive: oklch(0.55 0.19 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.915 0.008 230);
+  --input: oklch(0.89 0.01 230);
+  --ring: oklch(0.46 0.085 225);
+  --radius: 0.625rem;
+}
+
+.dark .theme-clinical {
+  --background: oklch(0.17 0.015 240);
+  --foreground: oklch(0.96 0.005 230);
+  --card: oklch(0.21 0.018 240);
+  --card-foreground: oklch(0.96 0.005 230);
+  --popover: oklch(0.21 0.018 240);
+  --popover-foreground: oklch(0.96 0.005 230);
+  --primary: oklch(0.72 0.09 215);
+  --primary-foreground: oklch(0.18 0.03 230);
+  --secondary: oklch(0.27 0.03 225);
+  --secondary-foreground: oklch(0.88 0.04 215);
+  --muted: oklch(0.25 0.015 240);
+  --muted-foreground: oklch(0.72 0.015 240);
+  --accent: oklch(0.32 0.05 160);
+  --accent-foreground: oklch(0.88 0.07 160);
+  --destructive: oklch(0.62 0.18 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.3 0.015 240);
+  --input: oklch(0.33 0.015 240);
+  --ring: oklch(0.72 0.09 215);
+}
+
 @theme inline {
   --font-sans: 'Nunito', 'Nunito Fallback', sans-serif;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback', monospace;
