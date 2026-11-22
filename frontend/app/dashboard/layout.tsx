@@ -113,12 +113,26 @@ export default function DashboardLayout({
 
   if (!user) return null
 
+  const isVeterinarian = user.rol === 'veterinario'
+
   return (
     /* 🌟 CORRECCIÓN 1: Forzamos el ancho máximo de la pantalla y bloqueamos scrolls horizontales rebeldes */
-    <div className="app-background min-h-screen w-full max-w-full overflow-x-hidden relative">
+    <div
+      className={
+        isVeterinarian
+          ? 'theme-clinical bg-background text-foreground min-h-screen w-full max-w-full overflow-x-hidden relative'
+          : 'app-background min-h-screen w-full max-w-full overflow-x-hidden relative'
+      }
+    >
       
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b w-full">
+      <header
+        className={
+          isVeterinarian
+            ? 'sticky top-0 z-50 bg-card border-b border-border shadow-sm w-full'
+            : 'sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b w-full'
+        }
+      >
         {/* 🌟 CORRECCIÓN 2: Reemplazamos 'container' por un ancho fluido responsivo controlado */}
         <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 py-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 sm:gap-6 min-w-0">
@@ -127,6 +141,11 @@ export default function DashboardLayout({
                 <QrCode className="w-5 h-5 text-primary-foreground" />
               </div>
               <span className="font-bold text-xl tracking-tight hidden sm:inline">PetQR</span>
+              {isVeterinarian && (
+                <span className="hidden sm:inline border-l border-border pl-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Panel clínico
+                </span>
+              )}
             </Link>
 
             {/* Desktop Nav */}
@@ -159,7 +178,15 @@ export default function DashboardLayout({
                     <Button
                       variant={isActive ? 'secondary' : 'ghost'}
                       size="sm"
-                      className={isActive ? "bg-secondary font-semibold" : ""}
+                      className={
+                        isActive
+                          ? isVeterinarian
+                            ? 'bg-primary/10 font-semibold text-primary hover:bg-primary/15'
+                            : 'bg-secondary font-semibold'
+                          : isVeterinarian
+                            ? 'text-muted-foreground hover:text-foreground'
+                            : ''
+                      }
                     >
                       <item.icon className="w-4 h-4 mr-2" />
                       {item.label}
@@ -251,7 +278,11 @@ export default function DashboardLayout({
               <Link key={item.href} href={item.href} onClick={() => setMobileMenuOpen(false)}>
                 <Button
                   variant={pathname === item.href ? 'secondary' : 'ghost'}
-                  className="w-full justify-start text-base"
+                  className={
+                    isVeterinarian && pathname === item.href
+                      ? 'w-full justify-start text-base bg-primary/10 font-semibold text-primary hover:bg-primary/15'
+                      : 'w-full justify-start text-base'
+                  }
                 >
                   <item.icon className="w-5 h-5 mr-3" />
                   {item.label}
