@@ -11,6 +11,7 @@ import uuid
 if TYPE_CHECKING:
     from app.models.user import User
     from app.models.qr import QRCode
+    from app.models.clinical_study import ClinicalStudy
 
 class Pet(Base):
     __tablename__ = "mascotas"
@@ -25,6 +26,11 @@ class Pet(Base):
         UUID(as_uuid=True), 
         ForeignKey("usuarios.id"), 
         nullable=False
+    )
+    clinical_studies: Mapped[list["ClinicalStudy"]] = relationship(
+        "ClinicalStudy", 
+        back_populates="pet",
+        cascade="all, delete-orphan"
     )
     
     nombre: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -62,7 +68,8 @@ class Pet(Base):
         lazy="joined",
     )
     
-
+    clinical_studies = relationship("ClinicalStudy", back_populates="pet")
+    
     def __repr__(self) -> str:
         return f"<Pet(nombre={self.nombre}, especie={self.especie}, estado={self.estado}, created_at={self.created_at},url={self.foto_url})>"
     @property

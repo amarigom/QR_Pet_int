@@ -5,6 +5,8 @@ import { toast } from 'sonner'
 import { veterinarianApi } from '@/lib/api/veterinarian'
 import type {
   AppointmentStatus,
+  DiagnosticAltaExpressResponse,
+  DiagnosticPetLookupItem,
   VeterinarianClientCreated,
   VeterinarianDashboardData,
 } from '@/lib/types/veterinarian'
@@ -18,6 +20,10 @@ export function useVeterinarianDashboard() {
   const [appointmentsError, setAppointmentsError] = useState<string | null>(null)
   const [appointmentsRefreshVersion, setAppointmentsRefreshVersion] = useState(0)
   const [createdClient, setCreatedClient] = useState<VeterinarianClientCreated | null>(null)
+
+  const [diagnosticLookupResults, setDiagnosticLookupResults] = useState<DiagnosticPetLookupItem[]>([])
+  const [isSearchingDiagnosticPet, setIsSearchingDiagnosticPet] = useState(false)
+  const [altaExpressResult, setAltaExpressResult] = useState<DiagnosticAltaExpressResponse | null>(null)
 
   const reload = useCallback(async () => {
     setIsLoading(true)
@@ -245,6 +251,59 @@ export function useVeterinarianDashboard() {
     }
   }, [refreshAfterAppointmentChange])
 
+  const searchPetForStudy = useCallback(async (query: string) => {
+    const trimmed = query.trim()
+    if (trimmed.length < 2) {
+      setDiagnosticLookupResults([])
+      return
+    }
+    setIsSearchingDiagnosticPet(true)
+    try {
+      const results = await veterinarianApi.lookupPetForStudy(trimmed)
+      setDiagnosticLookupResults(results)
+    } catch (lookupError) {
+      toast.error(lookupError instanceof Error
+        ? lookupError.message
+        : 'No se pudo buscar la mascota.')
+    } finally {
+      setIsSearchingDiagnosticPet(false)
+    }
+  }, [])
+
+  const registerAltaExpress = useCallback(async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const formElement = event.currentTarget
+    const form = new FormData(formElement)
+
+    setIsSubmitting(true)
+    setAltaExpressResult(null)
+    try {
+      const result = await veterinarianApi.registerAltaExpress({
+        owner_nombre: String(form.get('express-owner-name') || '').trim(),
+        owner_email: String(form.get('express-owner-email') || '').trim(),
+        owner_telefono: String(form.get('express-owner-phone') || '').trim(),
+        pet_nombre: String(form.get('express-pet-name') || '').trim(),
+        pet_especie: String(form.get('express-pet-species') || '').trim(),
+        pet_raza: String(form.get('express-pet-breed') || '').trim() || undefined,
+      })
+      setAltaExpressResult(result)
+      formElement.reset()
+      toast.success(result.message)
+      return result
+    } catch (submitError) {
+      toast.error(submitError instanceof Error
+        ? submitError.message
+        : 'No se pudo completar el Alta Express.')
+      return null
+    } finally {
+      setIsSubmitting(false)
+    }
+  }, [])
+
+  const clearAltaExpressResult = useCallback(() => {
+    setAltaExpressResult(null)
+  }, [])
+
   return {
     data,
     isLoading,
@@ -254,6 +313,9 @@ export function useVeterinarianDashboard() {
     appointmentsError,
     appointmentsRefreshVersion,
     createdClient,
+    diagnosticLookupResults,
+    isSearchingDiagnosticPet,
+    altaExpressResult,
     reload,
     loadWeeklyAppointments,
     createAppointment,
@@ -263,5 +325,8 @@ export function useVeterinarianDashboard() {
     createClient,
     resendClientActivation,
     uploadClinicLogo,
+    searchPetForStudy,
+    registerAltaExpress,
+    clearAltaExpressResult,
   }
 }

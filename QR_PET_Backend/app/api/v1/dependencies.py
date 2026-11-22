@@ -7,6 +7,12 @@ from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from functools import lru_cache
+from app.config import settings
+from app.infrastructure.storage.r2_storage import R2StorageAdapter
+from app.repositories.clinical_study_repository import ClinicalStudyRepository
+from app.services.clinical_study_service import ClinicalStudyService
+
 # 1. Imports de Core y Base de Datos
 from app.core.database import get_db
 from app.core.auth import decode_access_token
@@ -165,3 +171,31 @@ async def get_pet_service(
     
     # Pasamos vector_service en lugar de vector_repo
     return PetService(db=db,pet_repo=pet_repo, vector_service=vector_service)
+
+# =====================================================================
+# DEPENDENCIAS PARA MÓDULO DE ESTUDIOS CLÍNICOS (R2 / S3)
+# =====================================================================
+
+@lru_cache
+def get_storage_adapter() -> R2StorageAdapter:
+    return R2StorageAdapter(
+        bucket_name=settings.R2_BUCKET_NAME,
+        access_key_id=settings.R2_ACCESS_KEY_ID,
+        secret_access_key=settings.R2_SECRET_ACCESS_KEY,
+        account_id=settings.R2_ACCOUNT_ID,
+        endpoint_url=settings.R2_ENDPOINT_URL,
+        region_name="auto" if not settings.R2_ENDPOINT_URL else "us-east-1",
+    )
+
+
+async def get_clinical_study_service(
+    db: AsyncSession = Depends(get_db),
+    storage: R2StorageAdapter = Depends(get_storage_adapter),
+) -> ClinicalStudyService:
+    study_repo = ClinicalStudyRepository(db)
+    pet_repo = PetRepository(db)
+    return ClinicalStudyService(
+        study_repo=study_repo,
+        pet_repo=pet_repo,
+        storage=storage,
+    )

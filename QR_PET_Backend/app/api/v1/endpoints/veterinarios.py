@@ -1,6 +1,7 @@
+from typing import List
 import uuid
 
-from fastapi import APIRouter, Depends, File, UploadFile, status
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.dependencies import (
@@ -10,11 +11,15 @@ from app.api.v1.dependencies import (
 from app.core.database import get_db
 from app.models.user import User
 from app.schemas.veterinario import (
+    DiagnosticAltaExpressCreate,
+    DiagnosticAltaExpressResponse,
+    DiagnosticPetLookupItem,
     PerfilVeterinarioResponse,
     VeterinarianClientCreate,
     VeterinarianClientCreated,
 )
 from app.services.veterinarian_client_service import VeterinarianClientService
+from app.services.veterinarian_diagnostic_service import VeterinarianDiagnosticService
 from app.services.veterinarian_profile_service import (
     MAX_LOGO_BYTES,
     VeterinarianProfileService,
@@ -56,3 +61,33 @@ async def actualizar_logo(
 ):
     contents = await file.read(MAX_LOGO_BYTES + 1)
     return await service.update_logo(veterinarian.id, contents)
+
+
+@router.get(
+    "/estudios/buscar-mascota",
+    response_model=List[DiagnosticPetLookupItem],
+)
+async def buscar_mascota_para_estudio(
+    q: str = Query(..., min_length=2, max_length=100),
+    db: AsyncSession = Depends(get_db),
+    veterinarian: User = Depends(require_veterinarian),
+):
+    """Busca mascotas (vinculadas o externas) por código QR, email, teléfono o nombre."""
+    return await VeterinarianDiagnosticService(db).lookup_pets_for_study(q)
+
+
+@router.post(
+    "/estudios/alta-express",
+    response_model=DiagnosticAltaExpressResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def alta_express_estudio(
+    data: DiagnosticAltaExpressCreate,
+    db: AsyncSession = Depends(get_db),
+    veterinarian: User = Depends(require_veterinarian),
+):
+    """Registra dueño + mascota nueva + QR Clínico (CLN-XXXXXX) para subir estudios externos."""
+    return await VeterinarianDiagnosticService(db).register_alta_express(
+        data=data,
+        veterinarian=veterinarian,
+    )

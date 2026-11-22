@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
+import { ClinicalStudiesSection } from '@/components/clinical-studies-section'
 import { veterinarianApi } from '@/lib/api/veterinarian'
 import type {
   MedicalRecord,
@@ -247,6 +248,8 @@ export default function VeterinaryScanClinicalPage() {
           </CardContent>
         )}
       </Card>
+
+      <ClinicalStudiesSection petId={pet.id} canUpload={true} />
 
       <Card>
         <CardHeader>

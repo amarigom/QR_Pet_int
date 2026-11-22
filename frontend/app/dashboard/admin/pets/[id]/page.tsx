@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, PawPrint, Mail, User, Calendar, Database } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import { ClinicalStudiesSection } from "@/components/clinical-studies-section";
 
 export default function AdminPetDetailPage() {
   const params = useParams()
@@ -15,10 +16,10 @@ export default function AdminPetDetailPage() {
   const [pet, setPet] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const petId = params?.id as string
+
   useEffect(() => {
     async function loadPetData() {
       try {
-        // params.id debe coincidir con el nombre de la carpeta [id]
         const data = await petsApi.getById(petId)
         setPet(data)
       } catch (error) {
@@ -34,7 +35,7 @@ export default function AdminPetDetailPage() {
   if (!pet) return <div className="p-10 text-center text-destructive">Mascota no encontrada (404 API).</div>
 
   const cleanOwnerName = pet.owner?.nombre?.replace(/\s+/g, ' ').trim() || 'No registrado'
-  
+
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       <Button 
@@ -58,14 +59,14 @@ export default function AdminPetDetailPage() {
             </Badge>
           </CardHeader>
           <CardContent className="pt-6 space-y-4">
-             <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Especie:</span>
-                <span className="font-medium capitalize">{pet.especie || 'N/A'}</span>
-             </div>
-             <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Creado el:</span>
-                <span className="font-medium">{pet.created_at ? formatDate(pet.created_at) : '---'}</span>
-             </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Especie:</span>
+              <span className="font-medium capitalize">{pet.especie || 'N/A'}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Creado el:</span>
+              <span className="font-medium">{pet.created_at ? formatDate(pet.created_at) : '---'}</span>
+            </div>
           </CardContent>
         </Card>
 
@@ -105,6 +106,12 @@ export default function AdminPetDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Estudios Clínicos (Admin: lectura, descarga y carga habilitadas) */}
+      <ClinicalStudiesSection
+        petId={pet.id}
+        canUpload={true}
+      />
     </div>
   )
 }

@@ -130,3 +130,41 @@ export interface VeterinarianClinicProfile {
   activo: boolean
   created_at: string
 }
+
+export interface DiagnosticPetLookupItem {
+  pet_id: string
+  pet_name: string
+  especie: string
+  raza?: string | null
+  owner_id: string
+  owner_name: string
+  owner_email: string
+  owner_telefono?: string | null
+  qr_codigo?: string | null
+  qr_tipo?: 'FISICO' | 'CLINICO' | null
+}
+
+export interface DiagnosticAltaExpressPayload {
+  owner_nombre: string
+  owner_email: string
+  owner_telefono: string
+  pet_nombre: string
+  pet_especie: string
+  pet_raza?: string
+}
+
+export interface DiagnosticAltaExpressResponse {
+  pet_id: string
+  pet_nombre: string
+  pet_especie: string
+  owner_id: string
+  owner_nombre: string
+  owner_email: string
+  is_new_owner: boolean
+  qr_codigo: string
+  qr_tipo: 'CLINICO'
+  whatsapp_sent: boolean
+  activation_url?: string | null
+  whatsapp_error?: string | null
+  message: string
+}

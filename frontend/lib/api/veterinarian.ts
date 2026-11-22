@@ -8,6 +8,9 @@ import type {
   VeterinarianClientCreated,
   VeterinarianClinicProfile,
   VeterinarianScannedPet,
+  DiagnosticAltaExpressPayload,
+  DiagnosticAltaExpressResponse,
+  DiagnosticPetLookupItem
 } from '@/lib/types/veterinarian'
 
 export interface CreateAppointment {
@@ -78,6 +81,20 @@ export const veterinarianApi = {
       `/scans/veterinario/qr/${encodeURIComponent(code)}`,
     ),
 
+  lookupPetForStudy: (query: string) =>
+    fetchAPI<DiagnosticPetLookupItem[]>(
+      `/veterinario/estudios/buscar-mascota?q=${encodeURIComponent(query)}`,
+    ),
+
+  registerAltaExpress: (data: DiagnosticAltaExpressPayload) =>
+    fetchAPI<DiagnosticAltaExpressResponse>(
+      '/veterinario/estudios/alta-express',
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      },
+    ),
+    
   getPetMedicalRecords: (petId: string, page = 1, limit = 10) =>
     fetchAPI<PaginatedMedicalRecords>(
       `/historias-clinicas/mascota/${petId}/pagina?page=${page}&limit=${limit}`,
@@ -114,4 +131,8 @@ export const veterinarianApi = {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),
+
+
+    
 }
+

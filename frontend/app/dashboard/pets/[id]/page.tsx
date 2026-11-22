@@ -4,6 +4,8 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import imageCompression from 'browser-image-compression';
+import { ClinicalStudiesSection } from '@/components/clinical-studies-section'
+
 
 // Componentes UI de tu carpeta local
 import { Button } from '@/components/ui/button'
@@ -63,6 +65,7 @@ import type {
   PetVeterinarianLink,
   VeterinarianClinicSearchResult,
 } from '@/lib/types/pets'
+import App from 'next/app';
 
 export default function PetDetailPage() {
   const params = useParams()
@@ -533,6 +536,11 @@ async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
                 </div>
               </div>
             </div>
+
+            <ClinicalStudiesSection
+  petId={pet.id}
+  canUpload={false}
+/>
 
             {/* Sección de Comentarios / Notas */}
             <div className="space-y-2 pt-2">

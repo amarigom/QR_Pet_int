@@ -61,8 +61,20 @@ class Settings:
     )
     WHATSAPP_API_VERSION: str = os.getenv("WHATSAPP_API_VERSION", "v22.0")
     REMINDER_TIMEZONE: str = os.getenv("REMINDER_TIMEZONE", "America/Argentina/Buenos_Aires")
+    # Almacenamiento de Estudios Clínicos (Cloudflare R2 / S3)
+    R2_ACCOUNT_ID: str = os.getenv("R2_ACCOUNT_ID", "")
+    R2_ACCESS_KEY_ID: str = os.getenv("R2_ACCESS_KEY_ID", "")
+    R2_SECRET_ACCESS_KEY: str = os.getenv("R2_SECRET_ACCESS_KEY", "")
+    R2_BUCKET_NAME: str = os.getenv("R2_BUCKET_NAME", "petqr-estudios-clinicos")
+    R2_ENDPOINT_URL: Optional[str] = os.getenv("R2_ENDPOINT_URL") or None
     
-class Config:
-        env_file = ".env"
-        extra = "ignore"
+    @property
+    def is_r2_configured(self) -> bool:
+        return bool(
+            self.R2_ACCESS_KEY_ID
+            and self.R2_SECRET_ACCESS_KEY
+            and (self.R2_ACCOUNT_ID or self.R2_ENDPOINT_URL)
+        )
+
 settings = Settings()
+

@@ -4,44 +4,50 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-// Componentes UI
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Textarea } from '@/components/ui/textarea' 
-import { Input } from '@/components/ui/input' 
+import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 
 import {
-  PawPrint, Phone, MessageCircle, MapPin, 
-  AlertCircle, Heart, Send, Loader2
+  PawPrint, Phone, MessageCircle, MapPin,
+  AlertCircle, Heart, Send, Loader2, FileText, LogIn, ShieldCheck
 } from 'lucide-react'
 import { qrApi } from '@/lib/api/qr'
 import { authApi } from '@/lib/api/auth'
 import { toast } from 'sonner'
 import type { Pet } from '@/lib/types'
 
+interface ScanPayloadResponse {
+  scan_id: string | null
+  qr_tipo?: 'FISICO' | 'CLINICO'
+  pet: Pet
+  owner: {
+    nombre: string
+    telefono: string
+  }
+}
+
 export default function ScanPage() {
   const params = useParams()
   const router = useRouter()
   const code = params.code as string
 
-  // Estados de control de la Aduana
-  const [isAvailable, setIsAvailable] = useState<boolean | null>(null) 
-  const [data, setData] = useState<{ pet: Pet; owner: { nombre: string; telefono: string; } } | null>(null)
+  const [isAvailable, setIsAvailable] = useState<boolean | null>(null)
+  const [data, setData] = useState<ScanPayloadResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  
-  // Estados para el flujo de reporte (Mascota con dueño)
+
   const [scanId, setScanId] = useState<string | null>(null)
   const [locationStatus, setLocationStatus] = useState<'pending' | 'sent' | 'denied'>('pending')
   const [extraMessage, setExtraMessage] = useState('')
   const [isSendingMessage, setIsSendingMessage] = useState(false)
 
-  // Estados para el flujo de registro (Mascota nueva)
   const [formData, setFormData] = useState({
     nombre: '',
     especie: 'perro',
@@ -50,7 +56,7 @@ export default function ScanPage() {
   })
   const [submitting, setSubmitting] = useState(false)
 
-  // 1. Envío de ubicación automática
+  // 1. Envío de ubicación automática (solo para QR FISICO)
   const sendLocation = useCallback(async (id: string) => {
     if (!navigator.geolocation) {
       setLocationStatus('denied')
@@ -66,14 +72,14 @@ export default function ScanPage() {
           })
           setLocationStatus('sent')
         } catch (e) {
-          console.error("Error actualizando ubicación", e)
+          console.error('Error actualizando ubicación', e)
         }
       },
-      (error) => {
-        console.warn('No se pudo obtener la ubicación del transeúnte:', error.message)
+      (geoError) => {
+        console.warn('No se pudo obtener la ubicación del transeúnte:', geoError.message)
         setLocationStatus('denied')
       },
-      { enableHighAccuracy: true, timeout: 15000,maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     )
   }, [])
 
@@ -83,21 +89,21 @@ export default function ScanPage() {
       try {
         setIsLoading(true)
         setError(null)
-        
+
         const checkRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/qr/check/${code}`)
         const checkData = await checkRes.json()
 
         if (!checkRes.ok) {
-          setError(checkData.message || "Error al leer el código QR")
+          setError(checkData.message || 'Error al leer el código QR')
           setIsLoading(false)
           return
         }
 
-        // 1. CASO: MEDALLA NUEVA / DISPONIBLE PARA ACTIVAR
+        // 1. CASO: MEDALLA FÍSICA NUEVA / DISPONIBLE PARA ACTIVAR
         if (checkData.available) {
           const token = localStorage.getItem('token')
           if (!token) {
-            toast.error("Debes iniciar sesión para registrar una medalla nueva.")
+            toast.error('Debes iniciar sesión para registrar una medalla nueva.')
             router.push(`/auth/login?redirect=/scan/${code}`)
             return
           }
@@ -105,10 +111,10 @@ export default function ScanPage() {
           setIsAvailable(true)
           setIsLoading(false)
 
-        // 2. CASO: MEDALLA YA ASIGNADA A UNA MASCOTA
+        // 2. CASO: QR YA ASIGNADO A UNA MASCOTA (FÍSICO O CLÍNICO)
         } else if (checkData.has_pet) {
           setIsAvailable(false)
-          
+
           try {
             if (localStorage.getItem('token')) {
               const currentUser = await authApi.getCurrentUser()
@@ -118,32 +124,31 @@ export default function ScanPage() {
               }
             }
 
-            const response = await qrApi.scan(code) 
+            const response: ScanPayloadResponse = await qrApi.scan(code)
             setData(response)
             setScanId(response.scan_id)
-            
-            console.log("=== RESPUESTA REAL DEL BACKEND ===", response)
 
-            if (response.scan_id) {
-              sendLocation(response.scan_id)
+            // Solo pedimos GPS si es una medalla física con scan_id válido
+            if (response.qr_tipo !== 'CLINICO' && response.scan_id) {
+              void sendLocation(response.scan_id)
             }
           } catch (scanErr) {
-            console.error("Error al obtener los datos de la mascota:", scanErr)
-            setError("No se pudieron cargar los datos de la mascota asociada.")
+            console.error('Error al obtener los datos de la mascota:', scanErr)
+            setError('No se pudieron cargar los datos de la mascota asociada.')
           } finally {
             setIsLoading(false)
           }
 
-        // 3. CASO: MEDALLA NO VÁLIDA / REQUIERE AUTENTICACIÓN
+        // 3. CASO: MEDALLA NO VÁLIDA / INACTIVA
         } else {
           const token = localStorage.getItem('token')
           if (!token) {
-            toast.error("Debes iniciar sesión para activar o reclamar esta medalla.")
+            toast.error('Debes iniciar sesión para activar o reclamar esta medalla.')
             router.push(`/auth/login?redirect=/scan/${code}`)
             return
           }
 
-          setError("Código no válido o inactivo")
+          setError(checkData.message || 'Código no válido o inactivo')
           setIsLoading(false)
         }
       } catch (err) {
@@ -151,18 +156,17 @@ export default function ScanPage() {
         setIsLoading(false)
       }
     }
-    
-    if (code) initAduana()
+
+    if (code) void initAduana()
   }, [code, sendLocation, router])
 
-  // 3. Enviar mensaje manual al dueño
+  // 3. Enviar mensaje manual al dueño (solo QR FISICO)
   const handleSendMessage = async () => {
     if (!scanId || !extraMessage.trim()) return
 
-    // Verificación previa de autenticación
     const token = localStorage.getItem('token')
     if (!token) {
-      toast.error("Debes iniciar sesión para enviar un mensaje al dueño.")
+      toast.error('Debes iniciar sesión para enviar un mensaje al dueño.')
       router.push(`/auth/login?redirect=/scan/${code}`)
       return
     }
@@ -170,29 +174,30 @@ export default function ScanPage() {
     setIsSendingMessage(true)
     try {
       await qrApi.updateScanMessage(scanId, extraMessage)
-      setExtraMessage('') 
-      toast.success("Mensaje enviado al dueño. ¡Gracias!")
-    } catch (e: any) {
-      if (e?.status === 401 || e?.response?.status === 401) {
+      setExtraMessage('')
+      toast.success('Mensaje enviado al dueño. ¡Gracias!')
+    } catch (e: unknown) {
+      const errObj = e as { status?: number; response?: { status?: number } }
+      if (errObj?.status === 401 || errObj?.response?.status === 401) {
         localStorage.removeItem('token')
-        toast.error("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.")
+        toast.error('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.')
         router.push(`/auth/login?redirect=/scan/${code}`)
         return
       }
 
-      toast.error("Error al enviar el mensaje.")
+      toast.error('Error al enviar el mensaje.')
     } finally {
       setIsSendingMessage(false)
     }
   }
 
-  // 4. Guardar y activar QR (Vincular mascota)
+  // 4. Guardar y activar QR Físico
   const handleRegisterPet = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     const token = localStorage.getItem('token')
     if (!token) {
-      toast.error("Tu sesión expiró. Por favor, iniciá sesión nuevamente.")
+      toast.error('Tu sesión expiró. Por favor, iniciá sesión nuevamente.')
       router.push(`/auth/login?redirect=/scan/${code}`)
       return
     }
@@ -214,19 +219,18 @@ export default function ScanPage() {
       const activationData = await res.json()
 
       if (res.ok) {
-        toast.success("¡Medalla activada y mascota vinculada con éxito!")
+        toast.success('¡Medalla activada y mascota vinculada con éxito!')
         router.push('/dashboard')
       } else {
-        toast.error(activationData.message || "No se pudo activar la medalla.")
+        toast.error(activationData.message || 'No se pudo activar la medalla.')
       }
-    } catch (err) {
-      toast.error("Error de red al intentar registrar.")
+    } catch {
+      toast.error('Error de red al intentar registrar.')
     } finally {
       setSubmitting(false)
     }
   }
 
-  // --- RENDERS DE CONTROL ---
   if (isLoading) {
     return (
       <div className="max-w-md mx-auto p-6 space-y-6 mt-10">
@@ -260,7 +264,7 @@ export default function ScanPage() {
     )
   }
 
-  // --- INTERFAZ 1: FORMULARIO DE ALTA ---
+  // --- INTERFAZ 1: FORMULARIO DE ALTA DE MEDALLA FÍSICA ---
   if (isAvailable) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-secondary/5 to-accent/5 font-sans">
@@ -268,9 +272,9 @@ export default function ScanPage() {
           <CardHeader className="text-center pb-2 pt-6">
             <Link href="/" className="flex items-center justify-center gap-2 mb-4">
               <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center overflow-hidden">
-                <img 
-                  src="/PETQR_icono_solo_512.jpg" 
-                  alt="PetQR Isotipo" 
+                <img
+                  src="/PETQR_icono_solo_512.jpg"
+                  alt="PetQR Isotipo"
                   className="object-cover w-full h-full"
                 />
               </div>
@@ -282,7 +286,7 @@ export default function ScanPage() {
               Ingresa los datos de tu mascota
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent className="p-6 pt-4">
             <form onSubmit={handleRegisterPet} className="space-y-4">
               <div className="space-y-1.5">
@@ -291,13 +295,13 @@ export default function ScanPage() {
                 </Label>
                 <div className="relative">
                   <Heart className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary/60" />
-                  <Input 
+                  <Input
                     id="nombre"
                     required
                     placeholder="Ej: Rocco, Lola, Toby..."
                     className="pl-9 h-11 border-border focus:border-secondary focus:ring-secondary/20 transition-all rounded-lg"
                     value={formData.nombre}
-                    onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
                     disabled={submitting}
                   />
                 </div>
@@ -308,9 +312,9 @@ export default function ScanPage() {
                   <Label className="text-xs uppercase font-bold tracking-wider text-muted-foreground">
                     Especie
                   </Label>
-                  <Select 
-                    value={formData.especie} 
-                    onValueChange={(value) => setFormData({...formData, especie: value})}
+                  <Select
+                    value={formData.especie}
+                    onValueChange={(value) => setFormData({ ...formData, especie: value })}
                     disabled={submitting}
                   >
                     <SelectTrigger className="h-11 border-border focus:border-secondary transition-all rounded-lg">
@@ -323,17 +327,17 @@ export default function ScanPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-1.5">
                   <Label htmlFor="raza" className="text-xs uppercase font-bold tracking-wider text-muted-foreground">
                     Raza
                   </Label>
-                  <Input 
+                  <Input
                     id="raza"
                     placeholder="Mestizo, Ovejero..."
                     className="h-11 border-border focus:border-secondary transition-all rounded-lg"
                     value={formData.raza}
-                    onChange={(e) => setFormData({...formData, raza: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, raza: e.target.value })}
                     disabled={submitting}
                   />
                 </div>
@@ -343,19 +347,19 @@ export default function ScanPage() {
                 <Label htmlFor="notas" className="text-xs uppercase font-bold tracking-wider text-muted-foreground">
                   Notas Médicas / Cuidados
                 </Label>
-                <Textarea 
+                <Textarea
                   id="notas"
                   placeholder="Ej: Es alérgico a la penicilina y requiere medicación diaria..."
                   className="resize-none border-border focus:border-secondary focus:ring-secondary/20 transition-all rounded-lg min-h-[90px]"
-                  value={formData.notas} 
-                  onChange={(e) => setFormData({...formData, notas: e.target.value})}
+                  value={formData.notas}
+                  onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
                   disabled={submitting}
                 />
               </div>
 
-              <Button 
-                type="submit" 
-                className="w-full h-11 text-sm font-semibold bg-primary text-secondary-foreground hover:bg-primary/80 transition-all rounded-xl mt-2 cursor-pointer shadow-sm" 
+              <Button
+                type="submit"
+                className="w-full h-11 text-sm font-semibold bg-primary text-secondary-foreground hover:bg-primary/80 transition-all rounded-xl mt-2 cursor-pointer shadow-sm"
                 disabled={submitting}
               >
                 {submitting ? (
@@ -364,7 +368,7 @@ export default function ScanPage() {
                     Activando Chapita Inteligente...
                   </>
                 ) : (
-                  "Activar Medalla y Guardar"
+                  'Activar Medalla y Guardar'
                 )}
               </Button>
             </form>
@@ -374,8 +378,57 @@ export default function ScanPage() {
     )
   }
 
-  // --- INTERFAZ 2: VISTA DE REPORTE PÚBLICO ---
-  const whatsappUrl = data?.owner?.telefono 
+  // --- INTERFAZ 2: CREDENCIAL CLÍNICA DIGITAL (qr_tipo === 'CLINICO') ---
+  if (data?.qr_tipo === 'CLINICO') {
+    const hasSession = typeof window !== 'undefined' && Boolean(localStorage.getItem('token'))
+
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-background via-secondary/5 to-accent/5 font-sans">
+        <Card className="w-full max-w-md shadow-md border border-border/60 rounded-2xl overflow-hidden bg-card">
+          <CardHeader className="text-center pb-3 pt-6 border-b bg-muted/20">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <FileText className="h-6 w-6" />
+            </div>
+            <Badge variant="outline" className="mx-auto mb-2 font-mono text-xs">
+              {code.toUpperCase()} · CREDENCIAL CLÍNICA
+            </Badge>
+            <CardTitle className="text-2xl font-bold tracking-tight">
+              {data.pet.nombre}
+            </CardTitle>
+            <CardDescription className="capitalize">
+              {[data.pet.especie, data.pet.raza].filter(Boolean).join(' · ')}
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="p-6 space-y-5">
+            <div className="rounded-xl border bg-muted/30 p-4 space-y-1.5 text-sm">
+              <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
+                Titular registrado
+              </p>
+              <p className="font-medium text-foreground">{data.owner.nombre}</p>
+            </div>
+
+            <div className="flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 p-3.5 text-xs text-muted-foreground leading-relaxed">
+              <ShieldCheck className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+              <p>
+                Esta credencial digital permite consultar y descargar informes de laboratorio, radiografías y estudios clínicos de forma privada.
+              </p>
+            </div>
+
+            <Button asChild size="lg" className="w-full h-12 text-sm font-semibold rounded-xl">
+              <Link href={hasSession ? '/dashboard' : '/auth/login?redirect=/dashboard'}>
+                <LogIn className="mr-2 h-4 w-4" />
+                {hasSession ? 'Ver estudios clínicos en mi panel' : 'Ingresar para ver estudios clínicos'}
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // --- INTERFAZ 3: VISTA DE REPORTE PÚBLICO (MEDALLA FÍSICA) ---
+  const whatsappUrl = data?.owner?.telefono
     ? `https://wa.me/${data.owner.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(`¡Hola! Encontré a ${data.pet.nombre}.`)}`
     : null
 
@@ -414,10 +467,10 @@ export default function ScanPage() {
         <Card className="overflow-hidden shadow-md rounded-2xl border border-border/50">
           <div className="aspect-square relative bg-muted flex items-center justify-center">
             {tieneFotoValida ? (
-              <img 
-                src={data?.pet.foto_url ?? undefined} 
-                alt={data?.pet.nombre} 
-                className="object-cover w-full h-full" 
+              <img
+                src={data?.pet.foto_url ?? undefined}
+                alt={data?.pet.nombre}
+                className="object-cover w-full h-full"
               />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/5 text-muted-foreground/40">
@@ -429,7 +482,7 @@ export default function ScanPage() {
               {data?.pet.raza || data?.pet.especie}
             </Badge>
           </div>
-          
+
           <CardContent className="pt-4">
             {data?.pet.notas && data.pet.notas.trim() !== '' && (
               <div className="bg-amber-50/80 p-3 rounded-xl border border-amber-100 flex gap-2.5">
@@ -463,15 +516,15 @@ export default function ScanPage() {
             <CardDescription className="text-xs">Envía un mensaje rápido sobre el estado o ubicación de la mascota.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Textarea 
+            <Textarea
               placeholder="Ej: Está asustado bajo un auto rojo en la calle 9 de Julio..."
               value={extraMessage}
               onChange={(e) => setExtraMessage(e.target.value)}
               className="resize-none min-h-[80px] rounded-lg border-border focus:border-primary"
             />
-            <Button 
-              onClick={handleSendMessage} 
-              disabled={isSendingMessage || !extraMessage.trim()} 
+            <Button
+              onClick={handleSendMessage}
+              disabled={isSendingMessage || !extraMessage.trim()}
               className="w-full h-10 text-xs font-bold flex items-center justify-center gap-2 bg-foreground text-background hover:bg-foreground/90 rounded-xl cursor-pointer"
             >
               {isSendingMessage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

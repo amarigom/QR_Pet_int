@@ -3,6 +3,9 @@ from uuid import UUID
 from datetime import datetime
 from typing import Optional
 from app.schemas.user import UserResponse
+from typing import Optional
+import uuid
+from pydantic import BaseModel, EmailStr, Field
 
 class PerfilVeterinarioCreate(BaseModel):
     nombre_clinica: str = Field(..., min_length=2, max_length=150)
@@ -75,3 +78,44 @@ class AuthVeterinarioRegisterResponse(BaseModel):
     token_type: str = "bearer"
     user: UserResponse
     perfil: PerfilVeterinarioResponse
+    
+    
+
+
+
+class DiagnosticPetLookupItem(BaseModel):
+    pet_id: uuid.UUID
+    pet_name: str
+    especie: str
+    raza: Optional[str] = None
+    owner_id: uuid.UUID
+    owner_name: str
+    owner_email: str
+    owner_telefono: Optional[str] = None
+    qr_codigo: Optional[str] = None
+    qr_tipo: Optional[str] = None  # "FISICO" | "CLINICO" | None
+
+
+class DiagnosticAltaExpressCreate(BaseModel):
+    owner_nombre: str = Field(..., min_length=2, max_length=100)
+    owner_email: EmailStr
+    owner_telefono: str = Field(..., pattern=r"^\+[1-9]\d{9,14}$")
+    pet_nombre: str = Field(..., min_length=1, max_length=100)
+    pet_especie: str = Field(..., min_length=2, max_length=50)
+    pet_raza: Optional[str] = Field(default=None, max_length=100)
+
+
+class DiagnosticAltaExpressResponse(BaseModel):
+    pet_id: uuid.UUID
+    pet_nombre: str
+    pet_especie: str
+    owner_id: uuid.UUID
+    owner_nombre: str
+    owner_email: str
+    is_new_owner: bool
+    qr_codigo: str
+    qr_tipo: str = "CLINICO"
+    whatsapp_sent: bool = False
+    activation_url: Optional[str] = None
+    whatsapp_error: Optional[str] = None
+    message: str

@@ -5,7 +5,7 @@ from fastapi import APIRouter
 
 # 1. Importamos los routers de los endpoints
 from app.api.v1.endpoints import scans, veterinarios
-from app.api.v1.endpoints import auth, pets, qr, admin,maps,dashboards,conocimiento,pgvector,historias_clinicas,turnos
+from app.api.v1.endpoints import auth, pets, qr, admin,maps,dashboards,conocimiento,pgvector,historias_clinicas,turnos, clinical_studies
 
 
 router = APIRouter(prefix="/api/v1")
@@ -30,3 +30,4 @@ router.include_router(auth.router)
 router.include_router(historias_clinicas.router)
 router.include_router(turnos.router, prefix="/turnos", tags=["Turnos y Agenda"])
 router.include_router(veterinarios.router)
+router.include_router(clinical_studies.router)

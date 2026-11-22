@@ -11,8 +11,7 @@ from app.models.turno import Turno
 from app.models.veterinario_cliente import veterinario_clientes
 from app.models.veterinario_mascota import veterinario_mascotas
 from app.models.conocimiento import KnowledgeVector
-
-
+from app.models.clinical_study import ClinicalStudy
 # Esto facilita importar todo desde un solo lugar: 
 # from app.models import User, Pet
 __all__ = ["Base", "User", "Pet", "QRCode","PetVector","PerfilVeterinario","HistoriaClinica", "Turno", "veterinario_clientes", "veterinario_mascotas", "KnowledgeVector"]
