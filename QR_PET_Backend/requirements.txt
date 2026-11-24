@@ -46,3 +46,4 @@ pypdf
 python-docx
 reportlab
 qrcode
+boto3==1.44.9
