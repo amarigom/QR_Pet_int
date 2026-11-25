@@ -40,6 +40,15 @@ class ClinicalStudyService:
         self.pet_repo = pet_repo
         self.storage = storage
 
+    @staticmethod
+    def _to_naive_utc(dt: Optional[datetime]) -> datetime:
+        """Convierte cualquier datetime (con o sin zona horaria) a UTC naive para asyncpg."""
+        if dt is None:
+            return datetime.now(timezone.utc).replace(tzinfo=None)
+        if dt.tzinfo is not None:
+            return dt.astimezone(timezone.utc).replace(tzinfo=None)
+        return dt
+
     async def _is_linked_veterinarian(
         self, mascota_id: UUID, user_id: UUID
     ) -> bool:
@@ -116,8 +125,7 @@ class ClinicalStudyService:
             file_key=file_key,
             tamano_bytes=size_bytes,
             notas_veterinario=payload.notas_veterinario,
-            fecha_estudio=payload.fecha_estudio
-            or datetime.now(timezone.utc).replace(tzinfo=None),
+            fecha_estudio=self._to_naive_utc(payload.fecha_estudio),
         )
 
         try:
