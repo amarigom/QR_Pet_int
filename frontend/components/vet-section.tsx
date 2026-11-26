@@ -71,6 +71,7 @@ export default function VetSection() {
           </p>
         </motion.div>
 
+        {/* Grilla superior: STEPS con sombreado degradado azul en hover */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           {STEPS.map(({ icon: Icon, title, text }, i) => (
             <motion.div
@@ -79,18 +80,32 @@ export default function VetSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-60px' }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="relative rounded-2xl border border-border bg-card p-6 shadow-sm"
+              className="group relative flex"
             >
-              <span className="absolute right-5 top-4 text-4xl font-bold text-primary/15">{i + 1}</span>
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Icon className="h-5 w-5" />
+              {/* Halo / sombreado degradado azul exterior */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -inset-1 rounded-2xl bg-gradient-to-br from-primary/60 via-sky-500/40 to-secondary/60 opacity-0 blur-lg transition-all duration-500 group-hover:opacity-100"
+              />
+
+              {/* Tarjeta principal */}
+              <div className="relative z-10 w-full rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:border-primary/60 group-hover:bg-gradient-to-b group-hover:from-card group-hover:to-primary/5 group-hover:shadow-xl group-hover:shadow-primary/20">
+                <span className="absolute right-5 top-4 text-4xl font-bold text-primary/15 transition-colors duration-300 group-hover:text-primary/25">
+                  {i + 1}
+                </span>
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-105 group-hover:bg-primary/15">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <h3 className="mt-4 text-lg font-semibold transition-colors duration-300 group-hover:text-primary">
+                  {title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{text}</p>
               </div>
-              <h3 className="mt-4 text-lg font-semibold">{title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{text}</p>
             </motion.div>
           ))}
         </div>
 
+        {/* Grilla inferior: FEATURES con sombreado degradado azul en hover */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {FEATURES.map(({ icon: Icon, title, text }, i) => (
             <motion.div
@@ -99,11 +114,22 @@ export default function VetSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-60px' }}
               transition={{ duration: 0.5, delay: i * 0.1 }}
-              className="rounded-2xl border border-border bg-muted/30 p-6 transition-colors hover:border-primary/40"
+              className="group relative flex"
             >
-              <Icon className="h-6 w-6 text-secondary-foreground" />
-              <h3 className="mt-3 text-base font-semibold">{title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{text}</p>
+              {/* Halo / sombreado degradado azul exterior */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -inset-1 rounded-2xl bg-gradient-to-br from-primary/60 via-sky-500/40 to-secondary/60 opacity-0 blur-lg transition-all duration-500 group-hover:opacity-100"
+              />
+
+              {/* Tarjeta secundaria */}
+              <div className="relative z-10 w-full rounded-2xl border border-border bg-muted/30 p-6 transition-all duration-300 group-hover:-translate-y-1 group-hover:border-primary/60 group-hover:bg-gradient-to-b group-hover:from-card group-hover:to-primary/5 group-hover:shadow-xl group-hover:shadow-primary/20">
+                <Icon className="h-6 w-6 text-secondary-foreground transition-colors duration-300 group-hover:text-primary" />
+                <h3 className="mt-3 text-base font-semibold transition-colors duration-300 group-hover:text-primary">
+                  {title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{text}</p>
+              </div>
             </motion.div>
           ))}
         </div>

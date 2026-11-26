@@ -4,29 +4,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { QrCode, Shield, MapPin, Bell, Heart, Smartphone } from 'lucide-react'
 import ContactSection from '@/components/contactSection'
 import { TiltMedalScene } from '@/components/tilt-medal-scene'
+import { FaqSection } from '@/components/ui/FaqSection'
 
 export default function HomePage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="border-b bg-card sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
               <QrCode className="w-6 h-6 text-primary-foreground" />
             </div>
             <span className="text-xl font-bold text-foreground">PetQR</span>
           </Link>
-          <nav className="flex items-center gap-4">
+          <nav className="flex flex-wrap items-center gap-2 sm:gap-4">
+            <Link href="#preguntas-frecuentes">
+              <Button variant="ghost">Preguntas Frecuentes</Button>
+            </Link>
+            <Link href="#contact">
+              <Button variant="ghost">Contacto</Button>
+            </Link>
             <Link href="/auth/login">
               <Button variant="ghost">Iniciar Sesion</Button>
             </Link>
             <Link href="/auth/register">
               <Button>Registrarse</Button>
-            </Link>
-            {/* ⚡ NUEVO BOTÓN DE CONTACTO */}
-            <Link href="#contact">
-              <Button variant="ghost">Contacto</Button>
             </Link>
           </nav>
         </div>
@@ -60,7 +63,6 @@ export default function HomePage() {
                 </Button>
               </Link>
             </div>
-            
           </div>
         </div>
       </section>
@@ -97,11 +99,11 @@ export default function HomePage() {
                 <div className="w-16 h-16 rounded-2xl bg-secondary/20 flex items-center justify-center mx-auto mb-4">
                   <QrCode className="w-8 h-8 text-secondary-foreground" />
                 </div>
-                <CardTitle className="text-xl">2. Añade a tu  mascota: nombre, foto, datos de contacto.</CardTitle>
+                <CardTitle className="text-xl">2. Añade a tu mascota: nombre, foto, datos de contacto.</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Podrás acceder  a la previsualización de los datos públicos de tu mascota y reeditarlos cuantas veces quieras. 
+                  Podrás acceder a la previsualización de los datos públicos de tu mascota y reeditarlos cuantas veces quieras.
                 </CardDescription>
               </CardContent>
             </Card>
@@ -115,7 +117,7 @@ export default function HomePage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base">
-                  Accede a la app y verás los ultimos escaneos  de tus mascotas.
+                  Accede a la app y verás los ultimos escaneos de tus mascotas.
                 </CardDescription>
               </CardContent>
             </Card>
@@ -198,10 +200,17 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+
+      {/* Preguntas Frecuentes (Dueños y Veterinarias) */}
+      <div id="preguntas-frecuentes" className="scroll-mt-20 bg-background">
+        <FaqSection />
+      </div>
+
       {/* NUEVA SECCIÓN DE CONTACTO CON DESTELLOS AZULES */}
-        <section>
-          <ContactSection />
-        </section>
+      <section id="contact">
+        <ContactSection />
+      </section>
+
       {/* Footer */}
       <footer className="py-8 bg-card border-t">
         <div className="container mx-auto px-4">
@@ -212,6 +221,28 @@ export default function HomePage() {
               </div>
               <span className="font-semibold">PetQR</span>
             </div>
+
+            <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
+              <Link
+                href="#como-funciona"
+                className="transition-colors hover:text-foreground"
+              >
+                Cómo funciona
+              </Link>
+              <Link
+                href="#preguntas-frecuentes"
+                className="transition-colors hover:text-foreground"
+              >
+                Preguntas Frecuentes
+              </Link>
+              <Link
+                href="#contact"
+                className="transition-colors hover:text-foreground"
+              >
+                Contacto
+              </Link>
+            </div>
+
             <p className="text-sm text-muted-foreground">
               &copy; {new Date().getFullYear()} PetQR. Todos los derechos reservados.
             </p>
