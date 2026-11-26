@@ -1,20 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, MessageCircle, Instagram, QrCode, Ruler, Palette, Sparkles, CheckCircle2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-
-interface MedalProduct {
-  name: string
-  badge?: string
-  image: string
-  imageAlt: string
-  desc: string
-  size: string
-  colorsOrDesign: string
-  tech: string
-  features: string[]
-}
+import { ArrowLeft, QrCode, Sparkles } from 'lucide-react'
+import { ProductCard, type MedalProduct } from '@/components/ProductCard'
 
 interface ProductCategory {
   title: string
@@ -30,22 +17,40 @@ const productDetails: Record<string, ProductCategory> = {
       {
         name: 'Medalla Circular Standard',
         badge: 'Más elegida',
-        image: '/images/products/qr-4.jpg',
-        imageAlt: 'Medalla Circular Standard PetQR personalizada con código QR',
+        images: [
+          { src: '/images/products/qr-4.jpg', alt: 'Medalla Circular Standard PetQR personalizada con código QR' },
+          { src: '/images/products/frente.jpeg', alt: 'Medalla Circular Standard PetQR personalizada con código QR' },
+          { src: '/images/products/dorso.jpg', alt: 'Medalla Circular Standard PetQR personalizada con código QR' },
+          // Agregá acá más fotos de este modelo para activar la tira de miniaturas abajo:
+          // { src: '/images/products/qr-4-dorso.jpg', alt: 'Dorso con código QR' },
+        ],
         desc: 'Ideal para perros medianos y grandes. Impresión de alta definición por sublimación con terminación brillante resistente al agua y rayones.',
-        size: '35 mm de diámetro · Espesor 2 mm',
-        colorsOrDesign: 'Azul PetQR, celeste, rosa pastel, amarillo o diseño personalizado con huellitas.',
+        sizes: ['35 mm de diámetro · Espesor 2 mm'], // 1 solo elemento -> se muestra deshabilitado ("Tamaño único")
+        colors: [
+          { name: 'Azul PetQR', hex: '#2563eb' },
+          { name: 'Celeste', hex: '#7dd3fc' },
+          { name: 'Rosa Pastel', hex: '#f9a8d4' },
+          { name: 'Amarillo', hex: '#fde047' },
+          { name: 'Diseño Personalizado con Huellitas', hex: '#e2e8f0' },
+        ],
         tech: 'Código QR de alto contraste grabado en dorso',
         features: ['Incluye argolla metálica reforzada', 'Resistente al agua y al sol', 'Perfil digital editable sin límites'],
       },
       {
         name: 'Medalla Mini Gatos & Razas Pequeñas',
         badge: 'Ultra liviana',
-        image: '/images/products/qr-mini.jpg', // Reemplazá por la foto de tu medalla mini si tiene otro nombre
-        imageAlt: 'Medalla Mini PetQR liviana para gatos y perros pequeños',
+        images: [
+          { src: '/images/products/qr-mini.jpg', alt: 'Medalla Mini PetQR liviana para gatos y perros pequeños' },
+        ],
         desc: 'Diseñada para no molestar en el cuello de gatos o perros toy, manteniendo lectura instantánea desde cualquier celular.',
-        size: '25 mm de diámetro · Peso menor a 5 g',
-        colorsOrDesign: 'Colores pasteles, tonos neón, diseño galaxia, corazones o fondo liso a elección.',
+        sizes: ['25 mm de diámetro · Peso < 5 g'], // Tamaño único deshabilitado
+        colors: [
+          { name: 'Colores Pasteles', hex: '#bae6fd' },
+          { name: 'Tonos Neón', hex: '#a3e635' },
+          { name: 'Diseño Galaxia', hex: '#6366f1' },
+          { name: 'Corazones', hex: '#f472b6' },
+          { name: 'Fondo Liso a Elección', hex: '#ffffff' },
+        ],
         tech: 'Código QR de alta densidad',
         features: ['No hace ruido ni pesa', 'Argolla liviana incluida', 'Alertas de escaneo con ubicación'],
       },
@@ -58,21 +63,32 @@ const productDetails: Record<string, ProductCategory> = {
       {
         name: 'Medalla Twit Resina Cristal (NFC + QR)',
         badge: 'Doble tecnología',
-        image: '/qr2.jpg',
-        imageAlt: 'Medalla Twit con chip NFC y código QR encapsulada en resina cristal',
+        images: [
+          { src: '/qr2.jpg', alt: 'Medalla Twit con chip NFC y código QR encapsulada en resina cristal' },
+          { src: '/images/products/medalla1.2.jpg', alt: 'Medalla Circular Standard PetQR personalizada con código QR' },
+          { src: '/images/products/medalla1.3.jpg', alt: 'Medalla Circular Standard PetQR personalizada con código QR' },
+        ],
         desc: 'Encapsulado en resina cristal 3D que protege el diseño y aloja un chip NFC interno de lectura inmediata por proximidad.',
-        size: '38 mm de diámetro · Relieve cristal 3D',
-        colorsOrDesign: 'Azul marino, rosa,blanco o diseño exclusivo Le Plop.',
+        sizes: ['38 mm de diámetro · Relieve cristal 3D'], // Tamaño único deshabilitado
+        colors: [
+          { name: 'Azul Marino', hex: '#1e3a8a' },
+          { name: 'Rosa', hex: '#f472b6' },
+          { name: 'Blanco', hex: '#ffffff' },
+          { name: 'Diseño Exclusivo Le Plop', hex: '#0284c7' },
+        ],
         tech: 'Chip NFC NTAG213 + Código QR impreso',
         features: ['Lectura sin cámara acercando el teléfono', 'Máxima resistencia a golpes y agua', 'Historia clínica y vacunas accesibles'],
       },
       {
-        name: 'Medalla Escudo Clínico NFC ',
-        image: '/images/products/airtag.jpg', // Reemplazá por la foto correspondiente en /public/images/products/
-        imageAlt: 'Medalla formato escudo con alerta médica NFC ',
+        name: 'Medalla Escudo Clínico NFC',
+        images: [
+          { src: '/images/products/airtag.jpg', alt: 'Medalla formato escudo con alerta médica NFC' },
+        ],
         desc: 'Formato anatómico pensado para identificación rápida en paseos y consultas veterinarias.',
-        size: '25 mm x 28 mm',
-        colorsOrDesign: 'negro con etiqueta roja',
+        sizes: ['25 mm x 28 mm'], // Tamaño único deshabilitado
+        colors: [
+          { name: 'Negro con etiqueta roja', hex: '#18181b' }, // Color único deshabilitado
+        ],
         tech: 'Chip NFC + Código QR de respaldo',
         features: ['Espacio para alerta médica ("Toma medicación")', 'Argolla doble de acero', 'Sincronización instantánea con PetQR'],
       },
@@ -85,22 +101,31 @@ const productDetails: Record<string, ProductCategory> = {
       {
         name: 'Collar Regulable Edición Le Plop',
         badge: 'Diseño exclusivo',
-        image: '/images/products/Leplop.jpg',
-        imageAlt: 'Collar regulable diseño exclusivo Le Plop para mascotas',
+        images: [
+          { src: '/images/products/Leplop.jpg', alt: 'Collar regulable diseño exclusivo Le Plop para mascotas' },
+        ],
         desc: 'Cinta reforzada suave al tacto con herrajes metálicos y argolla dedicada para colgar la medalla PetQR sin que se enganche.',
-        size: 'Talles XS, S, M y L (regulables)',
-        colorsOrDesign: 'Estampados exclusivos Le Plop, azul PetQR, verde salvia y tonos pastel.',
+        sizes: ['Talle XS (regulable)', 'Talle S (regulable)', 'Talle M (regulable)', 'Talle L (regulable)'],
+        colors: [
+          { name: 'Estampados Exclusivos Le Plop', hex: '#3b82f6' },
+          { name: 'Azul PetQR', hex: '#1d4ed8' },
+          { name: 'Verde Salvia', hex: '#6ee7b7' },
+          { name: 'Tonos Pastel', hex: '#fbcfe8' },
+        ],
         tech: 'Compatible con medallas QR y Twit NFC/QR',
         features: ['Hebilla de cierre seguro', 'Lavable y de secado rápido', 'Combinable con medalla personalizada'],
       },
       {
         name: 'Kit Collar + Medalla PetQR',
         badge: 'Combo ideal',
-        image: '/images/products/kit-leplop.jpg', // Reemplazá por la foto del combo en /public/images/products/
-        imageAlt: 'Combo collar Le Plop con medalla personalizada PetQR',
+        images: [
+          { src: '/images/products/kit-leplop.jpg', alt: 'Combo collar Le Plop con medalla personalizada PetQR' },
+        ],
         desc: 'Llevá el collar Le Plop haciendo juego con la medalla personalizada de tu mascota lista para activar.',
-        size: 'A medida según talle de tu mascota',
-        colorsOrDesign: 'Diseños combinados a elección.',
+        sizes: ['A medida según talle de tu mascota'], // Tamaño único deshabilitado
+        colors: [
+          { name: 'Diseños combinados a elección', hex: '#0ea5e9' }, // Color único deshabilitado
+        ],
         tech: 'Medalla QR o Twit NFC/QR incluida',
         features: ['Descuento por combo completo', 'Personalización con nombre', 'Alta gratuita en plataforma PetQR'],
       },
@@ -120,13 +145,6 @@ export default async function ProductDetailPage({
   const category = productDetails[slug]
 
   if (!category) return notFound()
-
-  const getWhatsAppLink = (item: MedalProduct) => {
-    const message = encodeURIComponent(
-      `¡Hola! Vi en la web de PetQR *${item.name}* (${item.size}) y quiero consultar disponibilidad, colores y precio.`
-    )
-    return `https://wa.me/${WHATSAPP_PHONE}?text=${message}`
-  }
 
   return (
     <main className="min-h-screen bg-background text-foreground relative overflow-hidden">
@@ -191,95 +209,15 @@ export default async function ProductDetailPage({
           </div>
         </div>
 
+        {/* Grilla de tarjetas interactivas con carrusel y selectores */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {category.items.map((item) => (
-            <div key={item.name} className="group relative flex">
-              {/* Sombreado degradado azul en hover */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute -inset-1 rounded-2xl bg-gradient-to-br from-primary/60 via-sky-500/40 to-secondary/60 opacity-0 blur-lg transition-all duration-500 group-hover:opacity-100"
-              />
-
-              <Card className="relative z-10 flex w-full flex-col justify-between overflow-hidden border-2 border-border bg-card shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:border-primary/60 group-hover:shadow-xl group-hover:shadow-primary/20">
-                <div>
-                  {/* Imagen del producto */}
-                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted border-b border-border">
-                    <img
-                      src={item.image}
-                      alt={item.imageAlt}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                    {item.badge && (
-                      <span className="absolute top-3 right-3 rounded-full bg-background/90 backdrop-blur-sm border border-primary/20 px-3 py-1 text-xs font-semibold text-primary shadow-sm">
-                        {item.badge}
-                      </span>
-                    )}
-                  </div>
-
-                  <CardHeader>
-                    <CardTitle className="text-xl sm:text-2xl transition-colors group-hover:text-primary">
-                      {item.name}
-                    </CardTitle>
-                    <CardDescription className="pt-1.5 text-sm sm:text-base leading-relaxed">
-                      {item.desc}
-                    </CardDescription>
-                  </CardHeader>
-                </div>
-
-                <CardContent className="space-y-6">
-                  <div className="space-y-3 rounded-xl border border-border bg-muted/40 p-4 text-sm">
-                    <div className="flex items-start gap-2.5">
-                      <Ruler className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-semibold text-foreground">Tamaño: </span>
-                        <span className="text-muted-foreground">{item.size}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5">
-                      <Palette className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-semibold text-foreground">Colores y diseño: </span>
-                        <span className="text-muted-foreground">{item.colorsOrDesign}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2.5">
-                      <QrCode className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-semibold text-foreground">Tecnología: </span>
-                        <span className="text-muted-foreground">{item.tech}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <ul className="space-y-2 text-sm text-muted-foreground">
-                    {item.features.map((feat) => (
-                      <li key={feat} className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-                        <span>{feat}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <div className="pt-2 flex flex-col sm:flex-row gap-3">
-                    <a href={getWhatsAppLink(item)} target="_blank" rel="noopener noreferrer" className="flex-1">
-                      <Button className="w-full gap-2">
-                        <MessageCircle className="h-4 w-4" />
-                        Pedir por WhatsApp
-                      </Button>
-                    </a>
-
-                    <a href={`https://instagram.com/${INSTAGRAM_HANDLE}`} target="_blank" rel="noopener noreferrer" className="flex-1">
-                      <Button variant="outline" className="w-full gap-2 hover:border-primary/50">
-                        <Instagram className="h-4 w-4" />
-                        Consultar por Instagram
-                      </Button>
-                    </a>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <ProductCard
+              key={item.name}
+              item={item}
+              whatsappPhone={WHATSAPP_PHONE}
+              instagramHandle={INSTAGRAM_HANDLE}
+            />
           ))}
         </div>
 
