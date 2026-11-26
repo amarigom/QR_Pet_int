@@ -7,19 +7,19 @@ import { Button } from '@/components/ui/button'
 
 const PRODUCTOS_DATA = [
   {
-    nombre: 'QR Pet Tags',
+    nombre: 'Medalla Pet',
     img: '/images/products/qr-4.jpg',
-    desc: 'Smart identification and instant tracking for your pet.'
+    desc: 'Identificación inteligente al instante para tu mascota. Se activa mediante escaneo del código QR.'
   },
   {
-    nombre: 'AirTag Cases with QR',
+    nombre: 'medallitas Twit NFC/QR',
     img: '/images/products/airtag.jpg',
-    desc: 'Dual protection: Satellite tracking and instant contact scanning.'
+    desc: 'Doble protección: Se activan mediante escaneo o acceso Contact Less.'
   },
   {
-    nombre: 'Le Plop Accessories',
+    nombre: 'Accesorios Le Plop ',
     img: '/images/products/Leplop.jpg',
-    desc: 'Exclusive design, comfort, and premium style for daily walks.'
+    desc: 'Diseños exclusivos para tu mascota. '
   }
 ];
 
@@ -67,11 +67,11 @@ export default function ShopPage() {
           </p>
           
           <h1 className={`text-4xl font-semibold sm:text-5xl tracking-tight text-foreground transition-all duration-1000 delay-150 ease-out transform ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-            Explore our collections
+            Explora nuestra colección
           </h1>
           
           <p className={`text-lg text-muted-foreground transition-all duration-1000 delay-300 ease-out transform ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-            Discover products for pets and the people who care for them.
+            Descubrí productos para mascotas y gente que las cuida.
           </p>
           
           <div className={`transition-all duration-1000 delay-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
