@@ -88,8 +88,10 @@ export default function ShopPage() {
         <div className={`w-full lg:w-2/3 grid grid-cols-1 sm:grid-cols-2 gap-6 transition-all duration-1000 delay-700 ease-out transform ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
           {PRODUCTOS_DATA.map((producto) => {
             const productSlug = producto.nombre
+              .trim()
               .toLowerCase()
-              .replace(/\s+/g, '-');
+              .replace(/\//g, '-')
+              .replace(/\s+/g, '-')
 
             return (
               <div 

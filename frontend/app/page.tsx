@@ -8,7 +8,7 @@ import { FaqSection } from '@/components/ui/FaqSection'
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col scroll-smooth">
       {/* Header */}
       <header className="border-b bg-card sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
@@ -19,6 +19,12 @@ export default function HomePage() {
             <span className="text-xl font-bold text-foreground">PetQR</span>
           </Link>
           <nav className="flex flex-wrap items-center gap-2 sm:gap-4">
+            <Link href="/es/shop">
+              <Button variant="ghost">Productos</Button>
+            </Link>
+            <Link href="/promociones">
+              <Button variant="ghost">Promociones</Button>
+            </Link>
             <Link href="#preguntas-frecuentes">
               <Button variant="ghost">Preguntas Frecuentes</Button>
             </Link>
@@ -26,7 +32,7 @@ export default function HomePage() {
               <Button variant="ghost">Contacto</Button>
             </Link>
             <Link href="/auth/login">
-              <Button variant="ghost">Iniciar Sesion</Button>
+              <Button variant="ghost">Iniciar Sesión</Button>
             </Link>
             <Link href="/auth/register">
               <Button>Registrarse</Button>
@@ -45,11 +51,11 @@ export default function HomePage() {
             </div>
             <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 text-balance">
               Identifica a tu mascota con un simple{' '}
-              <span className="text-primary">codigo QR</span>
+              <span className="text-primary">código QR</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-8 text-pretty">
-              PetQR es la forma mas rápida y segura de reunir a las mascotas perdidas con sus familias.
-              Escanea el codigo, contacta al dueño, salva una vida.
+              PetQR es la forma más rápida y segura de reunir a las mascotas perdidas con sus familias.
+              Escanea el código, contacta al dueño, salva una vida.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/auth/register">
@@ -57,9 +63,9 @@ export default function HomePage() {
                   Comenzar Gratis
                 </Button>
               </Link>
-              <Link href="#como-funciona">
+              <Link href="/productos">
                 <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg px-8">
-                  Como Funciona
+                  Ver Medallas
                 </Button>
               </Link>
             </div>
@@ -68,59 +74,86 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section id="como-funciona" className="py-20 bg-card">
+      <section id="como-funciona" className="py-20 bg-card scroll-mt-24">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Como Funciona PetQR
+              Cómo Funciona PetQR
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              En solo 3 simples pasos, tu mascota estará protegida con identificacion QR
+              En solo 3 simples pasos, tu mascota estará protegida con identificación QR
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card className="text-center border-2 hover:border-primary/50 transition-colors">
-              <CardHeader>
-                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <Smartphone className="w-8 h-8 text-primary" />
-                </div>
-                <CardTitle className="text-xl">1. Escanea el codigo QR único para tu mascota</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base">
-                  Registra tus datos e información para que te contacten.
-                </CardDescription>
-              </CardContent>
-            </Card>
+            {/* Tarjeta 1 */}
+            <div className="group relative flex">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -inset-1 rounded-2xl bg-gradient-to-br from-primary/60 via-sky-500/40 to-secondary/60 opacity-0 blur-lg transition-all duration-500 group-hover:opacity-100"
+              />
+              <Card className="relative z-10 w-full text-center border-2 border-border bg-card shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:border-primary/60 group-hover:bg-gradient-to-b group-hover:from-card group-hover:to-primary/5 group-hover:shadow-xl group-hover:shadow-primary/20">
+                <CardHeader>
+                  <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4 transition-transform duration-300 group-hover:scale-105 group-hover:bg-primary/15">
+                    <Smartphone className="w-8 h-8 text-primary" />
+                  </div>
+                  <CardTitle className="text-xl transition-colors duration-300 group-hover:text-primary">
+                    1. Escanea el código QR único para tu mascota
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-base">
+                    Registra tus datos e información para que te contacten.
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </div>
 
-            <Card className="text-center border-2 hover:border-secondary/50 transition-colors">
-              <CardHeader>
-                <div className="w-16 h-16 rounded-2xl bg-secondary/20 flex items-center justify-center mx-auto mb-4">
-                  <QrCode className="w-8 h-8 text-secondary-foreground" />
-                </div>
-                <CardTitle className="text-xl">2. Añade a tu mascota: nombre, foto, datos de contacto.</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base">
-                  Podrás acceder a la previsualización de los datos públicos de tu mascota y reeditarlos cuantas veces quieras.
-                </CardDescription>
-              </CardContent>
-            </Card>
+            {/* Tarjeta 2 */}
+            <div className="group relative flex">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -inset-1 rounded-2xl bg-gradient-to-br from-primary/60 via-sky-500/40 to-secondary/60 opacity-0 blur-lg transition-all duration-500 group-hover:opacity-100"
+              />
+              <Card className="relative z-10 w-full text-center border-2 border-border bg-card shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:border-primary/60 group-hover:bg-gradient-to-b group-hover:from-card group-hover:to-primary/5 group-hover:shadow-xl group-hover:shadow-primary/20">
+                <CardHeader>
+                  <div className="w-16 h-16 rounded-2xl bg-secondary/20 flex items-center justify-center mx-auto mb-4 transition-transform duration-300 group-hover:scale-105 group-hover:bg-primary/15">
+                    <QrCode className="w-8 h-8 text-secondary-foreground transition-colors duration-300 group-hover:text-primary" />
+                  </div>
+                  <CardTitle className="text-xl transition-colors duration-300 group-hover:text-primary">
+                    2. Añade a tu mascota: nombre, foto, datos de contacto.
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-base">
+                    Podrás acceder a la previsualización de los datos públicos de tu mascota y reeditarlos cuantas veces quieras.
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </div>
 
-            <Card className="text-center border-2 hover:border-accent/50 transition-colors">
-              <CardHeader>
-                <div className="w-16 h-16 rounded-2xl bg-accent/30 flex items-center justify-center mx-auto mb-4">
-                  <Bell className="w-8 h-8 text-accent-foreground" />
-                </div>
-                <CardTitle className="text-xl">3. Recibe Alertas: Si alguien escanea el QR, recibiras una notificacion con la ubicacion donde fue encontrada</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base">
-                  Accede a la app y verás los ultimos escaneos de tus mascotas.
-                </CardDescription>
-              </CardContent>
-            </Card>
+            {/* Tarjeta 3 */}
+            <div className="group relative flex">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -inset-1 rounded-2xl bg-gradient-to-br from-primary/60 via-sky-500/40 to-secondary/60 opacity-0 blur-lg transition-all duration-500 group-hover:opacity-100"
+              />
+              <Card className="relative z-10 w-full text-center border-2 border-border bg-card shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:border-primary/60 group-hover:bg-gradient-to-b group-hover:from-card group-hover:to-primary/5 group-hover:shadow-xl group-hover:shadow-primary/20">
+                <CardHeader>
+                  <div className="w-16 h-16 rounded-2xl bg-accent/30 flex items-center justify-center mx-auto mb-4 transition-transform duration-300 group-hover:scale-105 group-hover:bg-primary/15">
+                    <Bell className="w-8 h-8 text-accent-foreground transition-colors duration-300 group-hover:text-primary" />
+                  </div>
+                  <CardTitle className="text-xl transition-colors duration-300 group-hover:text-primary">
+                    3. Recibe Alertas: Si alguien escanea el QR, recibirás una notificación con la ubicación donde fue encontrada
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-base">
+                    Accede a la app y verás los últimos escaneos de tus mascotas.
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </section>
@@ -131,7 +164,7 @@ export default function HomePage() {
           <div className="grid md:grid-cols-2 gap-12 items-center max-w-5xl mx-auto">
             <div>
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-                Por que elegir PetQR?
+                ¿Por qué elegir PetQR?
               </h2>
               <div className="space-y-6">
                 <div className="flex gap-4">
@@ -141,7 +174,7 @@ export default function HomePage() {
                   <div>
                     <h3 className="font-semibold text-lg mb-1">Seguridad Garantizada</h3>
                     <p className="text-muted-foreground">
-                      Tu informacion personal esta protegida. Solo se muestra lo necesario para contactarte.
+                      Tu información personal está protegida. Solo se muestra lo necesario para contactarte.
                     </p>
                   </div>
                 </div>
@@ -151,9 +184,9 @@ export default function HomePage() {
                     <MapPin className="w-6 h-6 text-secondary-foreground" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg mb-1">Geolocalizacion</h3>
+                    <h3 className="font-semibold text-lg mb-1">Geolocalización</h3>
                     <p className="text-muted-foreground">
-                      Visualiza en un mapa donde fue escaneado el codigo QR de tu mascota.
+                      Visualiza en un mapa dónde fue escaneado el código QR de tu mascota.
                     </p>
                   </div>
                 </div>
@@ -190,24 +223,35 @@ export default function HomePage() {
             Protege a tu mascota hoy
           </h2>
           <p className="text-lg text-primary-foreground/80 mb-8 max-w-2xl mx-auto">
-            Unete a miles de familias que ya confian en PetQR para mantener a sus mascotas seguras.
+            Únete a miles de familias que ya confían en PetQR para mantener a sus mascotas seguras.
           </p>
-          <Link href="/auth/register">
-            <Button size="lg" variant="secondary" className="text-lg px-8">
-              Crear Cuenta Gratis
-            </Button>
-            <TiltMedalScene />
-          </Link>
+          <div className="flex flex-wrap items-center justify-center gap-4 mb-8">
+            <Link href="/auth/register">
+              <Button size="lg" variant="secondary" className="text-lg px-8">
+                Crear Cuenta Gratis
+              </Button>
+            </Link>
+            <Link href="/productos">
+              <Button
+                size="lg"
+                variant="outline"
+                className="text-lg px-8 border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+              >
+                Ver Modelos de Medallas
+              </Button>
+            </Link>
+          </div>
+          <TiltMedalScene />
         </div>
       </section>
 
       {/* Preguntas Frecuentes (Dueños y Veterinarias) */}
-      <div id="preguntas-frecuentes" className="scroll-mt-20 bg-background">
+      <div id="preguntas-frecuentes" className="scroll-mt-24 bg-background">
         <FaqSection />
       </div>
 
       {/* NUEVA SECCIÓN DE CONTACTO CON DESTELLOS AZULES */}
-      <section id="contact">
+      <section id="contact" className="scroll-mt-24">
         <ContactSection />
       </section>
 
@@ -222,23 +266,20 @@ export default function HomePage() {
               <span className="font-semibold">PetQR</span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
-              <Link
-                href="#como-funciona"
-                className="transition-colors hover:text-foreground"
-              >
+            <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
+              <Link href="/productos" className="transition-colors hover:text-foreground">
+                Productos
+              </Link>
+              <Link href="/promociones" className="transition-colors hover:text-foreground">
+                Promociones
+              </Link>
+              <Link href="#como-funciona" className="transition-colors hover:text-foreground">
                 Cómo funciona
               </Link>
-              <Link
-                href="#preguntas-frecuentes"
-                className="transition-colors hover:text-foreground"
-              >
+              <Link href="#preguntas-frecuentes" className="transition-colors hover:text-foreground">
                 Preguntas Frecuentes
               </Link>
-              <Link
-                href="#contact"
-                className="transition-colors hover:text-foreground"
-              >
+              <Link href="#contact" className="transition-colors hover:text-foreground">
                 Contacto
               </Link>
             </div>
